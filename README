@@ -1,0 +1,17 @@
+
+This is the gss-proxy project.
+
+The goal is to have a GSS-API proxy, with standardizable protocol and a
+[somewhat portable] reference client and server implementation.  There
+are several motivations for this some of which are:
+
+ - Kernel-mode GSS-API applications (CIFS, NFS, AFS, ...) need to be
+   able to leave all complexity of GSS_Init/Accept_sec_context() out of
+   the kernel by upcalling to a daemon that does all the dirty work.
+
+ - Isolation and privilege separation for user-mode applications.  For
+   example: letting HTTP servers use but not see the keytabe entries for
+   HTTP/* principals for accepting security contexts.
+
+ - Possibly an ssh-agent-like SSH agent for GSS credentials -- a
+   gss-agent.
