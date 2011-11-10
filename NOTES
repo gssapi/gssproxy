@@ -1,0 +1,30 @@
+
+ - How to handle mixed proxied and non-proxied credentials for one
+   process?
+
+   Idea #0: Always use the proxy or no proxy.  Period.  Use an env var to
+            select mechglue config.
+
+   Idea #1: Some mechglue magic and minor constraints on the applications.
+
+    - mechglue needs to allow multiple providers to provide same
+      mechanisms, with GSS_Acquire/Add_cred*() trying all providers for
+      the desired mechanism(s) in order till one works or all fail;
+
+    - this does not work for GSS_Init/Accept_sec_context() when using
+      the default credential;
+
+       - for GSS_Init_sec_context() just pick one provider to be first
+	 for default credential and let apps that want the other
+	 provider acquire a credential handle instead of using the
+	 default one (e.g., ssh -o GSSAPIInitiatorCredential=...);
+
+       - for GSS_Accept_sec_context() declare that all acceptor
+	 credentials for any given mechanism must be proxied or not;
+
+   Idea #2: Use PGSS or GSS-APIv3 so we can have a caller context handle
+            via which to specify mechglue configuration.
+
+ - SPNEGO (any pseudo-mechanism) should not be proxied, as it will
+   re-enter the mechglue and call the proxy(ies) if needed (or not) as
+   appropriate.
