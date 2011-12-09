@@ -330,7 +330,7 @@ struct gssx_arg_init_sec_context {
     gssx_OID            mech_type;
     gssx_uint64         req_flags;
     gssx_time           time_req;
-    gssx_cb             *input_chan_bindings;
+    gssx_cb             *input_cb; /* input channel bindings */
     gssx_buffer         *input_token;
     gssx_typed_hole     extensions<>;
 };
@@ -346,7 +346,7 @@ struct gssx_arg_accept_sec_context {
     gssx_ctx            *context_handle;
     gssx_cred           *cred_handle; /* absent -> GSS_C_NO_CREDENTIAL */
     gssx_buffer         input_token;
-    gssx_cb             *input_chan_bindings;
+    gssx_cb             *input_cb; /* input channel bindings */
     gssx_typed_hole     extensions<>;
 };
 struct gssx_res_accept_sec_context {
