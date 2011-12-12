@@ -131,7 +131,7 @@ struct gssx_status {
  */
 struct gssx_call_ctx {
     gssx_uint64         client_ctx_id; /* a client-local unique id */
-    octet_string        server_ctx;    /* a client-local unique id */
+    octet_string        server_ctx;    /* server-assigned (see above) */
     utf8string          locale;        /* for status display string L10N */
     gssx_typed_hole     cred_store;    /* cred store "handle" or reference */
     gssx_typed_hole     extensions<>;
