@@ -80,13 +80,19 @@ typedef gssx_OID                gssx_OID_set<>; /* empty -> GSS_C_NO_OID_SET */
 enum gssx_cred_usage {GSSX_C_INITIATE = 1, GSSX_C_ACCEPT = 2, GSSX_C_BOTH = 3};
 typedef unsigned hyper          gssx_time;      /* seconds since Unix epoch */
 
+/* Extensions types.  This file is the registry of extension types for now. */
+enum gssx_ext_id {
+    GSSX_EXT_CRED_STORE_UNIX_KERNEL = 0,        /* see below */
+    GSSX_EXT_CRED_STORE_UNIX_USER = 1           /* see below */
+};
+
 /* Extensions */
 struct gssx_typed_hole {
     /*
-     * Negative values of ext_type will be for private use; positive
-     * values will require registration.
+     * Values of ext_type with the high bit set will be for private use;
+     * all other values will require registration.
      */
-    int                 ext_type;
+    gssx_ext_id         ext_type;
     octet_string        ext_data;
 };
 
@@ -97,29 +103,75 @@ struct gssx_status {
     gssx_uint64         minor_status;
     utf8string          major_status_string; /* localized; see below */
     utf8string          minor_status_string; /* localized; see below */
+    octet_string        server_ctx;    /* see caller context, below */
 };
 
 /*
- * Caller context.  This is needed to help the proxy server find user
- * credentials, for example.  It could be used in the future for other
+ * Caller context.
+ *
+ * Caller contexts are objects that are created by the caller.  But the
+ * server may return some octet string that the client must use with the
+ * same call context in the future (the server does so by sending
+ * server_ctx in the gssx_status struct; see above).
+ *
+ * This is useful to help the proxy server find user credentials, for
+ * example.  And for conveying locale information for status display
+ * string localization.  It could be used in the future for other
  * extensions.  It could be used for gss_set_context_option() for some
- * context options.
+ * context options, for example.
  *
  * A credential store is always implied in the GSS-API, but for a proxy
- * GSS protocol we need an option to make the credential store explicit.
- * The cred_store field is used to identify a credential store.
+ * GSS protocol we need an *option* to make the credential store explicit.
+ * The cred_store field of the caller context is used to identify a
+ * credential store.
  *
  * For some implementations and/or use contexts cred_store may be an
  * empty octet string.  Others might encode such things as environment
  * variables in it.
  */
 struct gssx_call_ctx {
-    utf8string          locale; /* for status display string L10N */
-    gssx_typed_hole     cred_store;
+    gssx_uint64         client_ctx_id; /* a client-local unique id */
+    octet_string        server_ctx;    /* a client-local unique id */
+    utf8string          locale;        /* for status display string L10N */
+    gssx_typed_hole     cred_store;    /* cred store "handle" or reference */
     gssx_typed_hole     extensions<>;
 };
 
-/* Example/possible structs to encode and use as cred_store */
+/*
+ * Example/possible structs to encode and use as cred_store.
+ *
+ * Two examples are given.
+ *
+ * Note that a gss proxy server implementation must be very careful about how it
+ * interprets cred_store information.  In particular it must not allow clients
+ * to access credential stores that they should not have access to -- that is,
+ * the gss proxy server must implement some form of authorization.
+ *
+ * An implementation that have an instance of a gss proxy daemon per-user or
+ * per-session might use IPC endpoints with appropriate permissions and simply
+ * ignore cred_store information from the caller, assuming instead that any
+ * caller that has access to the daemon's IPC endpoint has permission to access
+ * the proxy daemon instance's underlying credential store.
+ *
+ * Other implementations might have a single gss proxy daemon for all users on a
+ * system, in which case the authorization decision is likely more complex.
+ */
+
+/*
+ * Example/possible struct for identifying credential stores in the case that
+ * the caller is a Unix kernel module.  For example, an NFS/AFS/Lustre/other
+ * module might want to upcall to a gss proxy daemon to initiate or accept a
+ * security context.
+ *
+ * In some OSes the kernel might have information available that can help
+ * identify a credential store for the desired operation.  For example, on Linux
+ * the kernel might have keyring information useful for locating a Kerberos
+ * ccache.
+ *
+ * Other OSes might not have a use for this at all.  For example, on Solaris the
+ * gss proxy might be able to use an API like door_ucred(3DOOR) to get all the
+ * information it needs to find the caller's credential store.
+ */
 struct gssx__unix_kernel_cred_store {
     /*
      * A unix kernel proxy client will want to tell the proxy server
@@ -148,9 +200,15 @@ struct gssx__unix_kernel_cred_store {
      * structure might well be empty.
      */
 };
+
+/*
+ * Example/possible cred_store extension for user-land gss proxy clients on a
+ * typical Unix system.  This structure simply includes environment variables
+ * from the caller's environment, such as KRB5CCNAME and KRB5_KTNAME for
+ * Kerberos.  See authorization notes above!
+ */
 struct gssx__unix_user_cred_store {
     utf8string          environment<>;  /* for non-kernel clients */
-    /* The proxy server has to apply some form of authorization, of course */
 };
 
 /*
