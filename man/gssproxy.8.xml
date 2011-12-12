@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<reference>
+<title>GssProxy Manual pages</title>
+<refentry>
+    <refentryinfo>
+        <productname>GSS Proxy</productname>
+        <orgname>GSS-Proxy - http://fedorahosted.org/gss-proxy</orgname>
+    </refentryinfo>
+
+    <refmeta>
+        <refentrytitle>gssproxy</refentrytitle>
+        <manvolnum>8</manvolnum>
+    </refmeta>
+
+    <refnamediv id='name'>
+        <refname>gssproxy</refname>
+        <refpurpose>GssProxy Daemon</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv id='synopsis'>
+        <cmdsynopsis>
+            <command>gssproxy</command>
+            <arg choice='opt'>
+                <replaceable>options</replaceable>
+            </arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1 id='description'>
+        <title>DESCRIPTION</title>
+        <para>
+            <command>gssproxy</command> provides a daemons to manage access to
+            GSSAPI credetnials.
+        </para>
+    </refsect1>
+
+    <refsect1 id='options'>
+        <title>OPTIONS</title>
+        <variablelist remap='IP'>
+            <varlistentry>
+                <term>
+                    <option>-D</option>,<option>--daemon</option>
+                </term>
+                <listitem>
+                    <para>
+                        Become a daemon after starting up.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>-i</option>,<option>--interactive</option>
+                </term>
+                <listitem>
+                    <para>
+                        Run in the foreground, don't become a daemon.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>-c</option>,<option>--config</option>
+                </term>
+                <listitem>
+                    <para>
+                        Specify a non-default config file. The default is
+                        <filename>/etc/gssprosy/gssproxy.conf</filename>. For reference
+                        on the config file syntax and options, consult the
+                        <citerefentry>
+                            <refentrytitle>gssproxy.conf</refentrytitle>
+                            <manvolnum>5</manvolnum>
+                        </citerefentry>
+                        manual page.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--version</option>
+                </term>
+                <listitem>
+                    <para>
+                        Print version number and exit.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1>
+        <title>Signals</title>
+        <variablelist remap='IP'>
+            <varlistentry>
+                <term>SIGTERM/SIGINT</term>
+                <listitem>
+                    <para>
+                        Informs the GssProxy to gracefully terminate all of its
+                        child processes and then shut down.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>SIGHUP</term>
+                <listitem>
+                    <para>
+                        Tells the GssProxy to stop writing to its current debug
+                        file descriptors and to close and reopen them. This is
+                        meant to facilitate log rolling with programs like
+                        logrotate.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1 id='see_also'>
+        <title>SEE ALSO</title>
+        <para>
+            <citerefentry>
+                <refentrytitle>gssproxy.conf</refentrytitle><manvolnum>5</manvolnum>
+            </citerefentry>.
+        </para>
+    </refsect1>
+</refentry>
+</reference>
