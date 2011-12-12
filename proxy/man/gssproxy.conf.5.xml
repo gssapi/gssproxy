@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<reference>
+<title>GssProxy Manual pages</title>
+<refentry>
+    <refentryinfo>
+        <productname>GSS Proxy</productname>
+        <orgname>GSS-Proxy - http://fedorahosted.org/gss-proxy</orgname>
+    </refentryinfo>
+
+    <refmeta>
+        <refentrytitle>gssproxy.conf</refentrytitle>
+        <manvolnum>5</manvolnum>
+    </refmeta>
+
+    <refnamediv id='name'>
+        <refname>gssproxy.conf</refname>
+        <refpurpose>GssProxy Daemon Configuration file</refpurpose>
+    </refnamediv>
+
+    <refsect1 id='description'>
+        <title>DESCRIPTION</title>
+        <para>
+            Optional configuration directives for the gssproxy daemon.
+        </para>
+    </refsect1>
+
+</refentry>
+</reference>

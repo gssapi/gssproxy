@@ -1,0 +1,5 @@
+
+First off, run:
+# autoreconf -f -i
+
+Then the usual ./configure and make
