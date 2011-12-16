@@ -74,6 +74,11 @@ m4_include([external/selinux.m4])
 m4_include([external/libkeyutils.m4])
 m4_include([external/systemd.m4])
 
+PKG_CHECK_MODULES([VERTO], [libverto >= 0.2.2], [have_libverto=1], [have_libverto=])
+if test x$have_libverto = x; then
+    AC_MSG_ERROR([Could not find VERTO headers])
+fi
+
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
     WITH_SYSTEMD_UNIT_DIR

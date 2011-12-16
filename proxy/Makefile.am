@@ -71,7 +71,7 @@ AM_CPPFLAGS = \
 
 EXTRA_DIST = build/config.rpath
 
-GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS)
+GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS)
 
 if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
@@ -83,6 +83,7 @@ dist_noinst_HEADERS =
 # Program Binaries #
 ####################
 gssproxy_SOURCES = \
+    src/gp_init.c \
     src/gssproxy.c
 gssproxy_LDADD = \
     $(GSS_PROXY_LIBS)
