@@ -24,10 +24,8 @@
 */
 
 #include "config.h"
-#include <libintl.h>
 #include "popt.h"
-
-#define _(STRING) gettext(STRING)
+#include "gp_utils.h"
 
 int main(int argc, const char *argv[])
 {
@@ -38,6 +36,10 @@ int main(int argc, const char *argv[])
     int opt_version = 0;
     char *opt_config_file = NULL;
     char *config_file = NULL;
+    verto_ctx *vctx;
+    verto_ev *ev;
+    int vflags;
+    int fd;
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
@@ -86,6 +88,22 @@ int main(int argc, const char *argv[])
      * 4. ...
      * 5. Profit
      */
+
+    init_server();
+
+    fd = init_unix_socket(GSS_PROXY_SOCKET_NAME);
+    if (fd == -1) {
+        return 1;
+    }
+
+    vctx = init_event_loop();
+    if (!vctx) {
+        return 1;
+    }
+
+    verto_run(vctx);
+
+    fini_server();
 
     return 0;
 }
