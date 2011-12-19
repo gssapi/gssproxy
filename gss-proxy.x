@@ -96,6 +96,19 @@ struct gssx_typed_hole {
     octet_string        ext_data;
 };
 
+struct gssx_mech_attr {
+    gssx_OID            attr;
+    gssx_buffer         name;
+    gssx_buffer         short_desc;
+    gssx_buffer         long_desc;
+};
+
+struct gssx_mech_info {
+    gssx_OID            mech;
+    gssx_OID_set        attrs;
+    gssx_OID_set        known_attrs;
+};
+
 /* Avoid round-trips for GSS_Display_status() */
 struct gssx_status {
     gssx_uint64         major_status;
@@ -507,74 +520,38 @@ struct gssx_arg_indicate_mechs {
 };
 struct gssx_res_indicate_mechs {
     gssx_status         status;
-    gssx_OID_set        mech_set;
-};
-
-struct gssx_arg_indicate_mechs_by_attr {
-    gssx_call_ctx       call_ctx;
-    gssx_OID_set        desired_mech_attrs;
-    gssx_OID_set        except_mech_attrs;
-    gssx_OID_set        critical_mech_attrs;
-};
-struct gssx_res_indicate_mechs_by_attr {
-    gssx_status         status;
-    gssx_OID_set        mech_set;
-};
-
-struct gssx_arg_inquire_attrs_for_mech {
-    gssx_call_ctx       call_ctx;
-    gssx_OID            mech;
-};
-struct gssx_res_inquire_attrs_for_mech {
-    gssx_status         status;
-    gssx_OID_set        mech_attrs;
-    gssx_OID_set        known_mech_attrs;
-};
-
-struct gssx_arg_display_mech_attr {
-    gssx_call_ctx       call_ctx;
-    gssx_OID            mech_attr;
-};
-struct gssx_res_display_mech_attr {
-    gssx_status         status;
-    gssx_buffer         name;
-    gssx_buffer         short_desc;
-    gssx_buffer         long_desc;
+    gssx_mech_info      mechs<>;
+    gssx_mech_attr      mech_attr_descs<>;
+    gssx_typed_hole     extensions<>;
 };
 
 program GSSPROXY {
     version GSSPROXYVERS {
     gssx_res_indicate_mechs
         GSSX_INDICATE_MECHS(gssx_arg_indicate_mechs) = 1;
-    gssx_res_indicate_mechs_by_attr
-        GSSX_INDICATE_MECHS_BY_ATTR(gssx_arg_indicate_mechs_by_attr) = 2;
-    gssx_res_inquire_attrs_for_mech
-        GSSX_INQUIRE_ATTRS_FOR_MECH(gssx_arg_inquire_attrs_for_mech) = 3;
-    gssx_res_display_mech_attr
-        GSSX_DISPLAY_MECH_ATTR(gssx_arg_display_mech_attr) = 4;
     gssx_res_get_call_context
-        GSSX_GET_CALL_CONTEXT(gssx_arg_get_call_context) = 5;
+        GSSX_GET_CALL_CONTEXT(gssx_arg_get_call_context) = 2;
     gssx_res_import_and_canon_name
-        GSSX_IMPORT_AND_CANON_NAME(gssx_arg_import_and_canon_name) = 6;
+        GSSX_IMPORT_AND_CANON_NAME(gssx_arg_import_and_canon_name) = 3;
     gssx_res_acquire_cred
-        GSSX_ACQUIRE_CRED(gssx_arg_acquire_cred) = 7;
+        GSSX_ACQUIRE_CRED(gssx_arg_acquire_cred) = 4;
     gssx_res_store_cred
-        GSSX_STORE_CRED(gssx_arg_store_cred) = 8;
+        GSSX_STORE_CRED(gssx_arg_store_cred) = 5;
     gssx_res_init_sec_context
-        GSSX_INIT_SEC_CONTEXT(gssx_arg_init_sec_context) = 9;
+        GSSX_INIT_SEC_CONTEXT(gssx_arg_init_sec_context) = 6;
     gssx_res_accept_sec_context
-        GSSX_ACCEPT_SEC_CONTEXT(gssx_arg_accept_sec_context) = 10;
+        GSSX_ACCEPT_SEC_CONTEXT(gssx_arg_accept_sec_context) = 7;
     gssx_res_release_handle
-        GSSX_RELEASE_HANDLE(gssx_arg_release_handle) = 11;
+        GSSX_RELEASE_HANDLE(gssx_arg_release_handle) = 8;
     gssx_res_get_mic
-        GSSX_GET_MIC(gssx_arg_get_mic) = 12;
+        GSSX_GET_MIC(gssx_arg_get_mic) = 9;
     gssx_res_verify_mic
-        GSSX_VERIFY(gssx_arg_verify_mic) = 13;
+        GSSX_VERIFY(gssx_arg_verify_mic) = 10;
     gssx_res_wrap
-        GSSX_WRAP(gssx_arg_wrap) = 14;
+        GSSX_WRAP(gssx_arg_wrap) = 11;
     gssx_res_unwrap
-        GSSX_UNWRAP(gssx_arg_unwrap) = 15;
+        GSSX_UNWRAP(gssx_arg_unwrap) = 12;
     gssx_res_wrap_size_limit
-        GSSX_WRAP_SIZE_LIMIT(gssx_arg_wrap_size_limit) = 16;
+        GSSX_WRAP_SIZE_LIMIT(gssx_arg_wrap_size_limit) = 13;
     } = 1;
 } = 412345; /* XXX obtain from Oracle (Bill Baker, I think) */
