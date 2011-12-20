@@ -74,10 +74,14 @@
  * OIDs/OID sets; we can use '*' in the future if any new functions are
  * added with such semantics).
  *
- * Regarding extensions like GSS_Set_name_attribute(),
- * GSS_Set_cred_option(), and GSS_Set_sec_ctx_option(), the way these
- * are intended to be implemented with this GSS proxy protocol is as
- * follows:
+ * Most/all RPC arguments/results have typed holes for extensibility.
+ * Most/all "handles" have typed holes for extensibility.  Name
+ * attributes, credential options, and security context options are all
+ * first-class types rather than extensions for those typed holes.
+ *
+ * For functions like GSS_Set_name_attribute(), GSS_Set_cred_option(),
+ * and GSS_Set_sec_ctx_option(), the way these are intended to be
+ * implemented with this GSS proxy protocol is as follows:
  *
  *  - For name attributes the client must call the IMPORT_AND_CANON_NAME
  *    RPC once again for each additional name attribute.  The input_name
@@ -145,17 +149,13 @@ struct gssx_typed_hole {
     octet_string        ext_data;
 };
 
-struct gssx_option {
-    gssx_OID            option;
-    gssx_buffer         value;
-};
-
 /* Mechanism attributes */
 struct gssx_mech_attr {
     gssx_OID            attr;
     gssx_buffer         name;
     gssx_buffer         short_desc;
     gssx_buffer         long_desc;
+    gssx_typed_hole     extensions<>;
 };
 
 /* Mechanism meta-data */
@@ -170,28 +170,51 @@ struct gssx_mech_info {
     gssx_typed_hole     extensions<>;
 };
 
+/* Name attributes are {attribute name, attribute value} */
 struct gssx_name_attr {
     gssx_buffer         attr;
     gssx_buffer         value;
+    gssx_typed_hole     extensions<>;
 };
 
-/* Avoid round-trips for GSS_Display_status() */
+/* Credential and security context options are {option OID, option value} */
+struct gssx_option {
+    gssx_OID            option;
+    gssx_buffer         value;
+    gssx_typed_hole     extensions<>;
+};
+
+/*
+ * We avoid round-trips for GSS_Display_status() by always sending
+ * displayed status messages.  These are intended to be localized to the
+ * locale specified by the client (see below).
+ *
+ * Note that the minor_status is not really meaningful unless the
+ * mechanism specifies specific minor_status numeric values, which no
+ * mechanism does!  The server repeats the mechanism OID here for
+ * convenience, so the client can have a single structure that contains
+ * the mechanism OID and minor_status value for whatever purpose the
+ * client might put them to.
+ *
+ * The server_ctx value is opaque and intended for the client to replace
+ * its' caller context's server_ctx value with.
+ */
 struct gssx_status {
     gssx_uint64         major_status;
-    gssx_OID            mech;           /* to interpret minor_status by */
+    gssx_OID            mech;
     gssx_uint64         minor_status;
-    utf8string          major_status_string; /* localized; see below */
-    utf8string          minor_status_string; /* localized; see below */
-    octet_string        server_ctx;    /* see caller context, below */
+    utf8string          major_status_string;
+    utf8string          minor_status_string;
+    octet_string        server_ctx;
+    gssx_typed_hole     extensions<>;
 };
 
 /*
  * Caller context.
  *
  * Caller contexts are objects that are created by the caller.  But the
- * server may return some octet string that the client must use with the
- * same call context in the future (the server does so by sending
- * server_ctx in the gssx_status struct; see above).
+ * server may return some octet string (in gssx_status; see above) that
+ * the client must use in its call context in the future.
  *
  * This is useful to help the proxy server find user credentials, for
  * example.  And for conveying locale information for status display
@@ -205,33 +228,39 @@ struct gssx_status {
  * for it.
  */
 struct gssx_call_ctx {
-    gssx_uint64         client_ctx_id; /* a client-local unique id */
-    octet_string        server_ctx;    /* server-assigned (see above) */
-    utf8string          locale;        /* for status display string L10N */
+    utf8string          locale;     /* for status display string L10N */
+    octet_string        server_ctx; /* server-assigned (see above) */
     gssx_typed_hole     extensions<>;
 };
 
 /*
- * For NAME we don't use a plain opaque handle representation.  Our aim
- * is to be able to implement GSS_Import_name() and GSS_Display_name()
- * without talking to the proxy server (e.g., when the name type is not
- * an exported name type), and to unify those and GSS_Canonicalize_name()
- * and GSS_Get/Set_name_attribute() into one RPC.
+ * For NAMEs we don't use a plain opaque handle representation.
+ *
+ * Our aim is to be able to implement GSS_Import_name() and
+ * GSS_Display_name() without talking to the proxy server (e.g., when
+ * the name type is not an exported name type), and to unify those and
+ * GSS_Canonicalize_name() and GSS_Get/Set_name_attribute() into one
+ * RPC.
+ *
+ * We support multi-MNs by having arrays of exported name tokens, rather
+ * than just one, just in case we end up with multi-MN extensions.
  */
 struct gssx_name {
     /* Non-MNs MUST have these; MNs MAY have these */
     gssx_buffer         *display_name;
     gssx_OID            name_type;
-    /* MNs MUST have at least one exported name */
-    gssx_buffer         *exported_name;
-    gssx_buffer         *exported_composite_name;
+    /* MNs MUST have at least one exported name form */
+    gssx_buffer         exported_name<>;
+    gssx_buffer         exported_composite_name<>;
     /* Name attributes */
     gssx_name_attr      name_attributes<>;
+    /* Future extensions */
     gssx_typed_hole     extensions<>;
 };
 
 /*
- * CREDENTIAL and CONTEXT handles
+ * CREDENTIAL HANDLEs are really just a description plus whatever state
+ * reference or encoded (and protected) state the server needs.
  */
 struct gssx_cred_info {
     /* GSS_Inquire_cred_by_mech() outputs */
@@ -242,25 +271,27 @@ struct gssx_cred_info {
     gssx_time           acceptor_time_rec;
     gssx_option         cred_options<>;
     /*
-     * Server-side state, for the state-less server.
-     *
-     * Note that the cred_handle_reference might well be an exported
-     * credential handle token, but if so possibly encrypted in a secret
-     * key known only to the proxy.  Even if cred_handle_reference is
-     * just a reference (e.g., a ccache name) it may be MACed with a
-     * secret key known only to the proxy.  The server will use crypto
-     * to protect cred_handle_reference only when the client is not
-     * allowed direct access to the credential store and/or the server
-     * supports multiple users and wishes to perform full authorization
-     * only at credential acquisition time.
+     * Server-side state reference or encoded state; may or may not
+     * require releasing.  This may be just a ccache name, or an encoded
+     * list of URI-like strings, for example, or it might be an exported
+     * credential, possibly encrypted and/or MACed with a server secret
+     * key.
      */
     octet_string        cred_handle_reference;
     /* Extensions */
     gssx_typed_hole     extensions<>;
 };
+
+/*
+ * Security CONTECT HANDLEs consist of a description of the security
+ * context and an exported security context token or (if the server
+ * can't export partially established security contexts) a server-side
+ * state reference.
+ */
 struct gssx_ctx_info {
     /* The exported context token, if available */
     octet_string        *exported_context_token;   /* exported context token */
+    octet_string        *state;
     /* GSS_Inquire_context() outputs */
     gssx_OID            mech;
     gssx_name           src_name;
@@ -272,6 +303,12 @@ struct gssx_ctx_info {
     gssx_option         context_options<>;
     gssx_typed_hole     extensions<>;
 };
+
+/*
+ * We have a union type for CREDENTIAL and security CONTEXT HANDLEs so
+ * that we can have a unified handle release RPC (which is needed only
+ * when the server is stateful).
+ */
 enum gssx_handle_type { GSSX_C_HANDLE_SEC_CTX = 0, GSSX_C_HANDLE_CRED = 1 };
 union gssx_handle_info switch (gssx_handle_type handle_type) {
     case GSSX_C_HANDLE_CRED:
@@ -282,9 +319,8 @@ union gssx_handle_info switch (gssx_handle_type handle_type) {
         octet_string    extensions;   /* Future handle types */
 };
 struct gssx_handle {
-    gssx_handle_info    handle_info;        /* Has handle type */
-    octet_string        *handle;            /* Server state specific bits */
-    bool                needs_release;      /* For stateful proxies */
+    gssx_handle_info    handle_info;
+    bool                needs_release;
 };
 typedef gssx_handle     gssx_ctx;
 typedef gssx_handle     gssx_cred;
@@ -327,7 +363,7 @@ struct gssx_res_release_handle {
     gssx_status         status;
 };
 
-/* Various inquiry functions, all unified into one RPC */
+/* Various mechanism inquiry functions, all unified into one RPC */
 struct gssx_arg_indicate_mechs {
     gssx_call_ctx       call_ctx;
 };
@@ -335,10 +371,11 @@ struct gssx_res_indicate_mechs {
     gssx_status         status;
     gssx_mech_info      mechs<>;
     gssx_mech_attr      mech_attr_descs<>;
+    gssx_ext_id         supported_extensions<>;
     gssx_typed_hole     extensions<>;
 };
 
-/* We unify GSS_Import/Canonicalize_name() */
+/* We unify GSS_Import/Canonicalize_name() and GSS_Get/Set_name_attribute() */
 struct gssx_arg_import_and_canon_name {
     gssx_call_ctx       call_ctx;
     gssx_name           input_name;
@@ -352,22 +389,18 @@ struct gssx_res_import_and_canon_name {
     gssx_typed_hole     extensions<>;
 };
 
+/* We probably don't need this RPC */
 struct gssx_arg_get_call_context {
     gssx_call_ctx       call_ctx;
+    gssx_typed_hole     extensions<>;
 };
 struct gssx_res_get_call_context {
     gssx_status         status;
     octet_string        server_call_ctx;    /* server-assigned (see above) */
+    gssx_typed_hole     extensions<>;
 };
 
-/*
- * We unify GSS_Acquire/Add_cred() here.
- *
- * GSS_Add_cred() is only meaningful here for stateful proxy server
- * implementations.  Stateless ones will always output a new handle;
- * stateful ones will modify the given input handle if desired, but we
- * still include a handle in the result for the handle_info.
- */
+/* We unify GSS_Acquire/Add_cred() here */
 struct gssx_arg_acquire_cred {
     gssx_call_ctx       call_ctx;
     gssx_option         cred_options<>;
@@ -387,28 +420,33 @@ struct gssx_res_acquire_cred {
     gssx_typed_hole     extensions<>;
 };
 
+/* GSS_Export/Import_cred() are not unified */
 struct gssx_arg_export_cred {
     gssx_call_ctx       call_ctx;
     gssx_cred           input_cred_handle;
     gssx_cred_usage     cred_usage;
+    gssx_typed_hole     extensions<>;
 };
 
 struct gssx_res_export_cred {
     gssx_status         status;
     gssx_cred_usage     usage_exported;
     octet_string        *exported_handle;   /* exported credential token */
+    gssx_typed_hole     extensions<>;
 };
 
 struct gssx_arg_import_cred {
     gssx_call_ctx       call_ctx;
     octet_string        exported_handle;   /* exported credential token */
+    gssx_typed_hole     extensions<>;
 };
-
 struct gssx_res_import_cred {
     gssx_status         status;
     gssx_cred           *output_cred_handle; /* includes info */
+    gssx_typed_hole     extensions<>;
 };
 
+/* GSS_Store_cred() */
 struct gssx_arg_store_cred {
     gssx_call_ctx       call_ctx;
     gssx_cred           input_cred_handle;
@@ -416,11 +454,13 @@ struct gssx_arg_store_cred {
     gssx_OID            desired_mech;
     bool                overwrite_cred;
     bool                default_cred;
+    gssx_typed_hole     extensions<>;
 };
 struct gssx_res_store_cred {
     gssx_status         status;
     gssx_OID_set        elements_stored;
     gssx_cred_usage     cred_usage_stored;
+    gssx_typed_hole     extensions<>;
 };
 
 /*
@@ -474,14 +514,16 @@ struct gssx_res_accept_sec_context {
  * the client.  This is primarily useful for testing that the
  * client-side provider and the server-side provider have interoperable
  * per-message token functions, which can be especially important for
- * kernel-mode client use cases.
+ * kernel-mode client use cases.  (I.e., setup an NFS client without a
+ * kernel-mode GSS mechanism provider and test it against an NFS server
+ * that does have a kernel-mode GSS mechanism provider, and vice-versa.)
  *
  * The results of these functions have an optional context_handle output
- * so that stateless servers can store sequence number windows and such
- * things in the returned handle.
+ * so that stateless servers can store sequence number windows in the
+ * returned handle.
  *
  * Server support for this is optional.  Clients should really not need
- * this.
+ * this for any purpose other than testing.
  */
 struct gssx_arg_get_mic {
     gssx_call_ctx       call_ctx;
@@ -555,6 +597,7 @@ struct gssx_res_wrap_size_limit {
 
 program GSSPROXY {
     version GSSPROXYVERS {
+    /* rpcgen knows to automatically generate a NULLPROC */
     gssx_res_indicate_mechs
         GSSX_INDICATE_MECHS(gssx_arg_indicate_mechs) = 1;
     gssx_res_get_call_context
