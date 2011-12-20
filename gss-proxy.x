@@ -30,6 +30,8 @@
  */
 
 /*
+ *                         README First!
+ *
  * This is an initial attempt at creating an XDR representation of the
  * GSS-API for the implementation of a GSS proxy client/server protocol,
  * both over local IPC (for NFS and various other applications) and
@@ -43,19 +45,25 @@
  * affixes to name structures, and we use those structures to encode
  * function arguments and results, respectively.
  *
- * Naming functions are unified into one RPC for now.  Clients are
- * expected to not call the proxy for GSS_Import_name() calls unless the
- * name type is GSS_C_NT_EXPORTED_NAME.  Calls to GSS_Import/
- * Canonicalize/Display_name() can done in one RPC.
+ * We unify functions as much as possible into as few RPCs as possible.
+ * For example, we unify GSS_Import/Canonicalize/Display_name().  We
+ * also unify GSS_Acquire/Add_cred() and the credentials handle inquiry
+ * functions.  This way we reduce the number of round-trips needed to
+ * use the GSS proxy protocol effectively.
  *
- * Credentials functions are also unified.  The idea is to not have to
- * do multiple round-trips to acquire credentials then inquire them.
- *
- * GSS_Init/Accept_sec_context() similarly return all the information
+ * Similarly, GSS_Init/Accept_sec_context() return all the information
  * about a context that the app could want, including an exported
  * security context token (so the app can import it).
  *
+ * All general meta-data functions, such as GSS_Indicate_mechs() and
+ * GSS_Inquire_attrs_for_mech(), are unified as well.
+ *
  * We support stateful and stateless proxy server implementations both.
+ * Stateless servers will need to store various internal state on the
+ * client side, in the form of serialized credential handle references
+ * (e.g., ccache names) and exported security context tokens even for
+ * partially established security contexts.  Stateless servers will
+ * generally want to MAC state stored on the client side.
  *
  * We use gssx_ as a prefix to avoid colliding with the C bindings.
  *
@@ -65,6 +73,41 @@
  * (presently no GSS functions have any special semantics for empty
  * OIDs/OID sets; we can use '*' in the future if any new functions are
  * added with such semantics).
+ *
+ * Regarding extensions like GSS_Set_name_attribute(),
+ * GSS_Set_cred_option(), and GSS_Set_sec_ctx_option(), the way these
+ * are intended to be implemented with this GSS proxy protocol is as
+ * follows:
+ *
+ *  - For name attributes the client must call the IMPORT_AND_CANON_NAME
+ *    RPC once again for each additional name attribute.  The input_name
+ *    argument be the same as returned by the previous call to the same
+ *    RPC.
+ *
+ *    This means that an RPC (round trip) is needed for each name
+ *    attribute to be set.  This is a result of the semantics of
+ *    GSS_Set_name_attribute() and cannot be avoided.
+ *
+ *  - For credential handle options the client can call ACQUIRE_CRED
+ *    with cred_options.  If called with an existing credential handle
+ *    and no new elements are needed then no elements will be added to
+ *    the output credential, but the desired cred_options should be set
+ *    in the new credential (and will be visible).  This allows a
+ *    default credential handle to be acquired with cred_options in just
+ *    one round-trip for the first option.  Each additional cred_option
+ *    requires an additional round-trip with today's
+ *    GSS_Set_cred_option().
+ *
+ *    Note that supported cred_options are indicated on a per-mechanism
+ *    basis by the INDICATE_MECHS RPC.
+ *
+ *  - For security context options the options must be passed in on the
+ *    initial call to INIT/ACCEPT_SEC_CONTEXT (and may be repeated on
+ *    the remaining calls for a security context, but only the first
+ *    will matter).
+ *
+ *    Note that supported context_options are indicated on a
+ *    per-mechanism basis by the INDICATE_MECHS RPC.
  */
 
 /* Generic base types */
@@ -80,10 +123,16 @@ typedef gssx_OID                gssx_OID_set<>; /* empty -> GSS_C_NO_OID_SET */
 enum gssx_cred_usage {GSSX_C_INITIATE = 1, GSSX_C_ACCEPT = 2, GSSX_C_BOTH = 3};
 typedef unsigned hyper          gssx_time;      /* seconds since Unix epoch */
 
+/*
+ * Major status codes will be per-RFC2744, cast to gssx_uint64.
+ *
+ * XXX Should we define GSSX_S_...?  Should #include the RFC2744 headers
+ * here?
+ */
+
 /* Extensions types.  This file is the registry of extension types for now. */
 enum gssx_ext_id {
-    GSSX_EXT_CRED_STORE_UNIX_KERNEL = 0,        /* see below */
-    GSSX_EXT_CRED_STORE_UNIX_USER = 1           /* see below */
+    GSSX_EXT_NONE = 0
 };
 
 /* Extensions */
@@ -96,6 +145,12 @@ struct gssx_typed_hole {
     octet_string        ext_data;
 };
 
+struct gssx_option {
+    gssx_OID            option;
+    gssx_buffer         value;
+};
+
+/* Mechanism attributes */
 struct gssx_mech_attr {
     gssx_OID            attr;
     gssx_buffer         name;
@@ -103,10 +158,21 @@ struct gssx_mech_attr {
     gssx_buffer         long_desc;
 };
 
+/* Mechanism meta-data */
 struct gssx_mech_info {
     gssx_OID            mech;
-    gssx_OID_set        attrs;
-    gssx_OID_set        known_attrs;
+    gssx_OID_set        mech_attrs;
+    gssx_OID_set        known_mech_attrs;
+    gssx_OID_set        cred_options;
+    gssx_OID_set        sec_ctx_options;
+    utf8string          provider_names<>;
+    utf8string          provider_paths<>;
+    gssx_typed_hole     extensions<>;
+};
+
+struct gssx_name_attr {
+    gssx_buffer         attr;
+    gssx_buffer         value;
 };
 
 /* Avoid round-trips for GSS_Display_status() */
@@ -134,94 +200,15 @@ struct gssx_status {
  * context options, for example.
  *
  * A credential store is always implied in the GSS-API, but for a proxy
- * GSS protocol we need an *option* to make the credential store explicit.
- * The cred_store field of the caller context is used to identify a
- * credential store.
- *
- * For some implementations and/or use contexts cred_store may be an
- * empty octet string.  Others might encode such things as environment
- * variables in it.
+ * GSS protocol we may need an *option* to make the credential store
+ * explicit.  If we do need that option we'll use the extensions field
+ * for it.
  */
 struct gssx_call_ctx {
     gssx_uint64         client_ctx_id; /* a client-local unique id */
     octet_string        server_ctx;    /* server-assigned (see above) */
     utf8string          locale;        /* for status display string L10N */
-    gssx_typed_hole     cred_store;    /* cred store "handle" or reference */
     gssx_typed_hole     extensions<>;
-};
-
-/*
- * Example/possible structs to encode and use as cred_store.
- *
- * Two examples are given.
- *
- * Note that a gss proxy server implementation must be very careful about how it
- * interprets cred_store information.  In particular it must not allow clients
- * to access credential stores that they should not have access to -- that is,
- * the gss proxy server must implement some form of authorization.
- *
- * An implementation that have an instance of a gss proxy daemon per-user or
- * per-session might use IPC endpoints with appropriate permissions and simply
- * ignore cred_store information from the caller, assuming instead that any
- * caller that has access to the daemon's IPC endpoint has permission to access
- * the proxy daemon instance's underlying credential store.
- *
- * Other implementations might have a single gss proxy daemon for all users on a
- * system, in which case the authorization decision is likely more complex.
- */
-
-/*
- * Example/possible struct for identifying credential stores in the case that
- * the caller is a Unix kernel module.  For example, an NFS/AFS/Lustre/other
- * module might want to upcall to a gss proxy daemon to initiate or accept a
- * security context.
- *
- * In some OSes the kernel might have information available that can help
- * identify a credential store for the desired operation.  For example, on Linux
- * the kernel might have keyring information useful for locating a Kerberos
- * ccache.
- *
- * Other OSes might not have a use for this at all.  For example, on Solaris the
- * gss proxy might be able to use an API like door_ucred(3DOOR) to get all the
- * information it needs to find the caller's credential store.
- */
-struct gssx__unix_kernel_cred_store {
-    /*
-     * A unix kernel proxy client will want to tell the proxy server
-     * most/every relevant details about the client process/thread
-     * on behalf of which the kernel is doing this call.  Unless the
-     * kernel can do this through an IPC-specific mechanism (e.g.,
-     * door_ucred(3DOOR) in Solaris).
-     *
-     * The proxy server needs this information for either or both of
-     * these two purposes: a) credential store identification, b)
-     * authorization.  Some implementations might not need this for
-     * (b) (e.g., where there's a per-user or per-session proxy
-     * server, in which case access to the IPC endpoint might be
-     * authorization enough).
-     */
-    gss_uint64          pid; /* process ID */
-    gss_uint64          tid; /* thread ID */
-    gss_uint64          euid;/* effective UID */
-    gss_uint64          pag; /* PAG; 0 -> no PAG */
-    /*
-     * Lots of other things could be relevant here, such as keyring
-     * IDs, labels, ...
-     *
-     * A lot of this might be obviated by SCM_CREDENTIALS or
-     * door_ucred(3DOOR) type interfaces, so for some OSes this
-     * structure might well be empty.
-     */
-};
-
-/*
- * Example/possible cred_store extension for user-land gss proxy clients on a
- * typical Unix system.  This structure simply includes environment variables
- * from the caller's environment, such as KRB5CCNAME and KRB5_KTNAME for
- * Kerberos.  See authorization notes above!
- */
-struct gssx__unix_user_cred_store {
-    utf8string          environment<>;  /* for non-kernel clients */
 };
 
 /*
@@ -239,8 +226,7 @@ struct gssx_name {
     gssx_buffer         *exported_name;
     gssx_buffer         *exported_composite_name;
     /* Name attributes */
-    gssx_typed_hole     desired_name_attributes<>;
-    gssx_typed_hole     actual_name_attributes<>;
+    gssx_name_attr      name_attributes<>;
     gssx_typed_hole     extensions<>;
 };
 
@@ -254,10 +240,27 @@ struct gssx_cred_info {
     gssx_cred_usage     cred_usage;
     gssx_time           initiator_time_rec;
     gssx_time           acceptor_time_rec;
-    gssx_typed_hole     cred_options<>;
+    gssx_option         cred_options<>;
+    /*
+     * Server-side state, for the state-less server.
+     *
+     * Note that the cred_handle_reference might well be an exported
+     * credential handle token, but if so possibly encrypted in a secret
+     * key known only to the proxy.  Even if cred_handle_reference is
+     * just a reference (e.g., a ccache name) it may be MACed with a
+     * secret key known only to the proxy.  The server will use crypto
+     * to protect cred_handle_reference only when the client is not
+     * allowed direct access to the credential store and/or the server
+     * supports multiple users and wishes to perform full authorization
+     * only at credential acquisition time.
+     */
+    octet_string        cred_handle_reference;
+    /* Extensions */
     gssx_typed_hole     extensions<>;
 };
 struct gssx_ctx_info {
+    /* The exported context token, if available */
+    octet_string        *exported_context_token;   /* exported context token */
     /* GSS_Inquire_context() outputs */
     gssx_OID            mech;
     gssx_name           src_name;
@@ -266,7 +269,7 @@ struct gssx_ctx_info {
     gssx_uint64         ctx_flags;
     bool                locally_initiated;
     bool                open;
-    gssx_typed_hole     context_options<>;
+    gssx_option         context_options<>;
     gssx_typed_hole     extensions<>;
 };
 enum gssx_handle_type { GSSX_C_HANDLE_SEC_CTX = 0, GSSX_C_HANDLE_CRED = 1 };
@@ -280,8 +283,7 @@ union gssx_handle_info switch (gssx_handle_type handle_type) {
 };
 struct gssx_handle {
     gssx_handle_info    handle_info;        /* Has handle type */
-    octet_string        *handle;            /* Server-specific bits */
-    octet_string        *exported_handle;   /* Local standard form */
+    octet_string        *handle;            /* Server state specific bits */
     bool                needs_release;      /* For stateful proxies */
 };
 typedef gssx_handle     gssx_ctx;
@@ -325,11 +327,23 @@ struct gssx_res_release_handle {
     gssx_status         status;
 };
 
+/* Various inquiry functions, all unified into one RPC */
+struct gssx_arg_indicate_mechs {
+    gssx_call_ctx       call_ctx;
+};
+struct gssx_res_indicate_mechs {
+    gssx_status         status;
+    gssx_mech_info      mechs<>;
+    gssx_mech_attr      mech_attr_descs<>;
+    gssx_typed_hole     extensions<>;
+};
+
 /* We unify GSS_Import/Canonicalize_name() */
 struct gssx_arg_import_and_canon_name {
     gssx_call_ctx       call_ctx;
     gssx_name           input_name;
     gssx_OID            mech;
+    gssx_name_attr      name_attributes<>;
     gssx_typed_hole     extensions<>;
 };
 struct gssx_res_import_and_canon_name {
@@ -343,7 +357,7 @@ struct gssx_arg_get_call_context {
 };
 struct gssx_res_get_call_context {
     gssx_status         status;
-    gssx_call_ctx       call_ctx;
+    octet_string        server_call_ctx;    /* server-assigned (see above) */
 };
 
 /*
@@ -356,6 +370,7 @@ struct gssx_res_get_call_context {
  */
 struct gssx_arg_acquire_cred {
     gssx_call_ctx       call_ctx;
+    gssx_option         cred_options<>;
     gssx_cred           *input_cred_handle;
     bool                add_cred_to_input_handle;
     gssx_name           *desired_name; /* absent -> GSS_C_NO_NAME */
@@ -370,6 +385,28 @@ struct gssx_res_acquire_cred {
     gssx_status         status;
     gssx_cred           *output_cred_handle; /* includes info */
     gssx_typed_hole     extensions<>;
+};
+
+struct gssx_arg_export_cred {
+    gssx_call_ctx       call_ctx;
+    gssx_cred           input_cred_handle;
+    gssx_cred_usage     cred_usage;
+};
+
+struct gssx_res_export_cred {
+    gssx_status         status;
+    gssx_cred_usage     usage_exported;
+    octet_string        *exported_handle;   /* exported credential token */
+};
+
+struct gssx_arg_import_cred {
+    gssx_call_ctx       call_ctx;
+    octet_string        exported_handle;   /* exported credential token */
+};
+
+struct gssx_res_import_cred {
+    gssx_status         status;
+    gssx_cred           *output_cred_handle; /* includes info */
 };
 
 struct gssx_arg_store_cred {
@@ -395,6 +432,7 @@ struct gssx_res_store_cred {
  */
 struct gssx_arg_init_sec_context {
     gssx_call_ctx       call_ctx;
+    gssx_option         context_options<>;
     gssx_ctx            *context_handle;
     gssx_cred           *cred_handle; /* absent -> GSS_C_NO_CREDENTIAL */
     gssx_name           *target_name; /* absent -> GSS_C_NO_NAME */
@@ -414,6 +452,7 @@ struct gssx_res_init_sec_context {
 
 struct gssx_arg_accept_sec_context {
     gssx_call_ctx       call_ctx;
+    gssx_option         context_options<>;
     gssx_ctx            *context_handle;
     gssx_cred           *cred_handle; /* absent -> GSS_C_NO_CREDENTIAL */
     gssx_buffer         input_token;
@@ -514,17 +553,6 @@ struct gssx_res_wrap_size_limit {
     gssx_uint64         max_input_size;
 };
 
-/* Various inquiry functions */
-struct gssx_arg_indicate_mechs {
-    gssx_call_ctx       call_ctx;
-};
-struct gssx_res_indicate_mechs {
-    gssx_status         status;
-    gssx_mech_info      mechs<>;
-    gssx_mech_attr      mech_attr_descs<>;
-    gssx_typed_hole     extensions<>;
-};
-
 program GSSPROXY {
     version GSSPROXYVERS {
     gssx_res_indicate_mechs
@@ -533,25 +561,29 @@ program GSSPROXY {
         GSSX_GET_CALL_CONTEXT(gssx_arg_get_call_context) = 2;
     gssx_res_import_and_canon_name
         GSSX_IMPORT_AND_CANON_NAME(gssx_arg_import_and_canon_name) = 3;
+    gssx_res_export_cred
+        GSSX_EXPORT_CRED(gssx_arg_export_cred) = 4;
+    gssx_res_import_cred
+        GSSX_IMPORT_CRED(gssx_arg_import_cred) = 5;
     gssx_res_acquire_cred
-        GSSX_ACQUIRE_CRED(gssx_arg_acquire_cred) = 4;
+        GSSX_ACQUIRE_CRED(gssx_arg_acquire_cred) = 6;
     gssx_res_store_cred
-        GSSX_STORE_CRED(gssx_arg_store_cred) = 5;
+        GSSX_STORE_CRED(gssx_arg_store_cred) = 7;
     gssx_res_init_sec_context
-        GSSX_INIT_SEC_CONTEXT(gssx_arg_init_sec_context) = 6;
+        GSSX_INIT_SEC_CONTEXT(gssx_arg_init_sec_context) = 8;
     gssx_res_accept_sec_context
-        GSSX_ACCEPT_SEC_CONTEXT(gssx_arg_accept_sec_context) = 7;
+        GSSX_ACCEPT_SEC_CONTEXT(gssx_arg_accept_sec_context) = 9;
     gssx_res_release_handle
-        GSSX_RELEASE_HANDLE(gssx_arg_release_handle) = 8;
+        GSSX_RELEASE_HANDLE(gssx_arg_release_handle) = 10;
     gssx_res_get_mic
-        GSSX_GET_MIC(gssx_arg_get_mic) = 9;
+        GSSX_GET_MIC(gssx_arg_get_mic) = 11;
     gssx_res_verify_mic
-        GSSX_VERIFY(gssx_arg_verify_mic) = 10;
+        GSSX_VERIFY(gssx_arg_verify_mic) = 12;
     gssx_res_wrap
-        GSSX_WRAP(gssx_arg_wrap) = 11;
+        GSSX_WRAP(gssx_arg_wrap) = 13;
     gssx_res_unwrap
-        GSSX_UNWRAP(gssx_arg_unwrap) = 12;
+        GSSX_UNWRAP(gssx_arg_unwrap) = 14;
     gssx_res_wrap_size_limit
-        GSSX_WRAP_SIZE_LIMIT(gssx_arg_wrap_size_limit) = 13;
+        GSSX_WRAP_SIZE_LIMIT(gssx_arg_wrap_size_limit) = 15;
     } = 1;
 } = 412345; /* XXX obtain from Oracle (Bill Baker, I think) */
