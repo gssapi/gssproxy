@@ -83,6 +83,7 @@ dist_noinst_HEADERS =
 ####################
 gssproxy_SOURCES = \
     src/gp_init.c \
+    src/gp_socket.c \
     src/gssproxy.c
 gssproxy_LDADD = \
     $(GSS_PROXY_LIBS)
