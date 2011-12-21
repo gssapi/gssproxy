@@ -36,4 +36,8 @@ void init_server(void);
 void fini_server(void);
 verto_ctx *init_event_loop(void);
 
+/* from gp_socket.c */
+int init_unix_socket(const char *file_name);
+void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);
+
 #endif /* _SRV_UTILS_H_ */

@@ -101,6 +101,12 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    vflags = VERTO_EV_FLAG_PERSIST | VERTO_EV_FLAG_IO_READ;
+    ev = verto_add_io(vctx, vflags, accept_sock_conn, fd);
+    if (!ev) {
+        return 1;
+    }
+
     verto_run(vctx);
 
     fini_server();
