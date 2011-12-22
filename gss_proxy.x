@@ -161,6 +161,7 @@ struct gssx_mech_attr {
 /* Mechanism meta-data */
 struct gssx_mech_info {
     gssx_OID            mech;
+    gssx_OID_set        name_types;
     gssx_OID_set        mech_attrs;
     gssx_OID_set        known_mech_attrs;
     gssx_OID_set        cred_options;
