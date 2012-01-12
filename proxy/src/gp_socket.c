@@ -23,6 +23,7 @@
    DEALINGS IN THE SOFTWARE.
 */
 
+#include "config.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -41,6 +42,12 @@ struct unix_sock_conn {
 
 #ifdef HAVE_UCRED
     struct ucred creds;
+#else
+    struct noucred {
+        pid_t pid;
+        uid_t uid;
+        gid_t gid;
+    } creds;
 #endif
 };
 
@@ -148,6 +155,10 @@ static int get_peercred(int fd, struct unix_sock_conn *conn)
     if (len != sizeof(struct ucred)) {
         return EIO;
     }
+#else
+    conn->creds.pid = -1;
+    conn->creds.uid = -1;
+    conn->creds.gid = -1;
 #endif
     return 0;
 }
@@ -163,11 +174,14 @@ static void free_unix_sock_conn(verto_ctx *vctx, verto_ev *ev)
 
 void client_sock_conn(verto_ctx *vctx, verto_ev *ev)
 {
+    struct unix_sock_conn *conn;
     int fd;
 
     fd = verto_get_fd(ev);
+    conn = verto_get_private(ev);
 
-    syslog(LOG_ERR, "Ok you got here!");
+    syslog(LOG_ERR, "Ok you got here (pid=%d, uid=%d, gid=%d)!",
+           conn->creds.pid, conn->creds.uid, conn->creds.gid);
 
     verto_del(ev);
     close(fd);
