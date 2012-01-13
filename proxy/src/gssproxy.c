@@ -35,7 +35,7 @@ int main(int argc, const char *argv[])
     int opt_interactive = 0;
     int opt_version = 0;
     char *opt_config_file = NULL;
-    char *config_file = NULL;
+    struct gp_config *config;
     verto_ctx *vctx;
     verto_ev *ev;
     int vflags;
@@ -76,22 +76,15 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    if (!opt_daemon && !opt_interactive) {
-        opt_daemon = 1;
+    if (opt_interactive) {
+        opt_daemon = 2;
     }
 
-    poptFreeContext(pc);
-
-    /* 1. Init server and sockets
-     * 2. Create thread pools and queues
-     * 3. Create mainloop and start serving clients
-     * 4. ...
-     * 5. Profit
-     */
+    config = read_config(opt_config_file, opt_daemon);
 
     init_server();
 
-    fd = init_unix_socket(GSS_PROXY_SOCKET_NAME);
+    fd = init_unix_socket(config->socket_name);
     if (fd == -1) {
         return 1;
     }
@@ -110,6 +103,8 @@ int main(int argc, const char *argv[])
     verto_run(vctx);
 
     fini_server();
+
+    poptFreeContext(pc);
 
     return 0;
 }

@@ -79,6 +79,15 @@ if test x$have_libverto = x; then
     AC_MSG_ERROR([Could not find VERTO headers])
 fi
 
+#Check for iniparser
+AC_CHECK_HEADERS([iniparser.h],
+    [AC_CHECK_LIB(iniparser, iniparser_set, [ INI_LIBS="-liniparser" ],
+    [AC_MSG_ERROR([Iniparser library must support iniparser_set])])],
+    [AC_MSG_ERROR([Iniparser development package is not installed])]
+)
+
+AC_SUBST(INI_LIBS)
+
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
     WITH_SYSTEMD_UNIT_DIR

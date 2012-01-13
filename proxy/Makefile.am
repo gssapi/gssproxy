@@ -65,13 +65,12 @@ AM_CPPFLAGS = \
     -DLIBDIR=\"$(libdir)\" \
     -DVARDIR=\"$(localstatedir)\" \
     -DSHLIBEXT=\"$(SHLIBEXT)\" \
-    -DGSS_PROXY_CONF_DIR=\"$(gsspconfdir)\" \
-    -DGSS_PROXY_SOCKET_NAME=\"$(pipepath)/gssproxy.socket\" \
+    -DSYSCONFDIR=\"$(sysconfdir)\" \
     -DLOCALEDIR=\"$(localedir)\"
 
 EXTRA_DIST = build/config.rpath
 
-GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS)
+GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS)
 
 if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
@@ -83,6 +82,7 @@ dist_noinst_HEADERS =
 # Program Binaries #
 ####################
 gssproxy_SOURCES = \
+    src/gp_config.c \
     src/gp_init.c \
     src/gp_socket.c \
     src/gssproxy.c
