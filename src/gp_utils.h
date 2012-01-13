@@ -27,9 +27,19 @@
 #define _SRV_UTILS_H_
 
 #include <libintl.h>
+#include <stdbool.h>
 #include "verto.h"
 
 #define _(STRING) gettext(STRING)
+
+struct gp_config {
+    char *config_file;
+    bool daemonize;
+    char *socket_name;
+};
+
+/* from gp_config.c */
+struct gp_config *read_config(char *config_file, int opt_daemonize);
 
 /* from gp_init.c */
 void init_server(void);
