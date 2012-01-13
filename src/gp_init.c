@@ -31,8 +31,34 @@
 #include <signal.h>
 #include "gp_utils.h"
 
-void init_server(void)
+void init_server(bool daemonize)
 {
+    pid_t pid, sid;
+    int ret;
+
+    if (daemonize) {
+
+        pid = fork();
+        if (pid == -1) {
+            /* fork error ? abort */
+            exit(EXIT_FAILURE);
+        }
+        if (pid != 0) {
+            /* ok kill the parent */
+            exit(EXIT_SUCCESS);
+        }
+
+        sid = setsid();
+        if (sid == -1) {
+            /* setsid error ? abort */
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    ret = chdir("/");
+    if (ret == -1) {
+        exit(EXIT_FAILURE);
+    }
 
     /* Set strict umask by default */
     umask(0177);
@@ -43,7 +69,6 @@ void init_server(void)
     openlog("gssproxy",
             LOG_CONS|LOG_NDELAY|LOG_NOWAIT|LOG_PERROR|LOG_PID,
             LOG_AUTHPRIV);
-
 }
 
 void fini_server(void)

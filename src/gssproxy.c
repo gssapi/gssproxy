@@ -82,7 +82,7 @@ int main(int argc, const char *argv[])
 
     config = read_config(opt_config_file, opt_daemon);
 
-    init_server();
+    init_server(config->daemonize);
 
     fd = init_unix_socket(config->socket_name);
     if (fd == -1) {

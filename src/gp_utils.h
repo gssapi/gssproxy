@@ -42,7 +42,7 @@ struct gp_config {
 struct gp_config *read_config(char *config_file, int opt_daemonize);
 
 /* from gp_init.c */
-void init_server(void);
+void init_server(bool daemonize);
 void fini_server(void);
 verto_ctx *init_event_loop(void);
 
