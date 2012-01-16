@@ -38,6 +38,10 @@ struct gp_config {
     char *socket_name;
 };
 
+struct gssproxy_ctx {
+    struct gp_config *config;
+};
+
 /* from gp_config.c */
 struct gp_config *read_config(char *config_file, int opt_daemonize);
 

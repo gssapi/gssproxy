@@ -73,18 +73,20 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
 
     cfg = calloc(1, sizeof(struct gp_config));
     if (!cfg) {
-        exit(EXIT_FAILURE);
+        return NULL;
     }
 
     if (config_file) {
         cfg->config_file = strdup(config_file);
         if (!cfg->config_file) {
-            exit(EXIT_FAILURE);
+            free(cfg);
+            return NULL;
         }
     } else {
         ret = asprintf(&cfg->config_file, "%s/gssproxy.conf", PUBCONF_PATH);
         if (ret == -1) {
-            exit(EXIT_FAILURE);
+            free(cfg);
+            return NULL;
         }
     }
 
@@ -101,7 +103,7 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
 
     ret = load_config(cfg);
     if (ret) {
-        syslog(LOG_INFO, "Config file not found");
+        syslog(LOG_INFO, "Config file not found! Proceeding with defaults.");
     }
 
     return cfg;
