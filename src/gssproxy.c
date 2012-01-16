@@ -24,6 +24,7 @@
 */
 
 #include "config.h"
+#include <stdlib.h>
 #include "popt.h"
 #include "gp_utils.h"
 
@@ -35,11 +36,11 @@ int main(int argc, const char *argv[])
     int opt_interactive = 0;
     int opt_version = 0;
     char *opt_config_file = NULL;
-    struct gp_config *config;
     verto_ctx *vctx;
     verto_ev *ev;
     int vflags;
     int fd;
+    struct gssproxy_ctx *gpctx;
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
@@ -80,11 +81,16 @@ int main(int argc, const char *argv[])
         opt_daemon = 2;
     }
 
-    config = read_config(opt_config_file, opt_daemon);
+    gpctx = calloc(1, sizeof(struct gssproxy_ctx));
 
-    init_server(config->daemonize);
+    gpctx->config = read_config(opt_config_file, opt_daemon);
+    if (!gpctx->config) {
+        exit(EXIT_FAILURE);
+    }
 
-    fd = init_unix_socket(config->socket_name);
+    init_server(gpctx->config->daemonize);
+
+    fd = init_unix_socket(gpctx->config->socket_name);
     if (fd == -1) {
         return 1;
     }
@@ -99,6 +105,7 @@ int main(int argc, const char *argv[])
     if (!ev) {
         return 1;
     }
+    verto_set_private(ev, gpctx, NULL);
 
     verto_run(vctx);
 

@@ -40,6 +40,8 @@ struct unix_sock_conn {
     struct sockaddr_un sock_addr;
     socklen_t sock_addr_len;
 
+    struct gssproxy_ctx *gpctx;
+
 #ifdef HAVE_UCRED
     struct ucred creds;
 #else
@@ -50,7 +52,6 @@ struct unix_sock_conn {
     } creds;
 #endif
 };
-
 
 
 static int set_status_flags(int fd, int flags)
@@ -201,6 +202,7 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
         ret = ENOMEM;
         goto done;
     }
+    conn->gpctx = verto_get_private(ev);
 
     listen_fd = verto_get_fd(ev);
     fd = accept(listen_fd,
