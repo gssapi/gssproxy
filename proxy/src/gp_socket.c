@@ -33,25 +33,58 @@
 #include <sys/un.h>
 #include <syslog.h>
 #include <errno.h>
+#include <netinet/in.h>
 #include "gp_utils.h"
 
+#define CRED_TYPE_NONE 0x00
+#define CRED_TYPE_UNIX 0x01
+#define CRED_TYPE_SELINUX 0x02
+
+/* max out at 1MB for now */
+#define MAX_RPC_SIZE 1024*1024
+
+struct gp_creds {
+    int type;
+#ifdef HAVE_UCRED
+    struct ucred ucred;
+#endif
+};
+
 struct unix_sock_conn {
+
+    int sd;
 
     struct sockaddr_un sock_addr;
     socklen_t sock_addr_len;
 
-    struct gssproxy_ctx *gpctx;
-
-#ifdef HAVE_UCRED
-    struct ucred creds;
-#else
-    struct noucred {
-        pid_t pid;
-        uid_t uid;
-        gid_t gid;
-    } creds;
-#endif
 };
+
+struct gp_conn {
+    struct gssproxy_ctx *gpctx;
+    struct unix_sock_conn us;
+    struct gp_creds creds;
+};
+
+struct gp_buffer {
+    struct gp_conn *conn;
+    uint8_t *data;
+    size_t size;
+    size_t pos;
+};
+
+void gp_conn_free(struct gp_conn *conn)
+{
+    if (conn->us.sd != -1) {
+        close(conn->us.sd);
+    }
+    free(conn);
+}
+
+static void gp_buffer_free(struct gp_buffer *wbuf)
+{
+    free(wbuf->data);
+    free(wbuf);
+}
 
 
 static int set_status_flags(int fd, int flags)
@@ -142,72 +175,238 @@ done:
 
 /* TODO: use getpeercon for SeLinux context */
 
-static int get_peercred(int fd, struct unix_sock_conn *conn)
+static int get_peercred(int fd, struct gp_conn *conn)
 {
 #ifdef HAVE_UCRED
     socklen_t len;
     int ret;
 
     len = sizeof(struct ucred);
-    ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &conn->creds, &len);
+    ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &conn->creds.ucred, &len);
     if (ret == -1) {
         return errno;
     }
     if (len != sizeof(struct ucred)) {
         return EIO;
     }
-#else
-    conn->creds.pid = -1;
-    conn->creds.uid = -1;
-    conn->creds.gid = -1;
+
+    conn->creds.type |= CRED_TYPE_UNIX;
 #endif
     return 0;
 }
 
-static void free_unix_sock_conn(verto_ctx *vctx, verto_ev *ev)
+
+static void gp_socket_read(verto_ctx *vctx, verto_ev *ev);
+
+static void gp_socket_schedule_read(verto_ctx *vctx, struct gp_buffer *rbuf)
 {
-    struct unix_sock_conn *conn;
+    verto_ev *ev;
 
-    conn = verto_get_private(ev);
-
-    free(conn);
+    ev = verto_add_io(vctx, VERTO_EV_FLAG_IO_READ,
+                      gp_socket_read, rbuf->conn->us.sd);
+    if (!ev) {
+        gp_conn_free(rbuf->conn);
+        gp_buffer_free(rbuf);
+        return;
+    }
+    verto_set_private(ev, rbuf, NULL);
 }
 
-void client_sock_conn(verto_ctx *vctx, verto_ev *ev)
+static void gp_setup_reader(verto_ctx *vctx, struct gp_conn *conn)
 {
-    struct unix_sock_conn *conn;
+    struct gp_buffer *buf;
+
+    /* create initial read buffer */
+    buf = calloc(1, sizeof(struct gp_buffer));
+    if (!buf) {
+        gp_conn_free(conn);
+        return;
+    }
+    buf->conn = conn;
+
+    gp_socket_schedule_read(vctx, buf);
+}
+
+static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
+{
+    struct gp_buffer *rbuf;
+    uint32_t size;
+    bool header = false;
+    size_t rn;
     int fd;
 
     fd = verto_get_fd(ev);
-    conn = verto_get_private(ev);
+    rbuf = verto_get_private(ev);
 
-    syslog(LOG_ERR, "Ok you got here (pid=%d, uid=%d, gid=%d)!",
-           conn->creds.pid, conn->creds.uid, conn->creds.gid);
+    if (rbuf->data == NULL) {
+        header = true;
+        /* new connection, need to read length first */
+        rn = read(fd, &size, sizeof(uint32_t));
+        if (rn == -1) {
+            if (errno == EAGAIN || errno == EINTR) {
+                /* spin again */
+                ret = EAGAIN;
+            } else {
+                ret = EIO;
+            }
+            goto done;
+        }
+        if (rn != sizeof(uint32_t)) {
+            /* client closed,
+             * or we didn't get even 4 bytes,
+             * close conn, not worth trying 1 byte reads at this time */
+            ret = EIO;
+            goto done;
+        }
 
-    verto_del(ev);
-    close(fd);
+        /* allocate buffer for receiving data */
+        rbuf->size = ntohl(size);
+        if (rbuf->size > MAX_RPC_SIZE) {
+            /* req too big close conn. */
+            ret = EIO;
+            goto done;
+        }
+
+        rbuf->data = malloc(rbuf->size);
+        if (!rbuf->data) {
+            ret = ENOMEM;
+            goto done;
+        }
+    }
+
+    errno = 0;
+    rn = read(fd, rbuf->data + rbuf->pos, rbuf->size - rbuf->pos);
+    if (rn == -1) {
+        if (errno == EAGAIN || errno == EINTR) {
+            /* spin again */
+            ret = EAGAIN;
+        } else {
+            ret = EIO;
+        }
+        goto done;
+    }
+
+    if (rn == 0) {
+        if (!header) {
+            /* client closed before the buffer was fully read */
+            ret = EIO;
+        } else {
+            ret = EAGAIN;
+        }
+        goto done;
+    }
+
+    rbuf->pos += rn;
+
+    if (rbuf->pos == rbuf->size) {
+        /* got all data hand over packet */
+        /* TODO */
+        ret = ENOENT;
+        goto done;
+    }
+
+    ret = EAGAIN;
+
+done:
+    switch (ret) {
+    case EAGAIN:
+        gp_socket_schedule_read(vctx, rbuf);
+        return;
+    default:
+        gp_conn_free(rbuf->conn);
+        gp_buffer_free(rbuf);
+    }
+}
+
+static void gp_socket_write(verto_ctx *vctx, verto_ev *ev);
+
+static void gp_socket_schedule_write(verto_ctx *vctx, struct gp_buffer *wbuf)
+{
+    verto_ev *ev;
+
+    ev = verto_add_io(vctx, VERTO_EV_FLAG_IO_WRITE,
+                      gp_socket_write, wbuf->conn->us.sd);
+    if (!ev) {
+        gp_conn_free(wbuf->conn);
+        gp_buffer_free(wbuf);
+        return;
+    }
+    verto_set_private(ev, wbuf, NULL);
+}
+
+void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
+                         uint8_t *buffer, size_t buflen)
+{
+    struct gp_buffer *wbuf;
+
+    wbuf = calloc(1, sizeof(struct gp_buffer));
+    if (!wbuf) {
+        /* too bad, must kill the client connection now */
+        gp_conn_free(conn);
+        return;
+    }
+
+    wbuf->conn = conn;
+    wbuf->data = buffer;
+    wbuf->size = buflen;
+
+    gp_socket_schedule_write(vctx, wbuf);
+}
+
+static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
+{
+    struct gp_buffer *wbuf;
+    ssize_t wn;
+    int fd;
+
+    fd = verto_get_fd(ev);
+    wbuf = verto_get_private(ev);
+
+    errno = 0;
+    wn = write(fd, wbuf->data + wbuf->pos, wbuf->size - wbuf->pos);
+    if (wn == -1) {
+        if (errno == EAGAIN || errno == EINTR) {
+            /* try again later */
+            gp_socket_schedule_write(vctx, wbuf);
+        } else {
+            /* error on socket, close and release it */
+            gp_conn_free(wbuf->conn);
+            gp_buffer_free(wbuf);
+        }
+        return;
+    }
+
+    wbuf->pos += wn;
+    if (wbuf->size > wbuf->pos) {
+        /* short write, reschedule */
+        gp_socket_schedule_write(vctx, wbuf);
+    } else {
+        /* now setup again the reader */
+        gp_setup_reader(vctx, wbuf->conn);
+        /* all done, free write context */
+        gp_buffer_free(wbuf);
+    }
 }
 
 void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
 {
-    struct unix_sock_conn *conn = NULL;
-    verto_ev *nev;
-    int vflags;
+    struct gp_conn *conn = NULL;
     int listen_fd;
     int fd = -1;
     int ret;
 
-    conn = malloc(sizeof(struct unix_sock_conn));
+    conn = calloc(1, sizeof(struct gp_conn));
     if (!conn) {
         ret = ENOMEM;
         goto done;
     }
     conn->gpctx = verto_get_private(ev);
+    conn->us.sd = -1;
 
     listen_fd = verto_get_fd(ev);
     fd = accept(listen_fd,
-                (struct sockaddr *)&conn->sock_addr,
-                &conn->sock_addr_len);
+                (struct sockaddr *)&conn->us.sock_addr,
+                &conn->us.sock_addr_len);
     if (fd == -1) {
         ret = errno;
         if (ret == EINTR) {
@@ -216,6 +415,7 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
         }
         goto done;
     }
+    conn->us.sd = fd;
 
     ret = set_status_flags(fd, O_NONBLOCK);
     if (ret) {
@@ -232,22 +432,15 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
         goto done;
     }
 
-    vflags = VERTO_EV_FLAG_PERSIST | VERTO_EV_FLAG_IO_READ;
-    nev = verto_add_io(vctx, vflags, client_sock_conn, fd);
-    if (!nev) {
-        ret = ENOMEM;
-        goto done;
-    }
-    verto_set_private(nev, conn, free_unix_sock_conn);
+    gp_setup_reader(vctx, conn);
+
+    ret = 0;
 
 done:
     if (ret) {
         syslog(LOG_WARNING, "Error connecting client: (%d:%s)",
                             ret, strerror(ret));
-        if (fd != -1) {
-            close(fd);
-        }
-        free(conn);
+        gp_conn_free(conn);
     }
 }
 

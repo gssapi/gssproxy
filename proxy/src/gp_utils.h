@@ -28,6 +28,7 @@
 
 #include <libintl.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "verto.h"
 
 #define _(STRING) gettext(STRING)
@@ -42,6 +43,8 @@ struct gssproxy_ctx {
     struct gp_config *config;
 };
 
+struct gp_conn;
+
 /* from gp_config.c */
 struct gp_config *read_config(char *config_file, int opt_daemonize);
 
@@ -53,5 +56,8 @@ verto_ctx *init_event_loop(void);
 /* from gp_socket.c */
 int init_unix_socket(const char *file_name);
 void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);
+void gp_conn_free(struct gp_conn *conn);
+void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
+                         uint8_t *buffer, size_t buflen);
 
 #endif /* _SRV_UTILS_H_ */
