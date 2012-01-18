@@ -8,8 +8,6 @@
 bool_t
 xdr_utf8string (XDR *xdrs, utf8string *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_bytes (xdrs, (char **)&objp->utf8string_val, (u_int *) &objp->utf8string_len, ~0))
 		 return FALSE;
 	return TRUE;
@@ -18,8 +16,6 @@ xdr_utf8string (XDR *xdrs, utf8string *objp)
 bool_t
 xdr_octet_string (XDR *xdrs, octet_string *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_bytes (xdrs, (char **)&objp->octet_string_val, (u_int *) &objp->octet_string_len, ~0))
 		 return FALSE;
 	return TRUE;
@@ -28,8 +24,6 @@ xdr_octet_string (XDR *xdrs, octet_string *objp)
 bool_t
 xdr_gssx_uint64 (XDR *xdrs, gssx_uint64 *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_u_quad_t (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -38,8 +32,6 @@ xdr_gssx_uint64 (XDR *xdrs, gssx_uint64 *objp)
 bool_t
 xdr_gssx_qop (XDR *xdrs, gssx_qop *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_u_quad_t (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -48,8 +40,6 @@ xdr_gssx_qop (XDR *xdrs, gssx_qop *objp)
 bool_t
 xdr_gssx_buffer (XDR *xdrs, gssx_buffer *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_octet_string (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -58,8 +48,6 @@ xdr_gssx_buffer (XDR *xdrs, gssx_buffer *objp)
 bool_t
 xdr_gssx_OID (XDR *xdrs, gssx_OID *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_octet_string (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -68,8 +56,6 @@ xdr_gssx_OID (XDR *xdrs, gssx_OID *objp)
 bool_t
 xdr_gssx_OID_set (XDR *xdrs, gssx_OID_set *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_array (xdrs, (char **)&objp->gssx_OID_set_val, (u_int *) &objp->gssx_OID_set_len, ~0,
 		sizeof (gssx_OID), (xdrproc_t) xdr_gssx_OID))
 		 return FALSE;
@@ -79,8 +65,6 @@ xdr_gssx_OID_set (XDR *xdrs, gssx_OID_set *objp)
 bool_t
 xdr_gssx_cred_usage (XDR *xdrs, gssx_cred_usage *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -89,8 +73,6 @@ xdr_gssx_cred_usage (XDR *xdrs, gssx_cred_usage *objp)
 bool_t
 xdr_gssx_time (XDR *xdrs, gssx_time *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_u_quad_t (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -99,8 +81,6 @@ xdr_gssx_time (XDR *xdrs, gssx_time *objp)
 bool_t
 xdr_gssx_ext_id (XDR *xdrs, gssx_ext_id *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -109,8 +89,6 @@ xdr_gssx_ext_id (XDR *xdrs, gssx_ext_id *objp)
 bool_t
 xdr_gssx_typed_hole (XDR *xdrs, gssx_typed_hole *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_ext_id (xdrs, &objp->ext_type))
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->ext_data))
@@ -121,8 +99,6 @@ xdr_gssx_typed_hole (XDR *xdrs, gssx_typed_hole *objp)
 bool_t
 xdr_gssx_mech_attr (XDR *xdrs, gssx_mech_attr *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_OID (xdrs, &objp->attr))
 		 return FALSE;
 	 if (!xdr_gssx_buffer (xdrs, &objp->name))
@@ -140,8 +116,6 @@ xdr_gssx_mech_attr (XDR *xdrs, gssx_mech_attr *objp)
 bool_t
 xdr_gssx_mech_info (XDR *xdrs, gssx_mech_info *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_OID (xdrs, &objp->mech))
 		 return FALSE;
 	 if (!xdr_gssx_OID_set (xdrs, &objp->name_types))
@@ -169,8 +143,6 @@ xdr_gssx_mech_info (XDR *xdrs, gssx_mech_info *objp)
 bool_t
 xdr_gssx_name_attr (XDR *xdrs, gssx_name_attr *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_buffer (xdrs, &objp->attr))
 		 return FALSE;
 	 if (!xdr_gssx_buffer (xdrs, &objp->value))
@@ -184,8 +156,6 @@ xdr_gssx_name_attr (XDR *xdrs, gssx_name_attr *objp)
 bool_t
 xdr_gssx_option (XDR *xdrs, gssx_option *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_OID (xdrs, &objp->option))
 		 return FALSE;
 	 if (!xdr_gssx_buffer (xdrs, &objp->value))
@@ -199,8 +169,6 @@ xdr_gssx_option (XDR *xdrs, gssx_option *objp)
 bool_t
 xdr_gssx_status (XDR *xdrs, gssx_status *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_uint64 (xdrs, &objp->major_status))
 		 return FALSE;
 	 if (!xdr_gssx_OID (xdrs, &objp->mech))
@@ -222,8 +190,6 @@ xdr_gssx_status (XDR *xdrs, gssx_status *objp)
 bool_t
 xdr_gssx_call_ctx (XDR *xdrs, gssx_call_ctx *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_utf8string (xdrs, &objp->locale))
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->server_ctx))
@@ -237,8 +203,6 @@ xdr_gssx_call_ctx (XDR *xdrs, gssx_call_ctx *objp)
 bool_t
 xdr_gssx_name (XDR *xdrs, gssx_name *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_pointer (xdrs, (char **)&objp->display_name, sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
 		 return FALSE;
 	 if (!xdr_gssx_OID (xdrs, &objp->name_type))
@@ -261,8 +225,6 @@ xdr_gssx_name (XDR *xdrs, gssx_name *objp)
 bool_t
 xdr_gssx_cred_info (XDR *xdrs, gssx_cred_info *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_name (xdrs, &objp->MN))
 		 return FALSE;
 	 if (!xdr_gssx_OID (xdrs, &objp->mech))
@@ -287,8 +249,6 @@ xdr_gssx_cred_info (XDR *xdrs, gssx_cred_info *objp)
 bool_t
 xdr_gssx_ctx_info (XDR *xdrs, gssx_ctx_info *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_pointer (xdrs, (char **)&objp->exported_context_token, sizeof (octet_string), (xdrproc_t) xdr_octet_string))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->state, sizeof (octet_string), (xdrproc_t) xdr_octet_string))
@@ -319,8 +279,6 @@ xdr_gssx_ctx_info (XDR *xdrs, gssx_ctx_info *objp)
 bool_t
 xdr_gssx_handle_type (XDR *xdrs, gssx_handle_type *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -329,8 +287,6 @@ xdr_gssx_handle_type (XDR *xdrs, gssx_handle_type *objp)
 bool_t
 xdr_gssx_handle_info (XDR *xdrs, gssx_handle_info *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_handle_type (xdrs, &objp->handle_type))
 		 return FALSE;
 	switch (objp->handle_type) {
@@ -354,8 +310,6 @@ xdr_gssx_handle_info (XDR *xdrs, gssx_handle_info *objp)
 bool_t
 xdr_gssx_handle (XDR *xdrs, gssx_handle *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_handle_info (xdrs, &objp->handle_info))
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->needs_release))
@@ -366,8 +320,6 @@ xdr_gssx_handle (XDR *xdrs, gssx_handle *objp)
 bool_t
 xdr_gssx_ctx (XDR *xdrs, gssx_ctx *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_handle (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -376,8 +328,6 @@ xdr_gssx_ctx (XDR *xdrs, gssx_ctx *objp)
 bool_t
 xdr_gssx_cred (XDR *xdrs, gssx_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_handle (xdrs, objp))
 		 return FALSE;
 	return TRUE;
@@ -386,8 +336,6 @@ xdr_gssx_cred (XDR *xdrs, gssx_cred *objp)
 bool_t
 xdr_gssx_cb (XDR *xdrs, gssx_cb *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_uint64 (xdrs, &objp->initiator_addrtype))
 		 return FALSE;
 	 if (!xdr_gssx_buffer (xdrs, &objp->initiator_address))
@@ -404,8 +352,6 @@ xdr_gssx_cb (XDR *xdrs, gssx_cb *objp)
 bool_t
 xdr_gssx_arg_release_handle (XDR *xdrs, gssx_arg_release_handle *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_handle (xdrs, &objp->cred_handle))
@@ -416,8 +362,6 @@ xdr_gssx_arg_release_handle (XDR *xdrs, gssx_arg_release_handle *objp)
 bool_t
 xdr_gssx_res_release_handle (XDR *xdrs, gssx_res_release_handle *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	return TRUE;
@@ -426,8 +370,6 @@ xdr_gssx_res_release_handle (XDR *xdrs, gssx_res_release_handle *objp)
 bool_t
 xdr_gssx_arg_indicate_mechs (XDR *xdrs, gssx_arg_indicate_mechs *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	return TRUE;
@@ -436,8 +378,6 @@ xdr_gssx_arg_indicate_mechs (XDR *xdrs, gssx_arg_indicate_mechs *objp)
 bool_t
 xdr_gssx_res_indicate_mechs (XDR *xdrs, gssx_res_indicate_mechs *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->mechs.mechs_val, (u_int *) &objp->mechs.mechs_len, ~0,
@@ -458,8 +398,6 @@ xdr_gssx_res_indicate_mechs (XDR *xdrs, gssx_res_indicate_mechs *objp)
 bool_t
 xdr_gssx_arg_import_and_canon_name (XDR *xdrs, gssx_arg_import_and_canon_name *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_name (xdrs, &objp->input_name))
@@ -478,8 +416,6 @@ xdr_gssx_arg_import_and_canon_name (XDR *xdrs, gssx_arg_import_and_canon_name *o
 bool_t
 xdr_gssx_res_import_and_canon_name (XDR *xdrs, gssx_res_import_and_canon_name *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_name, sizeof (gssx_name), (xdrproc_t) xdr_gssx_name))
@@ -493,8 +429,6 @@ xdr_gssx_res_import_and_canon_name (XDR *xdrs, gssx_res_import_and_canon_name *o
 bool_t
 xdr_gssx_arg_get_call_context (XDR *xdrs, gssx_arg_get_call_context *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
@@ -506,8 +440,6 @@ xdr_gssx_arg_get_call_context (XDR *xdrs, gssx_arg_get_call_context *objp)
 bool_t
 xdr_gssx_res_get_call_context (XDR *xdrs, gssx_res_get_call_context *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->server_call_ctx))
@@ -521,8 +453,6 @@ xdr_gssx_res_get_call_context (XDR *xdrs, gssx_res_get_call_context *objp)
 bool_t
 xdr_gssx_arg_acquire_cred (XDR *xdrs, gssx_arg_acquire_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->cred_options.cred_options_val, (u_int *) &objp->cred_options.cred_options_len, ~0,
@@ -553,8 +483,6 @@ xdr_gssx_arg_acquire_cred (XDR *xdrs, gssx_arg_acquire_cred *objp)
 bool_t
 xdr_gssx_res_acquire_cred (XDR *xdrs, gssx_res_acquire_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
@@ -568,8 +496,6 @@ xdr_gssx_res_acquire_cred (XDR *xdrs, gssx_res_acquire_cred *objp)
 bool_t
 xdr_gssx_arg_export_cred (XDR *xdrs, gssx_arg_export_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_cred (xdrs, &objp->input_cred_handle))
@@ -585,8 +511,6 @@ xdr_gssx_arg_export_cred (XDR *xdrs, gssx_arg_export_cred *objp)
 bool_t
 xdr_gssx_res_export_cred (XDR *xdrs, gssx_res_export_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_gssx_cred_usage (xdrs, &objp->usage_exported))
@@ -602,8 +526,6 @@ xdr_gssx_res_export_cred (XDR *xdrs, gssx_res_export_cred *objp)
 bool_t
 xdr_gssx_arg_import_cred (XDR *xdrs, gssx_arg_import_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->exported_handle))
@@ -617,8 +539,6 @@ xdr_gssx_arg_import_cred (XDR *xdrs, gssx_arg_import_cred *objp)
 bool_t
 xdr_gssx_res_import_cred (XDR *xdrs, gssx_res_import_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
@@ -632,8 +552,6 @@ xdr_gssx_res_import_cred (XDR *xdrs, gssx_res_import_cred *objp)
 bool_t
 xdr_gssx_arg_store_cred (XDR *xdrs, gssx_arg_store_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_cred (xdrs, &objp->input_cred_handle))
@@ -655,8 +573,6 @@ xdr_gssx_arg_store_cred (XDR *xdrs, gssx_arg_store_cred *objp)
 bool_t
 xdr_gssx_res_store_cred (XDR *xdrs, gssx_res_store_cred *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_gssx_OID_set (xdrs, &objp->elements_stored))
@@ -672,8 +588,6 @@ xdr_gssx_res_store_cred (XDR *xdrs, gssx_res_store_cred *objp)
 bool_t
 xdr_gssx_arg_init_sec_context (XDR *xdrs, gssx_arg_init_sec_context *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->context_options.context_options_val, (u_int *) &objp->context_options.context_options_len, ~0,
@@ -704,8 +618,6 @@ xdr_gssx_arg_init_sec_context (XDR *xdrs, gssx_arg_init_sec_context *objp)
 bool_t
 xdr_gssx_res_init_sec_context (XDR *xdrs, gssx_res_init_sec_context *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
@@ -721,8 +633,6 @@ xdr_gssx_res_init_sec_context (XDR *xdrs, gssx_res_init_sec_context *objp)
 bool_t
 xdr_gssx_arg_accept_sec_context (XDR *xdrs, gssx_arg_accept_sec_context *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->context_options.context_options_val, (u_int *) &objp->context_options.context_options_len, ~0,
@@ -745,8 +655,6 @@ xdr_gssx_arg_accept_sec_context (XDR *xdrs, gssx_arg_accept_sec_context *objp)
 bool_t
 xdr_gssx_res_accept_sec_context (XDR *xdrs, gssx_res_accept_sec_context *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
@@ -764,8 +672,6 @@ xdr_gssx_res_accept_sec_context (XDR *xdrs, gssx_res_accept_sec_context *objp)
 bool_t
 xdr_gssx_arg_get_mic (XDR *xdrs, gssx_arg_get_mic *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_ctx (xdrs, &objp->context_handle))
@@ -780,8 +686,6 @@ xdr_gssx_arg_get_mic (XDR *xdrs, gssx_arg_get_mic *objp)
 bool_t
 xdr_gssx_res_get_mic (XDR *xdrs, gssx_res_get_mic *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
@@ -796,8 +700,6 @@ xdr_gssx_res_get_mic (XDR *xdrs, gssx_res_get_mic *objp)
 bool_t
 xdr_gssx_arg_verify_mic (XDR *xdrs, gssx_arg_verify_mic *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_ctx (xdrs, &objp->context_handle))
@@ -812,8 +714,6 @@ xdr_gssx_arg_verify_mic (XDR *xdrs, gssx_arg_verify_mic *objp)
 bool_t
 xdr_gssx_res_verify_mic (XDR *xdrs, gssx_res_verify_mic *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
@@ -826,8 +726,6 @@ xdr_gssx_res_verify_mic (XDR *xdrs, gssx_res_verify_mic *objp)
 bool_t
 xdr_gssx_arg_wrap (XDR *xdrs, gssx_arg_wrap *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_ctx (xdrs, &objp->context_handle))
@@ -845,8 +743,6 @@ xdr_gssx_arg_wrap (XDR *xdrs, gssx_arg_wrap *objp)
 bool_t
 xdr_gssx_res_wrap (XDR *xdrs, gssx_res_wrap *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
@@ -864,8 +760,6 @@ xdr_gssx_res_wrap (XDR *xdrs, gssx_res_wrap *objp)
 bool_t
 xdr_gssx_arg_unwrap (XDR *xdrs, gssx_arg_unwrap *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_ctx (xdrs, &objp->context_handle))
@@ -881,8 +775,6 @@ xdr_gssx_arg_unwrap (XDR *xdrs, gssx_arg_unwrap *objp)
 bool_t
 xdr_gssx_res_unwrap (XDR *xdrs, gssx_res_unwrap *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
@@ -900,8 +792,6 @@ xdr_gssx_res_unwrap (XDR *xdrs, gssx_res_unwrap *objp)
 bool_t
 xdr_gssx_arg_wrap_size_limit (XDR *xdrs, gssx_arg_wrap_size_limit *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
 	 if (!xdr_gssx_ctx (xdrs, &objp->context_handle))
@@ -918,8 +808,6 @@ xdr_gssx_arg_wrap_size_limit (XDR *xdrs, gssx_arg_wrap_size_limit *objp)
 bool_t
 xdr_gssx_res_wrap_size_limit (XDR *xdrs, gssx_res_wrap_size_limit *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gssx_status (xdrs, &objp->status))
 		 return FALSE;
 	 if (!xdr_gssx_uint64 (xdrs, &objp->max_input_size))

@@ -8,8 +8,6 @@
 bool_t
 xdr_gp_rpc_auth_flavor (XDR *xdrs, gp_rpc_auth_flavor *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -18,8 +16,6 @@ xdr_gp_rpc_auth_flavor (XDR *xdrs, gp_rpc_auth_flavor *objp)
 bool_t
 xdr_gp_rpc_opaque_auth (XDR *xdrs, gp_rpc_opaque_auth *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gp_rpc_auth_flavor (xdrs, &objp->flavor))
 		 return FALSE;
 	 if (!xdr_bytes (xdrs, (char **)&objp->body.body_val, (u_int *) &objp->body.body_len, 400))
@@ -30,8 +26,6 @@ xdr_gp_rpc_opaque_auth (XDR *xdrs, gp_rpc_opaque_auth *objp)
 bool_t
 xdr_gp_rpc_msg_type (XDR *xdrs, gp_rpc_msg_type *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -40,8 +34,6 @@ xdr_gp_rpc_msg_type (XDR *xdrs, gp_rpc_msg_type *objp)
 bool_t
 xdr_gp_rpc_reply_status (XDR *xdrs, gp_rpc_reply_status *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -50,8 +42,6 @@ xdr_gp_rpc_reply_status (XDR *xdrs, gp_rpc_reply_status *objp)
 bool_t
 xdr_gp_rpc_accept_status (XDR *xdrs, gp_rpc_accept_status *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -60,8 +50,6 @@ xdr_gp_rpc_accept_status (XDR *xdrs, gp_rpc_accept_status *objp)
 bool_t
 xdr_gp_rpc_reject_status (XDR *xdrs, gp_rpc_reject_status *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -70,8 +58,6 @@ xdr_gp_rpc_reject_status (XDR *xdrs, gp_rpc_reject_status *objp)
 bool_t
 xdr_gp_rpc_auth_status (XDR *xdrs, gp_rpc_auth_status *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_enum (xdrs, (enum_t *) objp))
 		 return FALSE;
 	return TRUE;
@@ -80,8 +66,6 @@ xdr_gp_rpc_auth_status (XDR *xdrs, gp_rpc_auth_status *objp)
 bool_t
 xdr_gp_rpc_mismatch_info (XDR *xdrs, gp_rpc_mismatch_info *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_u_int (xdrs, &objp->low))
 		 return FALSE;
 	 if (!xdr_u_int (xdrs, &objp->high))
@@ -92,8 +76,6 @@ xdr_gp_rpc_mismatch_info (XDR *xdrs, gp_rpc_mismatch_info *objp)
 bool_t
 xdr_gp_rpc_reply_union (XDR *xdrs, gp_rpc_reply_union *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gp_rpc_accept_status (xdrs, &objp->status))
 		 return FALSE;
 	switch (objp->status) {
@@ -114,8 +96,6 @@ xdr_gp_rpc_reply_union (XDR *xdrs, gp_rpc_reply_union *objp)
 bool_t
 xdr_gp_rpc_accepted_reply (XDR *xdrs, gp_rpc_accepted_reply *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gp_rpc_opaque_auth (xdrs, &objp->verf))
 		 return FALSE;
 	 if (!xdr_gp_rpc_reply_union (xdrs, &objp->reply_data))
@@ -126,8 +106,6 @@ xdr_gp_rpc_accepted_reply (XDR *xdrs, gp_rpc_accepted_reply *objp)
 bool_t
 xdr_gp_rpc_rejected_reply (XDR *xdrs, gp_rpc_rejected_reply *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gp_rpc_reject_status (xdrs, &objp->status))
 		 return FALSE;
 	switch (objp->status) {
@@ -217,8 +195,6 @@ xdr_gp_rpc_call_header (XDR *xdrs, gp_rpc_call_header *objp)
 bool_t
 xdr_gp_rpc_reply_header (XDR *xdrs, gp_rpc_reply_header *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gp_rpc_reply_status (xdrs, &objp->status))
 		 return FALSE;
 	switch (objp->status) {
@@ -239,8 +215,6 @@ xdr_gp_rpc_reply_header (XDR *xdrs, gp_rpc_reply_header *objp)
 bool_t
 xdr_gp_rpc_msg_union (XDR *xdrs, gp_rpc_msg_union *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_gp_rpc_msg_type (xdrs, &objp->type))
 		 return FALSE;
 	switch (objp->type) {
@@ -261,8 +235,6 @@ xdr_gp_rpc_msg_union (XDR *xdrs, gp_rpc_msg_union *objp)
 bool_t
 xdr_gp_rpc_msg (XDR *xdrs, gp_rpc_msg *objp)
 {
-	register int32_t *buf;
-
 	 if (!xdr_u_int (xdrs, &objp->xid))
 		 return FALSE;
 	 if (!xdr_gp_rpc_msg_union (xdrs, &objp->header))
