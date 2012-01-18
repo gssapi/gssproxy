@@ -34,13 +34,17 @@
 #define _(STRING) gettext(STRING)
 
 struct gp_config {
-    char *config_file;
-    bool daemonize;
-    char *socket_name;
+    char *config_file;      /* gssproxy configuration file */
+    bool daemonize;         /* let gssproxy daemonize */
+    char *socket_name;      /* the socket name to use for */
+    int num_workers;        /* number of worker threads */
 };
+
+struct gp_workers;
 
 struct gssproxy_ctx {
     struct gp_config *config;
+    struct gp_workers *workers;
 };
 
 struct gp_conn;
@@ -59,5 +63,11 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);
 void gp_conn_free(struct gp_conn *conn);
 void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
                          uint8_t *buffer, size_t buflen);
+
+/* from gp_workers.c */
+struct gp_workers *gp_workers_init(verto_ctx *vctx, struct gp_config *cfg);
+void gp_workers_free(struct gp_workers *w);
+int gp_query_new(struct gp_workers *w, struct gp_conn *conn,
+                 uint8_t *buffer, size_t buflen);
 
 #endif /* _SRV_UTILS_H_ */

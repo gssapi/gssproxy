@@ -233,6 +233,7 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
     uint32_t size;
     bool header = false;
     size_t rn;
+    int ret;
     int fd;
 
     fd = verto_get_fd(ev);
@@ -299,10 +300,18 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
     rbuf->pos += rn;
 
     if (rbuf->pos == rbuf->size) {
-        /* got all data hand over packet */
-        /* TODO */
-        ret = ENOENT;
-        goto done;
+        /* got all data, hand over packet */
+        ret = gp_query_new(rbuf->conn->gpctx->workers, rbuf->conn,
+                           rbuf->data, rbuf->size);
+        if (ret != 0) {
+            /* internal error, not much we can do */
+            goto done;
+        }
+
+        /* we successfully handed over the data */
+        rbuf->data = NULL;
+        gp_buffer_free(rbuf);
+        return;
     }
 
     ret = EAGAIN;

@@ -73,6 +73,7 @@ m4_include([external/sizes.m4])
 m4_include([external/selinux.m4])
 m4_include([external/libkeyutils.m4])
 m4_include([external/systemd.m4])
+m4_include([external/ax_pthread.m4])
 
 PKG_CHECK_MODULES([VERTO], [libverto >= 0.2.2], [have_libverto=1], [have_libverto=])
 if test x$have_libverto = x; then
@@ -87,6 +88,12 @@ AC_CHECK_HEADERS([iniparser.h],
 )
 
 AC_SUBST(INI_LIBS)
+
+AX_PTHREAD(,[AC_MSG_ERROR([Could not find Pthreads support])])
+
+LIBS="$PTHREAD_LIBS $LIBS"
+LIBS="$PTHREAD_CFLAGS $CFLAGS"
+CC="$PTHREAD_CC"
 
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then

@@ -85,6 +85,7 @@ gssproxy_SOURCES = \
     src/gp_config.c \
     src/gp_init.c \
     src/gp_socket.c \
+    src/gp_workers.c \
     src/gssproxy.c
 gssproxy_LDADD = \
     $(GSS_PROXY_LIBS)
