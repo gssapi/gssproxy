@@ -33,6 +33,31 @@
 
 #define _(STRING) gettext(STRING)
 
+/* add element to list head */
+#define LIST_ADD(list, elem) do { \
+    elem->prev = NULL; \
+    elem->next = list; \
+    if (list) { \
+        list->prev = elem; \
+    } \
+    list = elem; \
+} while (0)
+
+/* remove element from list */
+#define LIST_DEL(list, elem) do { \
+    if (elem->next) { \
+        elem->next->prev = elem->prev; \
+    } \
+    if (elem->prev) { \
+        elem->prev->next = elem->next; \
+    } \
+    if (list == elem) { \
+        list = elem->next; \
+    } \
+    elem->prev = NULL; \
+    elem->next = NULL; \
+} while (0)
+
 struct gp_config {
     char *config_file;      /* gssproxy configuration file */
     bool daemonize;         /* let gssproxy daemonize */
