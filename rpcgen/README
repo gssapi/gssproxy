@@ -4,4 +4,7 @@ Please do not directly edit these .c/.h files.
 Instead please edit the original .x files and then use rpcgen to re-generate
 the .c/.h files.
 
+NOTE: C files have been slightly edited to avoid compile warnings, please
+keep the changes if you regenerate them.
+
 Also note that gp_rpc.x must conform to RFC1831
