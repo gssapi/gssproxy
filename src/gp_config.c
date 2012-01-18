@@ -61,6 +61,8 @@ int load_config(struct gp_config *cfg)
         }
     }
 
+    cfg->num_workers = iniparser_getint(d, "gssproxy:worker threads", 0);
+
 done:
     iniparser_freedict(d);
     return ret;

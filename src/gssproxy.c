@@ -107,7 +107,14 @@ int main(int argc, const char *argv[])
     }
     verto_set_private(ev, gpctx, NULL);
 
+    gpctx->workers = gp_workers_init(vctx, gpctx->config);
+    if (!gpctx->workers) {
+        exit(EXIT_FAILURE);
+    }
+
     verto_run(vctx);
+
+    gp_workers_free(gpctx->workers);
 
     fini_server();
 
