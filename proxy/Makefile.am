@@ -76,17 +76,22 @@ if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
 endif
 
+GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c
+
 dist_noinst_HEADERS =
 
 ####################
 # Program Binaries #
 ####################
+
 gssproxy_SOURCES = \
     src/gp_config.c \
     src/gp_init.c \
     src/gp_socket.c \
     src/gp_workers.c \
+    $(GP_RPCGEN_OBJ) \
     src/gssproxy.c
+
 gssproxy_LDADD = \
     $(GSS_PROXY_LIBS)
 

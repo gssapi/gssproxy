@@ -1,0 +1,7 @@
+
+This file have been generated from .x files in ../../x-files/
+Please do not directly edit these .c/.h files.
+Instead please edit the original .x files and then use rpcgen to re-generate
+the .c/.h files.
+
+Also note that gp_rpc.x must conform to RFC1831
