@@ -95,6 +95,8 @@ LIBS="$PTHREAD_LIBS $LIBS"
 LIBS="$PTHREAD_CFLAGS $CFLAGS"
 CC="$PTHREAD_CC"
 
+AC_CHECK_HEADERS([rpc/rpc.h],,[AC_MSG_ERROR([Could not find rpc headers])])
+
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
     WITH_SYSTEMD_UNIT_DIR
