@@ -89,6 +89,7 @@ gssproxy_SOURCES = \
     src/gp_socket.c \
     src/gp_workers.c \
     $(GP_RPCGEN_OBJ) \
+    src/gp_rpc_process.c \
     src/gssproxy.c
 
 gssproxy_LDADD = \

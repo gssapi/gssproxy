@@ -96,4 +96,12 @@ void gp_workers_free(struct gp_workers *w);
 int gp_query_new(struct gp_workers *w, struct gp_conn *conn,
                  uint8_t *buffer, size_t buflen);
 
+/* max out at 1MB for now */
+#define MAX_RPC_SIZE 1024*1024
+
+/* from gp_rpc.c */
+int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
+                        uint8_t *inbuf, size_t inlen,
+                        uint8_t **outbuf, size_t *outlen);
+
 #endif /* _SRV_UTILS_H_ */

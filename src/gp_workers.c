@@ -430,11 +430,20 @@ static void *gp_worker_main(void *pvt)
 
 static void gp_handle_query(struct gp_workers *w, struct gp_query *q)
 {
-    /* TODO */
+    uint8_t *buffer;
+    size_t buflen;
+    int ret;
 
-    free(q->buffer);
-    q->buffer = strdup("WHATS UP?");
-    q->buflen = strlen(q->buffer);
-    q->status = GP_QUERY_OUT;
+    ret = gp_rpc_process_call(w->gpctx,
+                              q->buffer, q->buflen,
+                              &buffer, &buflen);
+    if (ret) {
+        q->status = GP_QUERY_ERR;
+    } else {
+        q->status = GP_QUERY_OUT;
+        free(q->buffer);
+        q->buffer = buffer;
+        q->buflen = buflen;
+    }
 }
 

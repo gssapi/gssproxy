@@ -40,9 +40,6 @@
 #define CRED_TYPE_UNIX 0x01
 #define CRED_TYPE_SELINUX 0x02
 
-/* max out at 1MB for now */
-#define MAX_RPC_SIZE 1024*1024
-
 struct gp_creds {
     int type;
 #ifdef HAVE_UCRED
