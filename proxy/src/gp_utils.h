@@ -70,6 +70,7 @@ struct gp_workers;
 struct gssproxy_ctx {
     struct gp_config *config;
     struct gp_workers *workers;
+    verto_ctx *vctx;
 };
 
 struct gp_conn;
@@ -90,7 +91,7 @@ void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
                          uint8_t *buffer, size_t buflen);
 
 /* from gp_workers.c */
-struct gp_workers *gp_workers_init(verto_ctx *vctx, struct gp_config *cfg);
+int gp_workers_init(struct gssproxy_ctx *gpctx);
 void gp_workers_free(struct gp_workers *w);
 int gp_query_new(struct gp_workers *w, struct gp_conn *conn,
                  uint8_t *buffer, size_t buflen);

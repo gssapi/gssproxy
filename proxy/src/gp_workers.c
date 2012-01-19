@@ -63,6 +63,7 @@ struct gp_thread {
 
 struct gp_workers {
     pthread_mutex_t lock;
+    struct gssproxy_ctx *gpctx;
     bool shutdown;
     struct gp_query *wait_list;
     struct gp_query *reply_list;
@@ -78,7 +79,7 @@ static void gp_handle_reply(verto_ctx *vctx, verto_ev *ev);
 
 /** DISPATCHER FUNCTIONS **/
 
-struct gp_workers *gp_workers_init(verto_ctx *vctx, struct gp_config *cfg)
+int gp_workers_init(struct gssproxy_ctx *gpctx)
 {
     struct gp_workers *w;
     struct gp_thread *t;
@@ -90,18 +91,19 @@ struct gp_workers *gp_workers_init(verto_ctx *vctx, struct gp_config *cfg)
 
     w = calloc(1, sizeof(struct gp_workers));
     if (!w) {
-        return NULL;
+        return ENOMEM;
     }
+    w->gpctx = gpctx;
 
     /* init global queue mutex */
     ret = pthread_mutex_init(&w->lock, NULL);
     if (ret) {
         free(w);
-        return NULL;
+        return ENOMEM;
     }
 
-    if (cfg->num_workers > 0) {
-        w->num_threads = cfg->num_workers;
+    if (gpctx->config->num_workers > 0) {
+        w->num_threads = gpctx->config->num_workers;
     } else {
         w->num_threads = DEFAULT_WORKER_THREADS_NUM;
     }
@@ -141,20 +143,21 @@ struct gp_workers *gp_workers_init(verto_ctx *vctx, struct gp_config *cfg)
     }
 
     vflags = VERTO_EV_FLAG_PERSIST | VERTO_EV_FLAG_IO_READ;
-    ev = verto_add_io(vctx, vflags, gp_handle_reply, w->sig_pipe[0]);
+    ev = verto_add_io(gpctx->vctx, vflags, gp_handle_reply, w->sig_pipe[0]);
     if (!ev) {
         ret = -1;
         goto done;
     }
     verto_set_private(ev, w, NULL);
 
+    gpctx->workers = w;
     ret = 0;
 
 done:
     if (ret) {
         gp_workers_free(w);
     }
-    return w;
+    return ret;
 }
 
 void gp_workers_free(struct gp_workers *w)
