@@ -41,6 +41,7 @@ int main(int argc, const char *argv[])
     int vflags;
     int fd;
     struct gssproxy_ctx *gpctx;
+    int ret;
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
@@ -99,6 +100,7 @@ int main(int argc, const char *argv[])
     if (!vctx) {
         return 1;
     }
+    gpctx->vctx = vctx;
 
     vflags = VERTO_EV_FLAG_PERSIST | VERTO_EV_FLAG_IO_READ;
     ev = verto_add_io(vctx, vflags, accept_sock_conn, fd);
@@ -107,8 +109,8 @@ int main(int argc, const char *argv[])
     }
     verto_set_private(ev, gpctx, NULL);
 
-    gpctx->workers = gp_workers_init(vctx, gpctx->config);
-    if (!gpctx->workers) {
+    ret = gp_workers_init(gpctx);
+    if (ret) {
         exit(EXIT_FAILURE);
     }
 
