@@ -62,6 +62,7 @@ AM_CPPFLAGS = \
     -Iinclude \
     -I. \
     $(POPT_CFLAGS) \
+    $(GSSAPI_CFLAGS) \
     -DLIBDIR=\"$(libdir)\" \
     -DVARDIR=\"$(localstatedir)\" \
     -DSHLIBEXT=\"$(SHLIBEXT)\" \
@@ -70,7 +71,7 @@ AM_CPPFLAGS = \
 
 EXTRA_DIST = build/config.rpath
 
-GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS)
+GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS) $(GSSAPI_LIBS)
 
 if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
