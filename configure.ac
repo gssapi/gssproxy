@@ -97,6 +97,18 @@ CC="$PTHREAD_CC"
 
 AC_CHECK_HEADERS([rpc/rpc.h],,[AC_MSG_ERROR([Could not find rpc headers])])
 
+AC_CHECK_HEADERS([gssapi/gssapi.h],,[AC_MSG_ERROR([Could not find GSSAPI headers])])
+AC_PATH_PROG(KRB5_CONFIG, krb5-config, failed)
+if test x$KRB5_CONFIG = xfailed; then
+    AC_MSG_ERROR([Could not find GSSAPI development libraries])
+else
+    GSSAPI_CFLAGS="`$KRB5_CONFIG --cflags gssapi`"
+    GSSAPI_LIBS="`$KRB5_CONFIG --libs gssapi`"
+fi
+
+AC_SUBST([GSSAPI_CFLAGS])
+AC_SUBST([GSSAPI_LIBS])
+
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
     WITH_SYSTEMD_UNIT_DIR
