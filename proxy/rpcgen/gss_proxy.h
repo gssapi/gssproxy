@@ -157,7 +157,7 @@ struct gssx_name {
 };
 typedef struct gssx_name gssx_name;
 
-struct gssx_cred_info {
+struct gssx_cred_element {
 	gssx_name MN;
 	gssx_OID mech;
 	gssx_cred_usage cred_usage;
@@ -167,17 +167,28 @@ struct gssx_cred_info {
 		u_int cred_options_len;
 		gssx_option *cred_options_val;
 	} cred_options;
-	octet_string cred_handle_reference;
 	struct {
 		u_int extensions_len;
 		gssx_typed_hole *extensions_val;
 	} extensions;
 };
-typedef struct gssx_cred_info gssx_cred_info;
+typedef struct gssx_cred_element gssx_cred_element;
 
-struct gssx_ctx_info {
-	octet_string *exported_context_token;
+struct gssx_cred {
+	gssx_name desired_name;
+	struct {
+		u_int elements_len;
+		gssx_cred_element *elements_val;
+	} elements;
+	octet_string cred_handle_reference;
+	bool_t needs_release;
+};
+typedef struct gssx_cred gssx_cred;
+
+struct gssx_ctx {
+	gssx_buffer *exported_context_token;
 	octet_string *state;
+	bool_t needs_release;
 	gssx_OID mech;
 	gssx_name src_name;
 	gssx_name targ_name;
@@ -194,7 +205,7 @@ struct gssx_ctx_info {
 		gssx_typed_hole *extensions_val;
 	} extensions;
 };
-typedef struct gssx_ctx_info gssx_ctx_info;
+typedef struct gssx_ctx gssx_ctx;
 
 enum gssx_handle_type {
 	GSSX_C_HANDLE_SEC_CTX = 0,
@@ -202,28 +213,18 @@ enum gssx_handle_type {
 };
 typedef enum gssx_handle_type gssx_handle_type;
 
-struct gssx_handle_info {
+struct gssx_handle {
 	gssx_handle_type handle_type;
 	union {
 		struct {
 			u_int cred_info_len;
-			gssx_cred_info *cred_info_val;
+			gssx_cred *cred_info_val;
 		} cred_info;
-		gssx_ctx_info sec_ctx_info;
+		gssx_ctx sec_ctx_info;
 		octet_string extensions;
-	} gssx_handle_info_u;
-};
-typedef struct gssx_handle_info gssx_handle_info;
-
-struct gssx_handle {
-	gssx_handle_info handle_info;
-	bool_t needs_release;
+	} gssx_handle_u;
 };
 typedef struct gssx_handle gssx_handle;
-
-typedef gssx_handle gssx_ctx;
-
-typedef gssx_handle gssx_cred;
 
 struct gssx_cb {
 	gssx_uint64 initiator_addrtype;
@@ -689,13 +690,11 @@ extern  bool_t xdr_gssx_option (XDR *, gssx_option*);
 extern  bool_t xdr_gssx_status (XDR *, gssx_status*);
 extern  bool_t xdr_gssx_call_ctx (XDR *, gssx_call_ctx*);
 extern  bool_t xdr_gssx_name (XDR *, gssx_name*);
-extern  bool_t xdr_gssx_cred_info (XDR *, gssx_cred_info*);
-extern  bool_t xdr_gssx_ctx_info (XDR *, gssx_ctx_info*);
-extern  bool_t xdr_gssx_handle_type (XDR *, gssx_handle_type*);
-extern  bool_t xdr_gssx_handle_info (XDR *, gssx_handle_info*);
-extern  bool_t xdr_gssx_handle (XDR *, gssx_handle*);
-extern  bool_t xdr_gssx_ctx (XDR *, gssx_ctx*);
+extern  bool_t xdr_gssx_cred_element (XDR *, gssx_cred_element*);
 extern  bool_t xdr_gssx_cred (XDR *, gssx_cred*);
+extern  bool_t xdr_gssx_ctx (XDR *, gssx_ctx*);
+extern  bool_t xdr_gssx_handle_type (XDR *, gssx_handle_type*);
+extern  bool_t xdr_gssx_handle (XDR *, gssx_handle*);
 extern  bool_t xdr_gssx_cb (XDR *, gssx_cb*);
 extern  bool_t xdr_gssx_cb (XDR *, gssx_cb*);
 extern  bool_t xdr_gssx_arg_release_handle (XDR *, gssx_arg_release_handle*);
@@ -748,13 +747,11 @@ extern bool_t xdr_gssx_option ();
 extern bool_t xdr_gssx_status ();
 extern bool_t xdr_gssx_call_ctx ();
 extern bool_t xdr_gssx_name ();
-extern bool_t xdr_gssx_cred_info ();
-extern bool_t xdr_gssx_ctx_info ();
-extern bool_t xdr_gssx_handle_type ();
-extern bool_t xdr_gssx_handle_info ();
-extern bool_t xdr_gssx_handle ();
-extern bool_t xdr_gssx_ctx ();
+extern bool_t xdr_gssx_cred_element ();
 extern bool_t xdr_gssx_cred ();
+extern bool_t xdr_gssx_ctx ();
+extern bool_t xdr_gssx_handle_type ();
+extern bool_t xdr_gssx_handle ();
 extern bool_t xdr_gssx_cb ();
 extern bool_t xdr_gssx_cb ();
 extern bool_t xdr_gssx_arg_release_handle ();

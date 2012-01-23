@@ -223,7 +223,7 @@ xdr_gssx_name (XDR *xdrs, gssx_name *objp)
 }
 
 bool_t
-xdr_gssx_cred_info (XDR *xdrs, gssx_cred_info *objp)
+xdr_gssx_cred_element (XDR *xdrs, gssx_cred_element *objp)
 {
 	 if (!xdr_gssx_name (xdrs, &objp->MN))
 		 return FALSE;
@@ -238,8 +238,6 @@ xdr_gssx_cred_info (XDR *xdrs, gssx_cred_info *objp)
 	 if (!xdr_array (xdrs, (char **)&objp->cred_options.cred_options_val, (u_int *) &objp->cred_options.cred_options_len, ~0,
 		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
-	 if (!xdr_octet_string (xdrs, &objp->cred_handle_reference))
-		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
 		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
 		 return FALSE;
@@ -247,11 +245,28 @@ xdr_gssx_cred_info (XDR *xdrs, gssx_cred_info *objp)
 }
 
 bool_t
-xdr_gssx_ctx_info (XDR *xdrs, gssx_ctx_info *objp)
+xdr_gssx_cred (XDR *xdrs, gssx_cred *objp)
 {
-	 if (!xdr_pointer (xdrs, (char **)&objp->exported_context_token, sizeof (octet_string), (xdrproc_t) xdr_octet_string))
+	 if (!xdr_gssx_name (xdrs, &objp->desired_name))
+		 return FALSE;
+	 if (!xdr_array (xdrs, (char **)&objp->elements.elements_val, (u_int *) &objp->elements.elements_len, ~0,
+		sizeof (gssx_cred_element), (xdrproc_t) xdr_gssx_cred_element))
+		 return FALSE;
+	 if (!xdr_octet_string (xdrs, &objp->cred_handle_reference))
+		 return FALSE;
+	 if (!xdr_bool (xdrs, &objp->needs_release))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_gssx_ctx (XDR *xdrs, gssx_ctx *objp)
+{
+	 if (!xdr_pointer (xdrs, (char **)&objp->exported_context_token, sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->state, sizeof (octet_string), (xdrproc_t) xdr_octet_string))
+		 return FALSE;
+	 if (!xdr_bool (xdrs, &objp->needs_release))
 		 return FALSE;
 	 if (!xdr_gssx_OID (xdrs, &objp->mech))
 		 return FALSE;
@@ -285,51 +300,25 @@ xdr_gssx_handle_type (XDR *xdrs, gssx_handle_type *objp)
 }
 
 bool_t
-xdr_gssx_handle_info (XDR *xdrs, gssx_handle_info *objp)
+xdr_gssx_handle (XDR *xdrs, gssx_handle *objp)
 {
 	 if (!xdr_gssx_handle_type (xdrs, &objp->handle_type))
 		 return FALSE;
 	switch (objp->handle_type) {
 	case GSSX_C_HANDLE_CRED:
-		 if (!xdr_array (xdrs, (char **)&objp->gssx_handle_info_u.cred_info.cred_info_val, (u_int *) &objp->gssx_handle_info_u.cred_info.cred_info_len, ~0,
-			sizeof (gssx_cred_info), (xdrproc_t) xdr_gssx_cred_info))
+		 if (!xdr_array (xdrs, (char **)&objp->gssx_handle_u.cred_info.cred_info_val, (u_int *) &objp->gssx_handle_u.cred_info.cred_info_len, ~0,
+			sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
 			 return FALSE;
 		break;
 	case GSSX_C_HANDLE_SEC_CTX:
-		 if (!xdr_gssx_ctx_info (xdrs, &objp->gssx_handle_info_u.sec_ctx_info))
+		 if (!xdr_gssx_ctx (xdrs, &objp->gssx_handle_u.sec_ctx_info))
 			 return FALSE;
 		break;
 	default:
-		 if (!xdr_octet_string (xdrs, &objp->gssx_handle_info_u.extensions))
+		 if (!xdr_octet_string (xdrs, &objp->gssx_handle_u.extensions))
 			 return FALSE;
 		break;
 	}
-	return TRUE;
-}
-
-bool_t
-xdr_gssx_handle (XDR *xdrs, gssx_handle *objp)
-{
-	 if (!xdr_gssx_handle_info (xdrs, &objp->handle_info))
-		 return FALSE;
-	 if (!xdr_bool (xdrs, &objp->needs_release))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_gssx_ctx (XDR *xdrs, gssx_ctx *objp)
-{
-	 if (!xdr_gssx_handle (xdrs, objp))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_gssx_cred (XDR *xdrs, gssx_cred *objp)
-{
-	 if (!xdr_gssx_handle (xdrs, objp))
-		 return FALSE;
 	return TRUE;
 }
 
