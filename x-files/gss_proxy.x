@@ -291,7 +291,7 @@ struct gssx_cred {
 };
 
 /*
- * Security CONTECT HANDLEs consist of a description of the security
+ * Security CONTEXT HANDLEs consist of a description of the security
  * context and an exported security context token or (if the server
  * can't export partially established security contexts) a server-side
  * state reference.
