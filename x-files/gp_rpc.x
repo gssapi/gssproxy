@@ -1,3 +1,14 @@
+/*
+ * ONC RPC request/reply header XDR.
+ *
+ * Note that this XDR is extracted from RFC1831 and massaged so that
+ * rpcgen(1) accepts it, but it is intended to be wire-compatible with
+ * RFC1831.
+ *
+ * Also, in order to avoid symbol naming conflicts, we prefix "gp_" and
+ * "GP_" to all symbols from RFC1831.  "GP" stands for "GSS proxy".
+ */
+
 enum gp_rpc_auth_flavor {
     GP_RPC_AUTH_NONE       = 0,
     GP_RPC_AUTH_SYS        = 1,
