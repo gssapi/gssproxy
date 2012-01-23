@@ -262,8 +262,17 @@ struct gssx_name {
 /*
  * CREDENTIAL HANDLEs are really just a description plus whatever state
  * reference or encoded (and protected) state the server needs.
+ *
+ * Of course, the way CREDENTIAL HANDLEs work in the GSS-API they are
+ * actually sets of elements, all of which are supposed to be for the
+ * same desired_name but different mechanism OIDs.  In practice the
+ * desired_names for each element will be MNs, thus all different, but
+ * we might have the original non-MN desired_name, and that is useful to
+ * keep for GSS_Inquire_cred().
+ *
+ * First we have credential elements:
  */
-struct gssx_cred {
+struct gssx_cred_element {
     /* GSS_Inquire_cred_by_mech() outputs */
     gssx_name           MN;
     gssx_OID            mech;
@@ -271,6 +280,16 @@ struct gssx_cred {
     gssx_time           initiator_time_rec;
     gssx_time           acceptor_time_rec;
     gssx_option         cred_options<>;
+    /* Extensions */
+    gssx_typed_hole     extensions<>;
+};
+
+/*
+ * Then we have the actual credential handle:
+ */
+struct gssx_cred {
+    gssx_name           desired_name; /* possibly not an MN */
+    gssx_cred_element   elements<>;
     /*
      * Server-side state reference or encoded state; may or may not
      * require releasing.  This may be just a ccache name, or an encoded
@@ -286,8 +305,6 @@ struct gssx_cred {
      */
     octet_string        cred_handle_reference;
     bool                needs_release;
-    /* Extensions */
-    gssx_typed_hole     extensions<>;
 };
 
 /*
