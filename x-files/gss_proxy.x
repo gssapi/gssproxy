@@ -315,7 +315,7 @@ struct gssx_cred {
  */
 struct gssx_ctx {
     /* The exported context token, if available */
-    octet_string        *exported_context_token;   /* exported context token */
+    gssx_buffer         *exported_context_token;
     octet_string        *state;
     /*
      * Stateful servers MUST be able to clean up unreferenced state
