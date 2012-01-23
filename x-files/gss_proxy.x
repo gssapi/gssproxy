@@ -263,7 +263,7 @@ struct gssx_name {
  * CREDENTIAL HANDLEs are really just a description plus whatever state
  * reference or encoded (and protected) state the server needs.
  */
-struct gssx_cred_info {
+struct gssx_cred {
     /* GSS_Inquire_cred_by_mech() outputs */
     gssx_name           MN;
     gssx_OID            mech;
@@ -277,8 +277,15 @@ struct gssx_cred_info {
      * list of URI-like strings, for example, or it might be an exported
      * credential, possibly encrypted and/or MACed with a server secret
      * key.
+     *
+     * Stateful servers MUST be able to clean up unreferenced state
+     * automatically, using an LRU/LFU type cache.  However, stateful
+     * servers SHOULD (or at least MAY) indicate statefulness so that
+     * the client can release server-side state sooner than the server
+     * might otherwise do it.
      */
     octet_string        cred_handle_reference;
+    bool                needs_release;
     /* Extensions */
     gssx_typed_hole     extensions<>;
 };
@@ -289,10 +296,18 @@ struct gssx_cred_info {
  * can't export partially established security contexts) a server-side
  * state reference.
  */
-struct gssx_ctx_info {
+struct gssx_ctx {
     /* The exported context token, if available */
     octet_string        *exported_context_token;   /* exported context token */
     octet_string        *state;
+    /*
+     * Stateful servers MUST be able to clean up unreferenced state
+     * automatically, using an LRU/LFU type cache.  However, stateful
+     * servers SHOULD (or at least MAY) indicate statefulness so that
+     * the client can release server-side state sooner than the server
+     * might otherwise do it.
+     */
+    bool                needs_release;
     /* GSS_Inquire_context() outputs */
     gssx_OID            mech;
     gssx_name           src_name;
@@ -311,20 +326,14 @@ struct gssx_ctx_info {
  * when the server is stateful).
  */
 enum gssx_handle_type { GSSX_C_HANDLE_SEC_CTX = 0, GSSX_C_HANDLE_CRED = 1 };
-union gssx_handle_info switch (gssx_handle_type handle_type) {
+union gssx_handle switch (gssx_handle_type handle_type) {
     case GSSX_C_HANDLE_CRED:
-        gssx_cred_info  cred_info<>; /* One per cred element */
+        gssx_cred       cred_info<>; /* One per cred element */
     case GSSX_C_HANDLE_SEC_CTX:
-        gssx_ctx_info   sec_ctx_info;
+        gssx_ctx        sec_ctx_info;
     default:
         octet_string    extensions;   /* Future handle types */
 };
-struct gssx_handle {
-    gssx_handle_info    handle_info;
-    bool                needs_release;
-};
-typedef gssx_handle     gssx_ctx;
-typedef gssx_handle     gssx_cred;
 
 /*
  * We should probably come up with a standard RFC4121 context export
