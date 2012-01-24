@@ -45,6 +45,9 @@ ACLOCAL_AMFLAGS = -I m4 -I .
 sbin_PROGRAMS = \
     gssproxy
 
+check_PROGRAMS = \
+    accept_context
+
 dist_noinst_SCRIPTS =
 
 dist_noinst_DATA =
@@ -97,14 +100,23 @@ gssproxy_SOURCES = \
     src/gp_accept_sec_context.c \
     src/gssproxy.c
 
+accept_context_SOURCES = \
+    src/gp_config.c \
+    src/gp_conv.c \
+    $(GP_RPCGEN_OBJ) \
+    tests/accept_context.c
+
 gssproxy_LDADD = \
+    $(GSS_PROXY_LIBS)
+
+accept_context_LDADD = \
     $(GSS_PROXY_LIBS)
 
 dist_noinst_DATA += \
     examples/gssproxy-example.conf \
     m4
 
-noinst_PROGRAMS =
+noinst_PROGRAMS = accept_context
 
 ################
 # TRANSLATIONS #
@@ -159,6 +171,8 @@ clean-local:
 	rm -Rf doc
 
 CLEANFILES = *.X */*.X */*/*.X
+
+tests: all $(check_PROGRAMS)
 
 # RPM-related tasks
 
