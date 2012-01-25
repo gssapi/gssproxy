@@ -216,10 +216,7 @@ typedef enum gssx_handle_type gssx_handle_type;
 struct gssx_handle {
 	gssx_handle_type handle_type;
 	union {
-		struct {
-			u_int cred_info_len;
-			gssx_cred *cred_info_val;
-		} cred_info;
+		gssx_cred cred_info;
 		gssx_ctx sec_ctx_info;
 		octet_string extensions;
 	} gssx_handle_u;

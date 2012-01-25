@@ -306,8 +306,7 @@ xdr_gssx_handle (XDR *xdrs, gssx_handle *objp)
 		 return FALSE;
 	switch (objp->handle_type) {
 	case GSSX_C_HANDLE_CRED:
-		 if (!xdr_array (xdrs, (char **)&objp->gssx_handle_u.cred_info.cred_info_val, (u_int *) &objp->gssx_handle_u.cred_info.cred_info_len, ~0,
-			sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
+		 if (!xdr_gssx_cred (xdrs, &objp->gssx_handle_u.cred_info))
 			 return FALSE;
 		break;
 	case GSSX_C_HANDLE_SEC_CTX:
