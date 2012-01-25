@@ -31,5 +31,6 @@
 
 int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out);
 int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out);
+int gp_find_cred(gssx_cred *cred, gss_cred_id_t *out);
 
 #endif /* _GSS_EXPORT_H_ */
