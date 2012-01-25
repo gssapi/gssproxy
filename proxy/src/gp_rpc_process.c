@@ -397,10 +397,6 @@ int gp_init_sec_context(gp_exec_std_args)
     return 0;
 }
 
-int gp_release_handle(gp_exec_std_args)
-{
-    return 0;
-}
 int gp_get_mic(gp_exec_std_args)
 {
     return 0;
