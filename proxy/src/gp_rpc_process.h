@@ -26,6 +26,13 @@
 #ifndef _GP_RPC_PROCESS_H_
 #define _GP_RPC_PROCESS_H_
 
+#include "config.h"
+#include <stdint.h>
+#include <errno.h>
+#include <gssapi/gssapi.h>
+#include "gp_utils.h"
+#include "gp_conv.h"
+#include "gp_export.h"
 #include "rpcgen/gss_proxy.h"
 #include "rpcgen/gp_rpc.h"
 

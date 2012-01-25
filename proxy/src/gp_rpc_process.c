@@ -23,10 +23,6 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include "config.h"
-#include <stdint.h>
-#include <errno.h>
-#include "gp_utils.h"
 #include "gp_rpc_process.h"
 
 struct gp_rpc_fn_set gp_xdr_set[] = {

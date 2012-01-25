@@ -23,13 +23,6 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#include "config.h"
-#include <stdint.h>
-#include <errno.h>
-#include <gssapi/gssapi.h>
-#include "gp_utils.h"
-#include "gp_conv.h"
-#include "gp_export.h"
 #include "gp_rpc_process.h"
 
 int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
