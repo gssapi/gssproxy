@@ -33,6 +33,7 @@
 #include <sys/un.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <gssapi/gssapi.h>
 #include "src/gp_utils.h"
 #include "src/gp_rpc_process.h"
@@ -67,55 +68,6 @@ done:
         }
     }
     return fd;
-}
-
-int client_init_context(char *target, gss_buffer_desc *out_token)
-{
-    uint32_t ret_maj;
-    uint32_t ret_min;
-    gss_buffer_desc target_buf;
-    gss_name_t name = GSS_C_NO_NAME;
-    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
-    int ret = 0;
-
-    target_buf.value = (void *)target;
-    target_buf.length = strlen(target) + 1;
-
-    ret_maj = gss_import_name(&ret_min, &target_buf,
-                              GSS_C_NT_HOSTBASED_SERVICE, &name);
-    if (ret_maj) {
-        goto done;
-    }
-
-    /* rely on kerberos not requiring more than one pass, so do not loop */
-    ret_maj = gss_init_sec_context(&ret_min,
-                                   GSS_C_NO_CREDENTIAL,
-                                   &ctx,
-                                   name,
-                                   GSS_C_NO_OID,
-                                   GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
-                                   0,
-                                   GSS_C_NO_CHANNEL_BINDINGS,
-                                   NULL,
-                                   NULL,
-                                   out_token,
-                                   NULL,
-                                   NULL);
-    if (ret_maj != GSS_S_CONTINUE_NEEDED) {
-        ret = -1;
-        goto done;
-    }
-    if (!ctx) {
-        ret = -1;
-        goto done;
-    }
-
-done:
-    gss_release_name(&ret_min, &name);
-    if (ret) {
-        return -1;
-    }
-    return 0;
 }
 
 int gp_send_buffer(int fd, char *buf, uint32_t len)
@@ -159,6 +111,10 @@ int gp_recv_buffer(int fd, char *buf, uint32_t *len)
 
     *len = ntohl(size);
 
+    if (*len > MAX_RPC_SIZE) {
+        return EINVAL;
+    }
+
     pos = 0;
     while (*len > pos) {
         rn = read(fd, buf + pos, *len - pos);
@@ -175,12 +131,6 @@ int gp_recv_buffer(int fd, char *buf, uint32_t *len)
     }
 
     return 0;
-}
-
-int gp_prep_accept_sec_context(gss_buffer_t in_token,
-                               gssx_arg_accept_sec_context *args)
-{
-    return gp_conv_buffer_to_gssx(in_token, &args->input_token);
 }
 
 int gp_send_accept_sec_context(int fd,
@@ -262,6 +212,159 @@ int gp_send_accept_sec_context(int fd,
     return 0;
 }
 
+struct athread {
+    pthread_t tid;
+    int *cli_pipe;
+    int *srv_pipe;
+    struct gp_config *cfg;
+    char *target;
+};
+
+void *client_thread(void *pvt)
+{
+    struct athread *data;
+    uint32_t ret_maj;
+    uint32_t ret_min;
+    char buffer[MAX_RPC_SIZE];
+    uint32_t buflen;
+    gss_buffer_desc target_buf;
+    gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
+    gss_name_t name = GSS_C_NO_NAME;
+    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    int ret = 0;
+
+    data = (struct athread *)pvt;
+
+    target_buf.value = (void *)data->target;
+    target_buf.length = strlen(data->target) + 1;
+
+    ret_maj = gss_import_name(&ret_min, &target_buf,
+                              GSS_C_NT_HOSTBASED_SERVICE, &name);
+    if (ret_maj) {
+        goto done;
+    }
+
+    do {
+        ret_maj = gss_init_sec_context(&ret_min,
+                                       GSS_C_NO_CREDENTIAL,
+                                       &ctx,
+                                       name,
+                                       GSS_C_NO_OID,
+                                       GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
+                                       0,
+                                       GSS_C_NO_CHANNEL_BINDINGS,
+                                       &in_token,
+                                       NULL,
+                                       &out_token,
+                                       NULL,
+                                       NULL);
+        if (ret_maj == GSS_S_COMPLETE) {
+            break;
+        }
+        if (ret_maj != GSS_S_CONTINUE_NEEDED) {
+            fprintf(stdout,
+                    "gss_init_sec_context() failed with: %d\n", ret_maj);
+            goto done;
+        }
+        if (!ctx) {
+            goto done;
+        }
+
+        /* send to server */
+        ret = gp_send_buffer(data->srv_pipe[1],
+                             out_token.value, out_token.length);
+        if (ret) {
+            goto done;
+        }
+
+        gss_release_buffer(&ret_min, &out_token);
+
+        /* and wait for reply */
+        ret = gp_recv_buffer(data->cli_pipe[0], buffer, &buflen);
+        if (ret) {
+            goto done;
+        }
+
+        in_token.value = buffer;
+        in_token.length = buflen;
+
+    } while (ret_maj == GSS_S_CONTINUE_NEEDED);
+
+    fprintf(stdout, "client: Success!\n");
+
+done:
+    gss_release_name(&ret_min, &name);
+    gss_release_buffer(&ret_min, &out_token);
+    close(data->cli_pipe[0]);
+    close(data->cli_pipe[1]);
+    pthread_exit(NULL);
+}
+
+void *server_thread(void *pvt)
+{
+    struct athread *data;
+    char buffer[MAX_RPC_SIZE];
+    uint32_t buflen;
+    gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
+    gssx_arg_accept_sec_context arg;
+    gssx_res_accept_sec_context res;
+    int ret;
+    int fd;
+
+    data = (struct athread *)pvt;
+
+    memset(&arg, 0, sizeof(gssx_arg_accept_sec_context));
+    memset(&res, 0, sizeof(gssx_res_accept_sec_context));
+
+    /* connect to the socket first to make sure the proxy is available */
+    fd = connect_unix_socket(data->cfg->socket_name);
+    if (fd == -1) {
+        goto done;
+    }
+
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        fprintf(stdout, "Failed to get data from client!\n");
+        goto done;
+    }
+
+    token.value = buffer;
+    token.length = buflen;
+
+    ret = gp_conv_buffer_to_gssx(&token, &arg.input_token);
+    if (ret) {
+        fprintf(stderr, "gp_conv_buffer_to_gssx() failed!\n");
+        goto done;
+    }
+
+    ret = gp_send_accept_sec_context(fd, &arg, &res);
+    if (ret) {
+        fprintf(stdout, "Comms with gssproxy failed!\n");
+    }
+
+    if (res.status.major_status) {
+        fprintf(stdout, "gssproxy returned an error: %ld\n",
+                        res.status.major_status);
+        goto done;
+    }
+
+    gp_conv_gssx_to_buffer(res.output_token, &token);
+
+    ret = gp_send_buffer(data->cli_pipe[1], token.value, token.length);
+    if (ret) {
+        fprintf(stdout, "Failed to send data to client!\n");
+        goto done;
+    }
+
+done:
+    xdr_free((xdrproc_t)xdr_gssx_arg_accept_sec_context, (char *)&arg);
+    xdr_free((xdrproc_t)xdr_gssx_res_accept_sec_context, (char *)&res);
+    close(data->srv_pipe[0]);
+    close(data->srv_pipe[1]);
+    pthread_exit(NULL);
+}
+
 int main(int argc, const char *argv[])
 {
     int opt;
@@ -270,12 +373,13 @@ int main(int argc, const char *argv[])
     struct gp_config *cfg;
     char *opt_config_file = NULL;
     char *opt_target = NULL;
-    int fd;
+    int srv_pipe[2];
+    int cli_pipe[2];
+    pthread_attr_t attr;
+    struct athread server;
+    struct athread client;
+    void *retval;
     int ret;
-    gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
-    gssx_arg_accept_sec_context arg;
-    gssx_res_accept_sec_context res;
-    uint32_t ret_min;
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
@@ -304,42 +408,53 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
+    if (opt_target == NULL) {
+        fprintf(stderr, "Missing target!\n");
+        poptPrintUsage(pc, stderr, 0);
+        return 1;
+    }
+
     cfg = read_config(opt_config_file, 0);
     if (!cfg) {
         return -1;
     }
 
-    memset(&arg, 0, sizeof(gssx_arg_accept_sec_context));
-    memset(&res, 0, sizeof(gssx_res_accept_sec_context));
-
-    /* connect to the socket first to make sure the proxy is available */
-    fd = connect_unix_socket(cfg->socket_name);
-    if (fd == -1) {
+    ret = pipe(srv_pipe);
+    if (ret) {
         return -1;
     }
-
-    ret = client_init_context(opt_target, &out_token);
+    ret = pipe(cli_pipe);
     if (ret) {
         return -1;
     }
 
-    ret = gp_prep_accept_sec_context(&out_token, &arg);
+    /* make thread joinable (portability) */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+    server.srv_pipe = srv_pipe;
+    server.cli_pipe = cli_pipe;
+    server.cfg = cfg;
+    server.target = NULL;
+
+    ret = pthread_create(&server.tid, &attr, server_thread, &server);
     if (ret) {
         return -1;
     }
 
-    ret = gp_send_accept_sec_context(fd, &arg, &res);
+    client.srv_pipe = srv_pipe;
+    client.cli_pipe = cli_pipe;
+    client.cfg = cfg;
+    client.target = opt_target;
+
+    ret = pthread_create(&client.tid, &attr, client_thread, &client);
     if (ret) {
         return -1;
     }
 
-    if (res.status.major_status) {
-        return -1;
-    }
+    pthread_join(server.tid, &retval);
+    pthread_join(client.tid, &retval);
 
-    xdr_free((xdrproc_t)xdr_gssx_arg_accept_sec_context, (char *)&arg);
-    xdr_free((xdrproc_t)xdr_gssx_res_accept_sec_context, (char *)&res);
-    gss_release_buffer(&ret_min, &out_token);
     return 0;
 }
 
