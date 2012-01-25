@@ -50,4 +50,8 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out);
 
 int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out);
 
+int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
+                           uint32_t ret_maj, uint32_t ret_min,
+                           gss_OID mech, struct gssx_status *status);
+
 #endif /* _GSS_CONV_H_ */

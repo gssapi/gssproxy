@@ -80,28 +80,12 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
                                      &time_rec,
                                      &dch);
 
-    ascr->status.major_status = ret_maj;
-    ret = gp_conv_oid_to_gssx(oid, &ascr->status.mech);
+    ret = gp_conv_status_to_gssx(&asca->call_ctx,
+                                 ret_maj, ret_min, oid,
+                                 &ascr->status);
     if (ret) {
         goto done;
     }
-    ascr->status.minor_status = ret_min;
-    if (ret_maj) {
-        ret = gp_conv_err_to_gssx_string(ret_maj, GSS_C_GSS_CODE, oid,
-                                         &ascr->status.major_status_string);
-        if (ret) {
-            goto done;
-        }
-    }
-    if (ret_min) {
-        ret = gp_conv_err_to_gssx_string(ret_min, GSS_C_MECH_CODE, oid,
-                                         &ascr->status.minor_status_string);
-        if (ret) {
-            goto done;
-        }
-    }
-    /* Only used with PGSS, ignore for now */
-    /* ascr->status.server_ctx; */
 
     if (ret_maj) {
         ret = 0;
