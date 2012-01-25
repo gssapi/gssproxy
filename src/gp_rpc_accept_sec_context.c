@@ -49,7 +49,6 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     asca = &arg->accept_sec_context;
     ascr = &res->accept_sec_context;
 
-    /* FIXME: set context id from asca->call_ctx */
     ctx = GSS_C_NO_CONTEXT;
 
     if (asca->cred_handle) {
