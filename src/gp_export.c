@@ -147,3 +147,7 @@ int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)
     return 0;
 }
 
+int gp_find_cred(gssx_cred *cred, gss_cred_id_t *out)
+{
+    return gp_import_gssx_cred(&cred->cred_handle_reference, out);
+}
