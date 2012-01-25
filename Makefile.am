@@ -96,7 +96,7 @@ gssproxy_SOURCES = \
     src/gp_rpc_process.c \
     src/gp_conv.c \
     src/gp_export.c \
-    src/gp_accept_sec_context.c \
+    src/gp_rpc_accept_sec_context.c \
     src/gssproxy.c
 
 accept_context_SOURCES = \
