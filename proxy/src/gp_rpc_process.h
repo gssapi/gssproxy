@@ -37,39 +37,39 @@
 #include "rpcgen/gp_rpc.h"
 
 union gp_rpc_arg {
-    gssx_arg_release_handle gssx_arg_release_handle_arg;
-    gssx_arg_indicate_mechs gssx_arg_indicate_mechs_arg;
-    gssx_arg_import_and_canon_name gssx_arg_import_and_canon_name_arg;
-    gssx_arg_get_call_context gssx_arg_get_call_context_arg;
-    gssx_arg_acquire_cred gssx_arg_acquire_cred_arg;
-    gssx_arg_export_cred gssx_arg_export_cred_arg;
-    gssx_arg_import_cred gssx_arg_import_cred_arg;
-    gssx_arg_store_cred gssx_arg_store_cred_arg;
-    gssx_arg_init_sec_context gssx_arg_init_sec_context_arg;
-    gssx_arg_accept_sec_context gssx_arg_accept_sec_context_arg;
-    gssx_arg_get_mic gssx_arg_get_mic_arg;
-    gssx_arg_verify_mic gssx_arg_verify_mic_arg;
-    gssx_arg_wrap gssx_arg_wrap_arg;
-    gssx_arg_unwrap gssx_arg_unwrap_arg;
-    gssx_arg_wrap_size_limit gssx_arg_wrap_size_limit_arg;
+    gssx_arg_release_handle release_handle;
+    gssx_arg_indicate_mechs indicate_mechs;
+    gssx_arg_import_and_canon_name import_and_canon_name;
+    gssx_arg_get_call_context get_call_context;
+    gssx_arg_acquire_cred acquire_cred;
+    gssx_arg_export_cred export_cred;
+    gssx_arg_import_cred import_cred;
+    gssx_arg_store_cred store_cred;
+    gssx_arg_init_sec_context init_sec_context;
+    gssx_arg_accept_sec_context accept_sec_context;
+    gssx_arg_get_mic get_mic;
+    gssx_arg_verify_mic verify_mic;
+    gssx_arg_wrap wrap;
+    gssx_arg_unwrap unwrap;
+    gssx_arg_wrap_size_limit wrap_size_limit;
 };
 
 union gp_rpc_res {
-    gssx_res_release_handle gssx_res_release_handle_res;
-    gssx_res_indicate_mechs gssx_res_indicate_mechs_res;
-    gssx_res_import_and_canon_name gssx_res_import_and_canon_name_res;
-    gssx_res_get_call_context gssx_res_get_call_context_res;
-    gssx_res_acquire_cred gssx_res_acquire_cred_res;
-    gssx_res_export_cred gssx_res_export_cred_res;
-    gssx_res_import_cred gssx_res_import_cred_res;
-    gssx_res_store_cred gssx_res_store_cred_res;
-    gssx_res_init_sec_context gssx_res_init_sec_context_res;
-    gssx_res_accept_sec_context gssx_res_accept_sec_context_res;
-    gssx_res_get_mic gssx_res_get_mic_res;
-    gssx_res_verify_mic gssx_res_verify_mic_res;
-    gssx_res_wrap gssx_res_wrap_res;
-    gssx_res_unwrap gssx_res_unwrap_res;
-    gssx_res_wrap_size_limit gssx_res_wrap_size_limit_res;
+    gssx_res_release_handle release_handle;
+    gssx_res_indicate_mechs indicate_mechs;
+    gssx_res_import_and_canon_name import_and_canon_name;
+    gssx_res_get_call_context get_call_context;
+    gssx_res_acquire_cred acquire_cred;
+    gssx_res_export_cred export_cred;
+    gssx_res_import_cred import_cred;
+    gssx_res_store_cred store_cred;
+    gssx_res_init_sec_context init_sec_context;
+    gssx_res_accept_sec_context accept_sec_context;
+    gssx_res_get_mic get_mic;
+    gssx_res_verify_mic verify_mic;
+    gssx_res_wrap wrap;
+    gssx_res_unwrap unwrap;
+    gssx_res_wrap_size_limit wrap_size_limit;
 };
 
 #define gp_exec_std_args struct gssproxy_ctx *gpctx, \
