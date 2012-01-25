@@ -345,7 +345,7 @@ struct gssx_ctx {
 enum gssx_handle_type { GSSX_C_HANDLE_SEC_CTX = 0, GSSX_C_HANDLE_CRED = 1 };
 union gssx_handle switch (gssx_handle_type handle_type) {
     case GSSX_C_HANDLE_CRED:
-        gssx_cred       cred_info<>; /* One per cred element */
+        gssx_cred       cred_info;
     case GSSX_C_HANDLE_SEC_CTX:
         gssx_ctx        sec_ctx_info;
     default:
