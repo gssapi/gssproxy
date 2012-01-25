@@ -29,17 +29,6 @@
 #include "rpcgen/gss_proxy.h"
 #include "rpcgen/gp_rpc.h"
 
-struct gp_rpc_call {
-    XDR xdr_ctx;
-    gp_rpc_msg msg;
-};
-
-struct gp_rpc_reply {
-    XDR xdr_ctx;
-    gp_rpc_msg msg;
-    char buffer[MAX_RPC_SIZE];
-};
-
 union gp_rpc_arg {
     gssx_arg_release_handle gssx_arg_release_handle_arg;
     gssx_arg_indicate_mechs gssx_arg_indicate_mechs_arg;
