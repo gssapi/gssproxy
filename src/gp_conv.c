@@ -333,3 +333,39 @@ done:
     return ret;
 }
 
+int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
+                           uint32_t ret_maj, uint32_t ret_min,
+                           gss_OID mech, struct gssx_status *status)
+{
+    int ret;
+
+    status->major_status = ret_maj;
+
+    ret = gp_conv_oid_to_gssx(mech, &status->mech);
+    if (ret) {
+        goto done;
+    }
+
+    status->minor_status = ret_min;
+
+    if (ret_maj) {
+        ret = gp_conv_err_to_gssx_string(ret_maj, GSS_C_GSS_CODE, mech,
+                                         &status->major_status_string);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    if (ret_min) {
+        ret = gp_conv_err_to_gssx_string(ret_min, GSS_C_MECH_CODE, mech,
+                                         &status->minor_status_string);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    ret = 0;
+
+done:
+    return ret;
+}
