@@ -112,56 +112,70 @@ struct gp_rpc_fn_set gp_xdr_set[] = {
     }
 };
 
-static int gp_rpc_decode_call_header(struct gp_rpc_call *call,
+static int gp_rpc_decode_call_header(XDR *xdr_call_ctx,
                                      uint32_t *xid,
                                      uint32_t *proc,
                                      gp_rpc_accept_status *acc,
                                      gp_rpc_reject_status *rej)
 {
     struct gp_rpc_call_header *chdr;
+    gp_rpc_msg msg;
     bool decoded;
+    int ret;
 
-    decoded = xdr_gp_rpc_msg(&call->xdr_ctx, &call->msg);
+    memset(&msg, 0, sizeof(gp_rpc_msg));
+
+    decoded = xdr_gp_rpc_msg(xdr_call_ctx, &msg);
     if (!decoded) {
         return EFAULT;
     }
 
-    *xid = call->msg.xid;
+    *xid = msg.xid;
 
-    if (call->msg.header.type != GP_RPC_CALL) {
+    if (msg.header.type != GP_RPC_CALL) {
         *acc = GP_RPC_GARBAGE_ARGS;
-        return EINVAL;
+        ret = EINVAL;
+        goto done;
     }
 
-    chdr = &call->msg.header.gp_rpc_msg_union_u.chdr;
+    chdr = &msg.header.gp_rpc_msg_union_u.chdr;
 
     if (chdr->rpcvers != 2) {
         *rej = GP_RPC_RPC_MISMATCH;
-        return EACCES;
+        ret = EACCES;
+        goto done;
     }
     if (chdr->prog != GSSPROXY) {
         *acc = GP_RPC_PROG_UNAVAIL;
-        return EINVAL;
+        ret = EINVAL;
+        goto done;
     }
     if (chdr->vers != GSSPROXYVERS) {
         *acc = GP_RPC_PROG_MISMATCH;
-        return EINVAL;
+        ret = EINVAL;
+        goto done;
     }
     if (chdr->proc < 1 || chdr->proc > 15) {
         *acc = GP_RPC_PROC_UNAVAIL;
-        return EINVAL;
+        ret = EINVAL;
+        goto done;
     }
     if (chdr->cred.flavor != GP_RPC_AUTH_NONE) {
         *rej = GP_RPC_AUTH_ERROR;
-        return EACCES;
+        ret = EACCES;
+        goto done;
     }
 
     *proc = chdr->proc;
     *acc = GP_RPC_SUCCESS;
-    return 0;
+    ret = 0;
+
+done:
+    xdr_free((xdrproc_t)xdr_gp_rpc_msg, (char *)&msg);
+    return ret;
 }
 
-static int gp_rpc_decode_call(struct gp_rpc_call *call,
+static int gp_rpc_decode_call(XDR *xdr_call_ctx,
                               uint32_t *xid,
                               uint32_t *proc,
                               union gp_rpc_arg *arg,
@@ -171,12 +185,12 @@ static int gp_rpc_decode_call(struct gp_rpc_call *call,
     bool xdrok;
     int ret;
 
-    ret = gp_rpc_decode_call_header(call, xid, proc, acc, rej);
+    ret = gp_rpc_decode_call_header(xdr_call_ctx, xid, proc, acc, rej);
     if (ret) {
         return ret;
     }
 
-    xdrok = gp_xdr_set[*proc].arg_fn(&call->xdr_ctx, (char *)arg);
+    xdrok = gp_xdr_set[*proc].arg_fn(xdr_call_ctx, (char *)arg);
     if (!xdrok) {
         *acc = GP_RPC_GARBAGE_ARGS;
         return EINVAL;
@@ -185,20 +199,23 @@ static int gp_rpc_decode_call(struct gp_rpc_call *call,
     return 0;
 }
 
-static int gp_rpc_encode_reply_header(struct gp_rpc_reply *reply,
+static int gp_rpc_encode_reply_header(XDR *xdr_reply_ctx,
                                       uint32_t xid, int err,
                                       gp_rpc_accept_status acc,
                                       gp_rpc_reject_status rej)
 {
+    gp_rpc_msg msg;
     gp_rpc_reply_header *rhdr;
     gp_rpc_accepted_reply *accepted;
     gp_rpc_rejected_reply *rejected;
     bool encoded;
 
-    reply->msg.xid = xid;
-    reply->msg.header.type = GP_RPC_REPLY;
+    memset(&msg, 0, sizeof(gp_rpc_msg));
 
-    rhdr = &reply->msg.header.gp_rpc_msg_union_u.rhdr;
+    msg.xid = xid;
+    msg.header.type = GP_RPC_REPLY;
+
+    rhdr = &msg.header.gp_rpc_msg_union_u.rhdr;
     accepted = &rhdr->gp_rpc_reply_header_u.accepted;
     rejected = &rhdr->gp_rpc_reply_header_u.rejected;
 
@@ -236,9 +253,9 @@ static int gp_rpc_encode_reply_header(struct gp_rpc_reply *reply,
     /* always reset xdr_ctx position, as this function may be called
      * multiple times in case errors occurred after the initial header
      * was created */
-    xdr_setpos(&reply->xdr_ctx, 0);
+    xdr_setpos(xdr_reply_ctx, 0);
 
-    encoded = xdr_gp_rpc_msg(&reply->xdr_ctx, &reply->msg);
+    encoded = xdr_gp_rpc_msg(xdr_reply_ctx, &msg);
     if (!encoded) {
         return EFAULT;
     }
@@ -246,7 +263,7 @@ static int gp_rpc_encode_reply_header(struct gp_rpc_reply *reply,
     return 0;
 }
 
-static int gp_rpc_encode_reply(struct gp_rpc_reply *reply,
+static int gp_rpc_encode_reply(XDR *xdr_reply_ctx,
                                uint32_t xid, uint32_t proc,
                                union gp_rpc_res *res, int err,
                                gp_rpc_accept_status acc,
@@ -255,15 +272,15 @@ static int gp_rpc_encode_reply(struct gp_rpc_reply *reply,
     bool xdrok;
     int ret;
 
-    ret = gp_rpc_encode_reply_header(reply, xid, err, acc, rej);
+    ret = gp_rpc_encode_reply_header(xdr_reply_ctx, xid, err, acc, rej);
     if (ret != 0  || err != 0) {
         return ret;
     }
 
-    xdrok = gp_xdr_set[proc].res_fn(&reply->xdr_ctx, (char *)res);
+    xdrok = gp_xdr_set[proc].res_fn(xdr_reply_ctx, (char *)res);
 
     if (!xdrok) {
-        return gp_rpc_encode_reply_header(reply, xid, EINVAL,
+        return gp_rpc_encode_reply_header(xdr_reply_ctx, xid, EINVAL,
                                           GP_RPC_SYSTEM_ERR, 0);
     }
 
@@ -276,46 +293,43 @@ static int gp_rpc_execute(struct gssproxy_ctx *gpctx, uint32_t proc,
     return gp_xdr_set[proc].exec_fn(gpctx, arg, res);
 }
 
-static int gp_rpc_return_buffer(struct gp_rpc_reply *reply,
+static int gp_rpc_return_buffer(XDR *xdr_reply_ctx, char *reply_buffer,
                                 uint8_t **outbuf, size_t *outlen)
 {
     unsigned int length;
     uint8_t *buffer;
 
-    length = xdr_getpos(&reply->xdr_ctx);
+    length = xdr_getpos(xdr_reply_ctx);
 
     buffer = malloc(length);
     if (!buffer) {
         return ENOMEM;
     }
-    memcpy(buffer, reply->buffer, length);
+    memcpy(buffer, reply_buffer, length);
 
     *outbuf = buffer;
     *outlen = length;
     return 0;
 }
 
-static void gp_rpc_free_xdrs(struct gp_rpc_call *call,
-                             struct gp_rpc_reply *reply,
-                             int proc,
+static void gp_rpc_free_xdrs(int proc,
                              union gp_rpc_arg *arg,
                              union gp_rpc_res *res)
 {
 
     xdr_free(gp_xdr_set[proc].arg_fn, (char *)arg);
     xdr_free(gp_xdr_set[proc].res_fn, (char *)res);
-    xdr_destroy(&call->xdr_ctx);
-    xdr_destroy(&reply->xdr_ctx);
 }
 
 int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
                         uint8_t *inbuf, size_t inlen,
                         uint8_t **outbuf, size_t *outlen)
 {
-    struct gp_rpc_call call;
-    struct gp_rpc_reply reply;
+    XDR xdr_call_ctx;
+    XDR xdr_reply_ctx;
     gp_rpc_accept_status acc = 0;
     gp_rpc_reject_status rej = 0;
+    char reply_buffer[MAX_RPC_SIZE];
     union gp_rpc_arg arg;
     union gp_rpc_res res;
     uint32_t xid = 0;
@@ -326,11 +340,11 @@ int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
     memset(&res, 0, sizeof(union gp_rpc_res));
     proc = 0;
 
-    xdrmem_create(&call.xdr_ctx, (caddr_t)inbuf, inlen, XDR_DECODE);
-    xdrmem_create(&reply.xdr_ctx, reply.buffer, MAX_RPC_SIZE, XDR_ENCODE);
+    xdrmem_create(&xdr_call_ctx, (caddr_t)inbuf, inlen, XDR_DECODE);
+    xdrmem_create(&xdr_reply_ctx, reply_buffer, MAX_RPC_SIZE, XDR_ENCODE);
 
     /* decode request */
-    ret = gp_rpc_decode_call(&call, &xid, &proc, &arg, &acc, &rej);
+    ret = gp_rpc_decode_call(&xdr_call_ctx, &xid, &proc, &arg, &acc, &rej);
     if (!ret) {
         /* execute request */
         ret = gp_rpc_execute(gpctx, proc, &arg, &res);
@@ -341,13 +355,16 @@ int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
     }
 
     /* encode reply */
-    ret = gp_rpc_encode_reply(&reply, xid, proc, &res, ret, acc, rej);
+    ret = gp_rpc_encode_reply(&xdr_reply_ctx, xid, proc, &res, ret, acc, rej);
     if (ret == 0) {
         /* return encoded buffer */
-        ret = gp_rpc_return_buffer(&reply, outbuf, outlen);
+        ret = gp_rpc_return_buffer(&xdr_reply_ctx,
+                                   reply_buffer, outbuf, outlen);
     }
     /* free resources */
-    gp_rpc_free_xdrs(&call, &reply, proc, &arg, &res);
+    gp_rpc_free_xdrs(proc, &arg, &res);
+    xdr_destroy(&xdr_call_ctx);
+    xdr_destroy(&xdr_reply_ctx);
     return ret;
 }
 
