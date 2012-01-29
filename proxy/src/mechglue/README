@@ -1,0 +1,7 @@
+Eventually here we will have the mechglue to module to be loaded in various gssapi
+implementations.
+
+At the moment we just need a conformant client in order to test the server
+implementation. So will just implement a simple RFC2744 API. It will
+be easy to turn this API into the mechglue SPI later on.
+

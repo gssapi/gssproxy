@@ -81,6 +81,7 @@ if BUILD_SELINUX
 endif
 
 GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c
+GP_MECHGLUE_OBJ = src/mechglue/gpm_common.c
 
 dist_noinst_HEADERS =
 
@@ -105,6 +106,7 @@ accept_context_SOURCES = \
     src/gp_config.c \
     src/gp_conv.c \
     $(GP_RPCGEN_OBJ) \
+    $(GP_MECHGLUE_OBJ) \
     tests/accept_context.c
 
 gssproxy_LDADD = \
