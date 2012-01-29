@@ -30,15 +30,21 @@
 #include "rpcgen/gss_proxy.h"
 
 int gp_conv_octet_string(size_t length, void *value, octet_string *out);
+int gp_conv_octet_string_alloc(size_t length, void *value,
+                               octet_string **out);
 
 void gp_conv_gssx_to_oid(gssx_OID *in, gss_OID out);
+int gp_conv_gssx_to_oid_alloc(gssx_OID *in, gss_OID *out);
 int gp_conv_oid_to_gssx(gss_OID in, gssx_OID *out);
+int gp_conv_oid_to_gssx_alloc(gss_OID in, gssx_OID **out);
 
 void gp_conv_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out);
+int gp_conv_gssx_to_buffer_alloc(gssx_buffer *in, gss_buffer_t *out);
 int gp_conv_buffer_to_gssx(gss_buffer_t in, gssx_buffer *out);
 
 void gp_conv_gssx_to_cb(gssx_cb *in, gss_channel_bindings_t out);
 int gp_conv_cb_to_gssx(gss_channel_bindings_t in, gssx_cb *out);
+int gp_conv_cb_to_gssx_alloc(gss_channel_bindings_t in, gssx_cb **out);
 
 gssx_cred_usage gp_conv_cred_usage_to_gssx(gss_cred_usage_t in);
 gss_cred_usage_t gp_conv_gssx_to_cred_usage(gssx_cred_usage in);

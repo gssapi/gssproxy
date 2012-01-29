@@ -40,10 +40,49 @@ int gp_conv_octet_string(size_t length, void *value, octet_string *out)
     return 0;
 }
 
+int gp_conv_octet_string_alloc(size_t length, void *value,
+                               octet_string **out)
+{
+    octet_string *o;
+    int ret;
+
+    o = calloc(1, sizeof(octet_string));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    ret = gp_conv_octet_string(length, value, o);
+    if (ret) {
+        free(o);
+        return ret;
+    }
+
+    *out = o;
+    return 0;
+}
+
 void gp_conv_gssx_to_oid(gssx_OID *in, gss_OID out)
 {
     out->length = in->octet_string_len;
     out->elements = (void *)in->octet_string_val;
+}
+
+int gp_conv_gssx_to_oid_alloc(gssx_OID *in, gss_OID *out)
+{
+    gss_OID o;
+
+    o = calloc(1, sizeof(gss_OID));
+    if (!o) {
+        return ENOMEM;
+    }
+    o->length = in->octet_string_len;
+    o->elements = malloc(o->length);
+    if (!o->elements) {
+        free(o);
+        return ENOMEM;
+    }
+    memcpy(o->elements, in->octet_string_val, o->length);
+    return 0;
 }
 
 int gp_conv_oid_to_gssx(gss_OID in, gssx_OID *out)
@@ -51,10 +90,36 @@ int gp_conv_oid_to_gssx(gss_OID in, gssx_OID *out)
     return gp_conv_octet_string(in->length, in->elements, out);
 }
 
+int gp_conv_oid_to_gssx_alloc(gss_OID in, gssx_OID **out)
+{
+    return gp_conv_octet_string_alloc(in->length, in->elements, out);
+}
+
 void gp_conv_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out)
 {
     out->length = in->octet_string_len;
     out->value = (void *)in->octet_string_val;
+}
+
+int gp_conv_gssx_to_buffer_alloc(gssx_buffer *in, gss_buffer_t *out)
+{
+    gss_buffer_desc *o;
+
+    o = malloc(sizeof(gss_buffer_desc));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    o->length = in->octet_string_len;
+    o->value = malloc(o->length);
+    if (!o->value) {
+        free(o);
+        return ENOMEM;
+    }
+    memcpy(o->value, in->octet_string_val, o->length);
+
+    *out = o;
+    return 0;
 }
 
 int gp_conv_buffer_to_gssx(gss_buffer_t in, gssx_buffer *out)
@@ -102,6 +167,26 @@ done:
         xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->application_data);
     }
     return ret;
+}
+
+int gp_conv_cb_to_gssx_alloc(gss_channel_bindings_t in, gssx_cb **out)
+{
+    gssx_cb *o;
+    int ret;
+
+    o = malloc(sizeof(gssx_cb));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    ret = gp_conv_cb_to_gssx(in, o);
+    if (ret) {
+        free(o);
+        return ENOMEM;
+    }
+
+    *out = o;
+    return 0;
 }
 
 gssx_cred_usage gp_conv_cred_usage_to_gssx(gss_cred_usage_t in)
