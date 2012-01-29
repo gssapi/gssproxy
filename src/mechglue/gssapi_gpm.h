@@ -53,4 +53,16 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
                              OM_uint32 *message_context,
                              gss_buffer_t status_string);
 
+OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
+                                 gss_ctx_id_t *context_handle,
+                                 gss_cred_id_t acceptor_cred_handle,
+                                 gss_buffer_t input_token_buffer,
+                                 gss_channel_bindings_t input_chan_bindings,
+                                 gss_name_t *src_name,
+                                 gss_OID *mech_type,
+                                 gss_buffer_t output_token,
+                                 OM_uint32 *ret_flags,
+                                 OM_uint32 *time_rec,
+                                 gss_cred_id_t *delegated_cred_handle);
+
 #endif /* _GSSAPI_GPM_H_ */
