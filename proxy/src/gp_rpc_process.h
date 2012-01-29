@@ -28,13 +28,16 @@
 
 #include "config.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <gssapi/gssapi.h>
-#include "gp_utils.h"
+#include "gp_common.h"
 #include "gp_conv.h"
 #include "gp_export.h"
 #include "rpcgen/gss_proxy.h"
 #include "rpcgen/gp_rpc.h"
+
+struct gssproxy_ctx;
 
 union gp_rpc_arg {
     gssx_arg_release_handle release_handle;

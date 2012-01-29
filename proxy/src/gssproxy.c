@@ -26,7 +26,7 @@
 #include "config.h"
 #include <stdlib.h>
 #include "popt.h"
-#include "gp_utils.h"
+#include "gp_proxy.h"
 
 int main(int argc, const char *argv[])
 {

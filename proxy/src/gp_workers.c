@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include "gp_utils.h"
+#include "gp_proxy.h"
 
 #define DEFAULT_WORKER_THREADS_NUM 5
 
