@@ -35,7 +35,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <gssapi/gssapi.h>
-#include "src/gp_utils.h"
+#include "src/gp_proxy.h"
 #include "src/gp_rpc_process.h"
 #include "src/gp_conv.h"
 #include "popt.h"

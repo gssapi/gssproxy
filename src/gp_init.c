@@ -29,7 +29,7 @@
 #include <locale.h>
 #include <syslog.h>
 #include <signal.h>
-#include "gp_utils.h"
+#include "gp_proxy.h"
 
 void init_server(bool daemonize)
 {

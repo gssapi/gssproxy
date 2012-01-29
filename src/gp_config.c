@@ -29,7 +29,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <errno.h>
-#include "gp_utils.h"
+#include "gp_proxy.h"
 #include "iniparser.h"
 
 #define GP_SOCKET_NAME "gssproxy.socket"

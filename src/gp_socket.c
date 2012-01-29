@@ -34,7 +34,7 @@
 #include <syslog.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include "gp_utils.h"
+#include "gp_proxy.h"
 
 #define CRED_TYPE_NONE 0x00
 #define CRED_TYPE_UNIX 0x01
