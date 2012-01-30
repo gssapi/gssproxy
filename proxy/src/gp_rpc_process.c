@@ -25,7 +25,13 @@
 
 #include "gp_rpc_process.h"
 
-struct gp_rpc_fn_set gp_xdr_set[] = {
+typedef int (*gp_exec_fn)(gp_exec_std_args);
+
+struct gp_rpc_fn_set {
+    xdrproc_t arg_fn;
+    xdrproc_t res_fn;
+    gp_exec_fn exec_fn;
+} gp_xdr_set[] = {
     { /* NULLPROC */
         (xdrproc_t)xdr_void,
         (xdrproc_t)xdr_void,

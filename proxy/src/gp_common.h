@@ -54,4 +54,42 @@
 /* max out at 1MB for now */
 #define MAX_RPC_SIZE 1024*1024
 
+#include "rpcgen/gss_proxy.h"
+
+union gp_rpc_arg {
+    gssx_arg_release_handle release_handle;
+    gssx_arg_indicate_mechs indicate_mechs;
+    gssx_arg_import_and_canon_name import_and_canon_name;
+    gssx_arg_get_call_context get_call_context;
+    gssx_arg_acquire_cred acquire_cred;
+    gssx_arg_export_cred export_cred;
+    gssx_arg_import_cred import_cred;
+    gssx_arg_store_cred store_cred;
+    gssx_arg_init_sec_context init_sec_context;
+    gssx_arg_accept_sec_context accept_sec_context;
+    gssx_arg_get_mic get_mic;
+    gssx_arg_verify_mic verify_mic;
+    gssx_arg_wrap wrap;
+    gssx_arg_unwrap unwrap;
+    gssx_arg_wrap_size_limit wrap_size_limit;
+};
+
+union gp_rpc_res {
+    gssx_res_release_handle release_handle;
+    gssx_res_indicate_mechs indicate_mechs;
+    gssx_res_import_and_canon_name import_and_canon_name;
+    gssx_res_get_call_context get_call_context;
+    gssx_res_acquire_cred acquire_cred;
+    gssx_res_export_cred export_cred;
+    gssx_res_import_cred import_cred;
+    gssx_res_store_cred store_cred;
+    gssx_res_init_sec_context init_sec_context;
+    gssx_res_accept_sec_context accept_sec_context;
+    gssx_res_get_mic get_mic;
+    gssx_res_verify_mic verify_mic;
+    gssx_res_wrap wrap;
+    gssx_res_unwrap unwrap;
+    gssx_res_wrap_size_limit wrap_size_limit;
+};
+
 #endif /* _GP_COMMON_H_ */
