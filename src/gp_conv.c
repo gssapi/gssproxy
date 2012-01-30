@@ -543,3 +543,76 @@ done:
     return ret;
 }
 
+int gp_conv_gssx_to_oid_set(gssx_OID_set *in, gss_OID_set *out)
+{
+    gss_OID_set o;
+    int i;
+
+    if (in->gssx_OID_set_len == 0) {
+        *out = GSS_C_NO_OID_SET;
+        return 0;
+    }
+
+    o = malloc(sizeof(gss_OID_set_desc));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    o->count = in->gssx_OID_set_len;
+    o->elements = calloc(o->count, sizeof(gss_OID_desc));
+    if (!o->elements) {
+        free(o);
+        return ENOMEM;
+    }
+
+    for (i = 0; i < o->count; i++) {
+        o->elements[i].elements =
+                        gp_memdup(in->gssx_OID_set_val[i].octet_string_val,
+                                  in->gssx_OID_set_val[i].octet_string_len);
+        if (!o->elements[i].elements) {
+            while (i > 0) {
+                i--;
+                free(o->elements[i].elements);
+            }
+            free(o->elements);
+            free(o);
+            return ENOMEM;
+        }
+        o->elements[i].length = in->gssx_OID_set_val[i].octet_string_len;
+    }
+
+    *out = o;
+    return 0;
+}
+
+int gp_conv_oid_set_to_gssx(gss_OID_set in, gssx_OID_set *out)
+{
+    int ret;
+    int i;
+
+    if (in->count == 0) {
+        return 0;
+    }
+
+    out->gssx_OID_set_len = in->count;
+    out->gssx_OID_set_val = calloc(in->count, sizeof(gssx_OID));
+    if (!out->gssx_OID_set_val) {
+        return ENOMEM;
+    }
+
+    for (i = 0; i < in->count; i++) {
+        ret = gp_conv_octet_string(in->elements[i].length,
+                                   in->elements[i].elements,
+                                   &out->gssx_OID_set_val[i]);
+        if (ret) {
+            while (i > 0) {
+                i--;
+                free(out->gssx_OID_set_val[i].octet_string_val);
+            }
+            free(out->gssx_OID_set_val);
+            return ENOMEM;
+        }
+    }
+
+    return 0;
+}
