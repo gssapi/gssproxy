@@ -207,11 +207,9 @@ xdr_gssx_name (XDR *xdrs, gssx_name *objp)
 		 return FALSE;
 	 if (!xdr_gssx_OID (xdrs, &objp->name_type))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->exported_name.exported_name_val, (u_int *) &objp->exported_name.exported_name_len, ~0,
-		sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
+	 if (!xdr_gssx_buffer (xdrs, &objp->exported_name))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->exported_composite_name.exported_composite_name_val, (u_int *) &objp->exported_composite_name.exported_composite_name_len, ~0,
-		sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
+	 if (!xdr_gssx_buffer (xdrs, &objp->exported_composite_name))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->name_attributes.name_attributes_val, (u_int *) &objp->name_attributes.name_attributes_len, ~0,
 		sizeof (gssx_name_attr), (xdrproc_t) xdr_gssx_name_attr))
