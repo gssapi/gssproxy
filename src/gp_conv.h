@@ -29,6 +29,7 @@
 #include <gssapi/gssapi.h>
 #include "rpcgen/gss_proxy.h"
 
+void *gp_memdup(void *in, size_t len);
 int gp_conv_octet_string(size_t length, void *value, octet_string *out);
 int gp_conv_octet_string_alloc(size_t length, void *value,
                                octet_string **out);
