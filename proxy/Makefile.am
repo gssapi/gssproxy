@@ -84,6 +84,7 @@ GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c
 GP_MECHGLUE_OBJ = \
     src/mechglue/gpm_display_status.c \
     src/mechglue/gpm_accept_sec_context.c \
+    src/mechglue/gpm_release_handle.c \
     src/mechglue/gpm_common.c
 
 dist_noinst_HEADERS =
