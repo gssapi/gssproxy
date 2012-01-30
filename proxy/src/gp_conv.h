@@ -60,4 +60,7 @@ int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
                            uint32_t ret_maj, uint32_t ret_min,
                            gss_OID mech, struct gssx_status *status);
 
+int gp_copy_utf8string(utf8string *in, utf8string *out);
+int gp_copy_gssx_status_alloc(gssx_status *in, gssx_status **out);
+
 #endif /* _GSS_CONV_H_ */

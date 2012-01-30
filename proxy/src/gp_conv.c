@@ -454,3 +454,72 @@ int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
 done:
     return ret;
 }
+
+int gp_copy_utf8string(utf8string *in, utf8string *out)
+{
+    out->utf8string_val = strdup(in->utf8string_val);
+    if (!out->utf8string_val) {
+        return ENOMEM;
+    }
+    out->utf8string_len = in->utf8string_len;
+    return 0;
+}
+
+int gp_copy_gssx_status_alloc(gssx_status *in, gssx_status **out)
+{
+    gssx_status *o;
+    int ret;
+
+    o = calloc(1, sizeof(gssx_status));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    o->major_status = in->major_status;
+    o->minor_status = in->minor_status;
+
+    if (in->mech.octet_string_len) {
+        ret = gp_conv_octet_string(in->mech.octet_string_len,
+                                   in->mech.octet_string_val,
+                                   &o->mech);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    if (in->major_status_string.utf8string_len) {
+        ret = gp_copy_utf8string(&in->major_status_string,
+                                 &o->major_status_string);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    if (in->minor_status_string.utf8string_len) {
+        ret = gp_copy_utf8string(&in->minor_status_string,
+                                 &o->minor_status_string);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    if (in->server_ctx.octet_string_len) {
+        ret = gp_conv_octet_string(in->server_ctx.octet_string_len,
+                                   in->server_ctx.octet_string_val,
+                                   &o->server_ctx);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    *out = o;
+    ret = 0;
+
+done:
+    if (ret) {
+        xdr_free((xdrproc_t)xdr_gssx_status, (char *)o);
+        free(o);
+    }
+    return ret;
+}
+

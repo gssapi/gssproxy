@@ -44,4 +44,13 @@ OM_uint32 gpm_release_name(OM_uint32 *minor_status,
 OM_uint32 gpm_release_buffer(OM_uint32 *minor_status,
                              gss_buffer_t buffer);
 
+void gpm_save_status(gssx_status *status);
+
+OM_uint32 gpm_display_status(OM_uint32 *minor_status,
+                             OM_uint32 status_value,
+                             int status_type,
+                             const gss_OID mech_type,
+                             OM_uint32 *message_context,
+                             gss_buffer_t status_string);
+
 #endif /* _GSSAPI_GPM_H_ */
