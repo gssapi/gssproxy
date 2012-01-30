@@ -29,13 +29,26 @@
 #include <errno.h>
 #include "gp_conv.h"
 
+void *gp_memdup(void *in, size_t len)
+{
+    void *out;
+
+    out = malloc(len);
+    if (!out) {
+        return NULL;
+    }
+
+    memcpy(out, in, len);
+
+    return out;
+}
+
 int gp_conv_octet_string(size_t length, void *value, octet_string *out)
 {
-    out->octet_string_val = malloc(length);
+    out->octet_string_val = gp_memdup(value, length);
     if (!out->octet_string_val) {
         return ENOMEM;
     }
-    memcpy(out->octet_string_val, value, length);
     out->octet_string_len = length;
     return 0;
 }
@@ -75,13 +88,13 @@ int gp_conv_gssx_to_oid_alloc(gssx_OID *in, gss_OID *out)
     if (!o) {
         return ENOMEM;
     }
-    o->length = in->octet_string_len;
-    o->elements = malloc(o->length);
+    o->elements = gp_memdup(in->octet_string_val,
+                            in->octet_string_len);
     if (!o->elements) {
         free(o);
         return ENOMEM;
     }
-    memcpy(o->elements, in->octet_string_val, o->length);
+    o->length = in->octet_string_len;
     return 0;
 }
 
@@ -110,13 +123,13 @@ int gp_conv_gssx_to_buffer_alloc(gssx_buffer *in, gss_buffer_t *out)
         return ENOMEM;
     }
 
-    o->length = in->octet_string_len;
-    o->value = malloc(o->length);
+    o->value = gp_memdup(in->octet_string_val,
+                         in->octet_string_len);
     if (!o->value) {
         free(o);
         return ENOMEM;
     }
-    memcpy(o->value, in->octet_string_val, o->length);
+    o->length = in->octet_string_len;
 
     *out = o;
     return 0;
@@ -450,7 +463,8 @@ done:
 
 int gp_copy_utf8string(utf8string *in, utf8string *out)
 {
-    out->utf8string_val = strdup(in->utf8string_val);
+    out->utf8string_val = gp_memdup(in->utf8string_val,
+                                    in->utf8string_len);
     if (!out->utf8string_val) {
         return ENOMEM;
     }
