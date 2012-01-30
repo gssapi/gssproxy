@@ -38,6 +38,7 @@
 #include "src/gp_proxy.h"
 #include "src/gp_rpc_process.h"
 #include "src/gp_conv.h"
+#include "src/mechglue/gssapi_gpm.h"
 #include "popt.h"
 
 int connect_unix_socket(const char *file_name)
@@ -306,16 +307,17 @@ void *server_thread(void *pvt)
     struct athread *data;
     char buffer[MAX_RPC_SIZE];
     uint32_t buflen;
-    gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
-    gssx_arg_accept_sec_context arg;
-    gssx_res_accept_sec_context res;
+    gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
+    uint32_t ret_maj;
+    uint32_t ret_min;
+    gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
+    gss_name_t src_name;
+    gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
+    gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
     int ret;
     int fd;
 
     data = (struct athread *)pvt;
-
-    memset(&arg, 0, sizeof(gssx_arg_accept_sec_context));
-    memset(&res, 0, sizeof(gssx_res_accept_sec_context));
 
     /* connect to the socket first to make sure the proxy is available */
     fd = connect_unix_socket(data->cfg->socket_name);
@@ -329,37 +331,39 @@ void *server_thread(void *pvt)
         goto done;
     }
 
-    token.value = buffer;
-    token.length = buflen;
+    in_token.value = buffer;
+    in_token.length = buflen;
 
-    ret = gp_conv_buffer_to_gssx(&token, &arg.input_token);
-    if (ret) {
-        fprintf(stderr, "gp_conv_buffer_to_gssx() failed!\n");
+    ret_maj = gpm_accept_sec_context(&ret_min,
+                                     &context_handle,
+                                     GSS_C_NO_CREDENTIAL,
+                                     &in_token,
+                                     GSS_C_NO_CHANNEL_BINDINGS,
+                                     &src_name,
+                                     NULL,
+                                     &out_token,
+                                     NULL,
+                                     NULL,
+                                     &deleg_cred);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
         goto done;
     }
 
-    ret = gp_send_accept_sec_context(fd, &arg, &res);
-    if (ret) {
-        fprintf(stdout, "Comms with gssproxy failed!\n");
-    }
-
-    if (res.status.major_status) {
-        fprintf(stdout, "gssproxy returned an error: %ld\n",
-                        res.status.major_status);
-        goto done;
-    }
-
-    gp_conv_gssx_to_buffer(res.output_token, &token);
-
-    ret = gp_send_buffer(data->cli_pipe[1], token.value, token.length);
-    if (ret) {
-        fprintf(stdout, "Failed to send data to client!\n");
-        goto done;
+    if (out_token.length) {
+        ret = gp_send_buffer(data->cli_pipe[1],
+                             out_token.value, out_token.length);
+        if (ret) {
+            fprintf(stdout, "Failed to send data to client!\n");
+            goto done;
+        }
     }
 
 done:
-    xdr_free((xdrproc_t)xdr_gssx_arg_accept_sec_context, (char *)&arg);
-    xdr_free((xdrproc_t)xdr_gssx_res_accept_sec_context, (char *)&res);
+    gpm_release_name(&ret_min, &src_name);
+    gpm_release_buffer(&ret_min, &out_token);
+    gpm_release_cred(&ret_min, &deleg_cred);
+    gpm_delete_sec_context(&ret_min, &context_handle, GSS_C_NO_BUFFER);
     close(data->srv_pipe[0]);
     close(data->srv_pipe[1]);
     pthread_exit(NULL);
