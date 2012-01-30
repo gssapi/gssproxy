@@ -302,14 +302,7 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
         goto done;
     }
 
-    out->exported_name.exported_name_len = 1;
-    out->exported_name.exported_name_val = calloc(1, sizeof(gssx_buffer));
-    if (!out->exported_name.exported_name_val) {
-        ret = ENOMEM;
-        goto done;
-    }
-    ret = gp_conv_buffer_to_gssx(&exported_name,
-                                 out->exported_name.exported_name_val);
+    ret = gp_conv_buffer_to_gssx(&exported_name, &out->exported_name);
     if (ret) {
         goto done;
     }
@@ -326,11 +319,7 @@ done:
             free(out->display_name);
         }
         xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->name_type);
-        if (out->exported_name.exported_name_val) {
-            xdr_free((xdrproc_t)xdr_gssx_buffer,
-                     (char *)out->exported_name.exported_name_val);
-            free(out->exported_name.exported_name_val);
-        }
+        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->exported_name);
     }
     return ret;
 }

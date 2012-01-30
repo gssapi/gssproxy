@@ -138,14 +138,8 @@ typedef struct gssx_call_ctx gssx_call_ctx;
 struct gssx_name {
 	gssx_buffer *display_name;
 	gssx_OID name_type;
-	struct {
-		u_int exported_name_len;
-		gssx_buffer *exported_name_val;
-	} exported_name;
-	struct {
-		u_int exported_composite_name_len;
-		gssx_buffer *exported_composite_name_val;
-	} exported_composite_name;
+	gssx_buffer exported_name;
+	gssx_buffer exported_composite_name;
 	struct {
 		u_int name_attributes_len;
 		gssx_name_attr *name_attributes_val;

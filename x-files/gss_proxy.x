@@ -251,8 +251,8 @@ struct gssx_name {
     gssx_buffer         *display_name;
     gssx_OID            name_type;
     /* MNs MUST have at least one exported name form */
-    gssx_buffer         exported_name<>;
-    gssx_buffer         exported_composite_name<>;
+    gssx_buffer         exported_name;
+    gssx_buffer         exported_composite_name;
     /* Name attributes */
     gssx_name_attr      name_attributes<>;
     /* Future extensions */
