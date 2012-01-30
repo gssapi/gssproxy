@@ -103,6 +103,7 @@ gssproxy_SOURCES = \
     src/gp_export.c \
     src/gp_rpc_accept_sec_context.c \
     src/gp_rpc_release_handle.c \
+    src/gp_rpc_acquire_cred.c \
     src/gssproxy.c
 
 accept_context_SOURCES = \

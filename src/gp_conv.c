@@ -445,9 +445,11 @@ int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
 
     status->major_status = ret_maj;
 
-    ret = gp_conv_oid_to_gssx(mech, &status->mech);
-    if (ret) {
-        goto done;
+    if (mech) {
+        ret = gp_conv_oid_to_gssx(mech, &status->mech);
+        if (ret) {
+            goto done;
+        }
     }
 
     status->minor_status = ret_min;
