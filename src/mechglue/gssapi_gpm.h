@@ -65,4 +65,11 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
                                  OM_uint32 *time_rec,
                                  gss_cred_id_t *delegated_cred_handle);
 
+OM_uint32 gpm_release_cred(OM_uint32 *minor_status,
+                           gss_cred_id_t *cred_handle);
+
+OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
+                                 gss_ctx_id_t *context_handle,
+                                 gss_buffer_t output_token);
+
 #endif /* _GSSAPI_GPM_H_ */
