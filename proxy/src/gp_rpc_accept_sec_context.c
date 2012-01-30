@@ -33,17 +33,17 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     struct gssx_res_accept_sec_context *ascr;
     uint32_t ret_maj;
     uint32_t ret_min;
-    gss_ctx_id_t ctx = NULL;
-    gss_cred_id_t ach;
+    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    gss_cred_id_t ach = GSS_C_NO_CREDENTIAL;
     gss_buffer_desc ibuf;
     struct gss_channel_bindings_struct cbs;
     gss_channel_bindings_t pcbs;
-    gss_name_t src_name = NULL;
+    gss_name_t src_name = GSS_C_NO_NAME;
     gss_OID oid;
     gss_buffer_desc obuf = { 0, NULL };
     uint32_t ret_flags;
     uint32_t time_rec;
-    gss_cred_id_t dch = NULL;
+    gss_cred_id_t dch = GSS_C_NO_CREDENTIAL;
     int ret;
 
     asca = &arg->accept_sec_context;
@@ -52,10 +52,10 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     ctx = GSS_C_NO_CONTEXT;
 
     if (asca->cred_handle) {
-        /* FIXME: deal with actually acquired credentials */
-        ach = GSS_C_NO_CREDENTIAL;
-    } else {
-        ach = GSS_C_NO_CREDENTIAL;
+        ret = gp_find_cred(asca->cred_handle, &ach);
+        if (ret) {
+            goto done;
+        }
     }
 
     gp_conv_gssx_to_buffer(&asca->input_token, &ibuf);
