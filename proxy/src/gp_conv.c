@@ -337,6 +337,19 @@ done:
     return ret;
 }
 
+int gp_conv_gssx_to_name(gssx_name *in, gss_name_t *out)
+{
+    uint32_t ret_min;
+    gss_buffer_desc name_buffer;
+    gss_OID_desc name_type;
+
+    gp_conv_gssx_to_oid(&in->name_type, &name_type);
+
+    gp_conv_gssx_to_buffer(&in->exported_name, &name_buffer);
+
+    return gss_import_name(&ret_min, &name_buffer, &name_type, out);
+}
+
 int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
 {
     uint32_t ret_maj;
