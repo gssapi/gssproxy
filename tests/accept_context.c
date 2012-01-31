@@ -298,7 +298,7 @@ done:
     gss_release_name(&ret_min, &name);
     gss_release_buffer(&ret_min, &out_token);
     close(data->cli_pipe[0]);
-    close(data->cli_pipe[1]);
+    close(data->srv_pipe[1]);
     pthread_exit(NULL);
 }
 
@@ -311,6 +311,7 @@ void *server_thread(void *pvt)
     uint32_t ret_maj;
     uint32_t ret_min;
     gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
+    gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gss_name_t src_name;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
@@ -331,12 +332,25 @@ void *server_thread(void *pvt)
         goto done;
     }
 
+    ret_maj = gpm_acquire_cred(&ret_min,
+                               GSS_C_NO_NAME,
+                               GSS_C_INDEFINITE,
+                               GSS_C_NO_OID_SET,
+                               GSS_C_ACCEPT,
+                               &cred_handle,
+                               NULL,
+                               NULL);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        goto done;
+    }
+
     in_token.value = buffer;
     in_token.length = buflen;
 
     ret_maj = gpm_accept_sec_context(&ret_min,
                                      &context_handle,
-                                     GSS_C_NO_CREDENTIAL,
+                                     cred_handle,
                                      &in_token,
                                      GSS_C_NO_CHANNEL_BINDINGS,
                                      &src_name,
@@ -365,7 +379,7 @@ done:
     gpm_release_cred(&ret_min, &deleg_cred);
     gpm_delete_sec_context(&ret_min, &context_handle, GSS_C_NO_BUFFER);
     close(data->srv_pipe[0]);
-    close(data->srv_pipe[1]);
+    close(data->cli_pipe[1]);
     pthread_exit(NULL);
 }
 
