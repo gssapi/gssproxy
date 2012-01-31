@@ -98,8 +98,34 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
                                            &acceptor_lifetime,
                                            &cred_usage);
         if (ret_maj) {
+            uint32_t msgctx;
+            uint32_t discard;
+            gss_buffer_desc tmp;
+
+            gss_oid_to_str(&ret_min, &mechanisms->elements[i], &tmp);
+            fprintf(stderr, "Mech OID: %s", (char *)tmp.value);
+            gss_release_buffer(&discard, &tmp);
+
+            msgctx = 0;
+            gss_display_status(&discard, ret_maj, GSS_C_GSS_CODE,
+                               &mechanisms->elements[i], &msgctx, &tmp);
+            fprintf(stderr, " ... failed with %s,", (char *)tmp.value);
+            gss_release_buffer(&discard, &tmp);
+
+            msgctx = 0;
+            gss_display_status(&discard, ret_min, GSS_C_MECH_CODE,
+                               &mechanisms->elements[i], &msgctx, &tmp);
+            fprintf(stderr, " %s\n", (char *)tmp.value);
+
+            gss_release_buffer(&discard, &tmp);
+
+            /* temporarily skip any offender */
+            out->elements.elements_len--;
+            continue;
+#if 0
             ret = EINVAL;
             goto done;
+#endif
         }
 
         ret = gp_conv_name_to_gssx(name, &el->MN);
