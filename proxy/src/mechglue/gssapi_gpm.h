@@ -72,4 +72,25 @@ OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
                                  gss_ctx_id_t *context_handle,
                                  gss_buffer_t output_token);
 
+OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
+                           const gss_name_t desired_name,
+                           OM_uint32 time_req,
+                           const gss_OID_set desired_mechs,
+                           gss_cred_usage_t cred_usage,
+                           gss_cred_id_t *output_cred_handle,
+                           gss_OID_set *actual_mechs,
+                           OM_uint32 *time_rec);
+
+OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
+                       const gss_cred_id_t input_cred_handle,
+                       const gss_name_t desired_name,
+                       const gss_OID desired_mech,
+                       gss_cred_usage_t cred_usage,
+                       OM_uint32 initiator_time_req,
+                       OM_uint32 acceptor_time_req,
+                       gss_cred_id_t *output_cred_handle,
+                       gss_OID_set *actual_mechs,
+                       OM_uint32 *initiator_time_rec,
+                       OM_uint32 *acceptor_time_rec);
+
 #endif /* _GSSAPI_GPM_H_ */
