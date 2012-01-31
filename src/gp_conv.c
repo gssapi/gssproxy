@@ -237,7 +237,7 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
             if (str) {
                 ret = asprintf(&t, "%s, %s", str, (char *)gssbuf.value);
                 if (ret == -1) {
-                    ret_maj = ENOMEM;
+                    ret = ENOMEM;
                 } else {
                     free(str);
                     str = t;
@@ -245,22 +245,26 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
             } else {
                 str = strdup((char *)gssbuf.value);
                 if (!str) {
-                    ret_maj = ENOMEM;
+                    ret = ENOMEM;
                 }
             }
             gss_release_buffer(&ret_min, &gssbuf);
         }
         if (ret_maj) {
+            ret = EINVAL;
             goto done;
         }
     } while (msg_ctx);
 
     ret_str->utf8string_len = strlen(str + 1);
     ret_str->utf8string_val = str;
+    ret = 0;
 
 done:
-    free(str);
-    return ret_maj;
+    if (ret) {
+        free(str);
+    }
+    return ret;
 }
 
 int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
