@@ -84,6 +84,7 @@ GP_MECHGLUE_OBJ = \
     src/mechglue/gpm_display_status.c \
     src/mechglue/gpm_accept_sec_context.c \
     src/mechglue/gpm_release_handle.c \
+    src/mechglue/gpm_acquire_cred.c \
     src/mechglue/gpm_common.c
 
 dist_noinst_HEADERS =
