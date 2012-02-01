@@ -119,7 +119,7 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
         el->acceptor_time_rec = acceptor_lifetime;
     }
 
-    ret = gp_conv_octet_string(sizeof(gss_cred_id_t), *in,
+    ret = gp_conv_octet_string(sizeof(gss_cred_id_t), in,
                                &out->cred_handle_reference);
     if (ret) {
         goto done;
@@ -140,7 +140,7 @@ done:
 int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)
 {
     if (in) {
-        *out = (gss_cred_id_t)(in->octet_string_val);
+        memcpy(out, in->octet_string_val, sizeof(gss_cred_id_t));
     } else {
         *out = NULL;
     }
