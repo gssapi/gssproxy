@@ -128,11 +128,11 @@ xdr_gssx_mech_info (XDR *xdrs, gssx_mech_info *objp)
 		 return FALSE;
 	 if (!xdr_gssx_OID_set (xdrs, &objp->sec_ctx_options))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->provider_names.provider_names_val, (u_int *) &objp->provider_names.provider_names_len, ~0,
-		sizeof (utf8string), (xdrproc_t) xdr_utf8string))
+	 if (!xdr_gssx_buffer (xdrs, &objp->saslname_sasl_mech_name))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->provider_paths.provider_paths_val, (u_int *) &objp->provider_paths.provider_paths_len, ~0,
-		sizeof (utf8string), (xdrproc_t) xdr_utf8string))
+	 if (!xdr_gssx_buffer (xdrs, &objp->saslname_mech_name))
+		 return FALSE;
+	 if (!xdr_gssx_buffer (xdrs, &objp->saslname_mech_desc))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
 		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
