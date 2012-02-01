@@ -166,8 +166,9 @@ struct gssx_mech_info {
     gssx_OID_set        known_mech_attrs;
     gssx_OID_set        cred_options;
     gssx_OID_set        sec_ctx_options;
-    utf8string          provider_names<>;
-    utf8string          provider_paths<>;
+    gssx_buffer         saslname_sasl_mech_name;
+    gssx_buffer         saslname_mech_name;
+    gssx_buffer         saslname_mech_desc;
     gssx_typed_hole     extensions<>;
 };
 
