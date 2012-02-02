@@ -45,6 +45,12 @@ void *gp_memdup(void *in, size_t len)
 
 int gp_conv_octet_string(size_t length, void *value, octet_string *out)
 {
+    if (length == 0) {
+        out->octet_string_val = NULL;
+        out->octet_string_len = 0;
+        return 0;
+    }
+
     out->octet_string_val = gp_memdup(value, length);
     if (!out->octet_string_val) {
         return ENOMEM;
@@ -119,6 +125,11 @@ void gp_conv_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out)
 int gp_conv_gssx_to_buffer_alloc(gssx_buffer *in, gss_buffer_t *out)
 {
     gss_buffer_desc *o;
+
+    if (in->octet_string_len == 0) {
+        *out = GSS_C_NO_BUFFER;
+        return 0;
+    }
 
     o = malloc(sizeof(gss_buffer_desc));
     if (!o) {
