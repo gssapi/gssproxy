@@ -370,10 +370,6 @@ int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
     return ret;
 }
 
-int gp_indicate_mechs(gp_exec_std_args)
-{
-    return 0;
-}
 int gp_get_call_context(gp_exec_std_args)
 {
     return 0;
