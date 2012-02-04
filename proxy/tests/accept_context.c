@@ -315,6 +315,7 @@ void *server_thread(void *pvt)
     gss_name_t src_name;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
+    gss_OID_set mech_set = GSS_C_NO_OID_SET;
     int ret;
     int fd;
 
@@ -332,10 +333,16 @@ void *server_thread(void *pvt)
         goto done;
     }
 
+    ret_maj = gpm_indicate_mechs(&ret_min, &mech_set);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        goto done;
+    }
+
     ret_maj = gpm_acquire_cred(&ret_min,
                                GSS_C_NO_NAME,
                                GSS_C_INDEFINITE,
-                               GSS_C_NO_OID_SET,
+                               mech_set,
                                GSS_C_ACCEPT,
                                &cred_handle,
                                NULL,
@@ -378,6 +385,7 @@ done:
     gpm_release_buffer(&ret_min, &out_token);
     gpm_release_cred(&ret_min, &deleg_cred);
     gpm_delete_sec_context(&ret_min, &context_handle, GSS_C_NO_BUFFER);
+    gss_release_oid_set(&ret_min, &mech_set);
     close(data->srv_pipe[0]);
     close(data->cli_pipe[1]);
     pthread_exit(NULL);
