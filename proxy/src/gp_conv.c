@@ -95,6 +95,8 @@ int gp_conv_gssx_to_oid_alloc(gssx_OID *in, gss_OID *out)
         return ENOMEM;
     }
     o->length = in->octet_string_len;
+
+    *out = o;
     return 0;
 }
 
