@@ -93,4 +93,6 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
                        OM_uint32 *initiator_time_rec,
                        OM_uint32 *acceptor_time_rec);
 
+OM_uint32 gpm_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set);
+
 #endif /* _GSSAPI_GPM_H_ */
