@@ -94,5 +94,30 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
                        OM_uint32 *acceptor_time_rec);
 
 OM_uint32 gpm_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set);
+OM_uint32 gpm_inquire_names_for_mech(OM_uint32 *minor_status,
+                                     gss_OID mech_type,
+                                     gss_OID_set *mech_names);
+OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
+                                     const gss_name_t input_name,
+                                     gss_OID_set *mech_types);
+OM_uint32 gpm_inquire_attrs_for_mech(OM_uint32 *minor_status,
+                                     gss_OID mech,
+                                     gss_OID_set *mech_attrs,
+                                     gss_OID_set *known_mech_attrs);
+OM_uint32 gpm_inquire_saslname_for_mech(OM_uint32 *minor_status,
+                                        const gss_OID desired_mech,
+                                        gss_buffer_t sasl_mech_name,
+                                        gss_buffer_t mech_name,
+                                        gss_buffer_t mech_description);
+OM_uint32 gpm_display_mech_attr(OM_uint32 *minor_status,
+                                gss_const_OID mech_attr,
+                                gss_buffer_t name,
+                                gss_buffer_t short_desc,
+                                gss_buffer_t long_desc);
+OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
+                                      gss_const_OID_set desired_mech_attrs,
+                                      gss_const_OID_set except_mech_attrs,
+                                      gss_const_OID_set critical_mech_attrs,
+                                      gss_OID_set *mechs);
 
 #endif /* _GSSAPI_GPM_H_ */
