@@ -29,6 +29,7 @@
 #include <errno.h>
 #include "gp_conv.h"
 #include "gp_export.h"
+#include "gp_debug.h"
 
 /* FIXME: F I X M E
  *
@@ -63,7 +64,7 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
     uint32_t acceptor_lifetime;
     struct gssx_cred_element *el;
     int ret;
-    int i;
+    int i, j;
 
     ret_maj = gss_inquire_cred(&ret_min, *in,
                                &name, &lifetime, &cred_usage, &mechanisms);
@@ -87,9 +88,9 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
         goto done;
     }
 
-    for (i = 0; i < mechanisms->count; i++) {
+    for (i = 0, j = 0; i < mechanisms->count; i++, j++) {
 
-        el = &out->elements.elements_val[i];
+        el = &out->elements.elements_val[j];
 
         ret_maj = gss_inquire_cred_by_mech(&ret_min, *in,
                                            &mechanisms->elements[i],
@@ -98,29 +99,11 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
                                            &acceptor_lifetime,
                                            &cred_usage);
         if (ret_maj) {
-            uint32_t msgctx;
-            uint32_t discard;
-            gss_buffer_desc tmp;
-
-            gss_oid_to_str(&ret_min, &mechanisms->elements[i], &tmp);
-            fprintf(stderr, "Mech OID: %s", (char *)tmp.value);
-            gss_release_buffer(&discard, &tmp);
-
-            msgctx = 0;
-            gss_display_status(&discard, ret_maj, GSS_C_GSS_CODE,
-                               &mechanisms->elements[i], &msgctx, &tmp);
-            fprintf(stderr, " ... failed with %s,", (char *)tmp.value);
-            gss_release_buffer(&discard, &tmp);
-
-            msgctx = 0;
-            gss_display_status(&discard, ret_min, GSS_C_MECH_CODE,
-                               &mechanisms->elements[i], &msgctx, &tmp);
-            fprintf(stderr, " %s\n", (char *)tmp.value);
-
-            gss_release_buffer(&discard, &tmp);
+            gp_log_failure(&mechanisms->elements[i], ret_maj, ret_min);
 
             /* temporarily skip any offender */
             out->elements.elements_len--;
+            j--;
             continue;
 #if 0
             ret = EINVAL;
