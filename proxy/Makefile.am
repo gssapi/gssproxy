@@ -114,6 +114,7 @@ gssproxy_SOURCES = \
 accept_context_SOURCES = \
     src/gp_config.c \
     src/gp_conv.c \
+    src/gp_debug.c \
     $(GP_RPCGEN_OBJ) \
     $(GP_MECHGLUE_OBJ) \
     tests/accept_context.c

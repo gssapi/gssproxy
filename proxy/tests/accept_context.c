@@ -38,6 +38,7 @@
 #include "src/gp_proxy.h"
 #include "src/gp_rpc_process.h"
 #include "src/gp_conv.h"
+#include "src/gp_debug.h"
 #include "src/mechglue/gssapi_gpm.h"
 #include "popt.h"
 
@@ -316,6 +317,17 @@ void *server_thread(void *pvt)
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
     gss_OID_set mech_set = GSS_C_NO_OID_SET;
+    gss_OID_set mech_names = GSS_C_NO_OID_SET;
+    gss_OID_set mech_types = GSS_C_NO_OID_SET;
+    gss_OID_set mech_attrs = GSS_C_NO_OID_SET;
+    gss_OID_set known_mech_attrs = GSS_C_NO_OID_SET;
+    gss_buffer_desc sasl_mech_name = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc mech_name = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc mech_description = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc name = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc short_desc = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc long_desc = GSS_C_EMPTY_BUFFER;
+    gss_OID_set mechs = GSS_C_NO_OID_SET;
     int ret;
     int fd;
 
@@ -336,6 +348,53 @@ void *server_thread(void *pvt)
     ret_maj = gpm_indicate_mechs(&ret_min, &mech_set);
     if (ret_maj) {
         fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret_maj = gpm_inquire_names_for_mech(&ret_min,
+                                         &mech_set->elements[0],
+                                         &mech_names);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
+        goto done;
+    }
+    ret_maj = gpm_inquire_attrs_for_mech(&ret_min,
+                                         &mech_set->elements[0],
+                                         &mech_attrs,
+                                         &known_mech_attrs);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
+        goto done;
+    }
+    ret_maj = gpm_inquire_saslname_for_mech(&ret_min,
+                                            &mech_set->elements[0],
+                                            &sasl_mech_name,
+                                            &mech_name,
+                                            &mech_description);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
+        goto done;
+    }
+    ret_maj = gpm_display_mech_attr(&ret_min,
+                                    &mech_attrs->elements[0],
+                                    &name, &short_desc, &long_desc);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+    ret_maj = gpm_indicate_mechs_by_attrs(&ret_min,
+                                          GSS_C_NO_OID_SET,
+                                          GSS_C_NO_OID_SET,
+                                          GSS_C_NO_OID_SET,
+                                          &mechs);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
@@ -349,6 +408,7 @@ void *server_thread(void *pvt)
                                NULL);
     if (ret_maj) {
         fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
@@ -368,6 +428,14 @@ void *server_thread(void *pvt)
                                      &deleg_cred);
     if (ret_maj) {
         fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret_maj = gpm_inquire_mechs_for_name(&ret_min, src_name, &mech_types);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
@@ -386,6 +454,17 @@ done:
     gpm_release_cred(&ret_min, &deleg_cred);
     gpm_delete_sec_context(&ret_min, &context_handle, GSS_C_NO_BUFFER);
     gss_release_oid_set(&ret_min, &mech_set);
+    gss_release_oid_set(&ret_min, &mech_names);
+    gss_release_oid_set(&ret_min, &mech_types);
+    gss_release_oid_set(&ret_min, &mech_attrs);
+    gss_release_oid_set(&ret_min, &known_mech_attrs);
+    gss_release_buffer(&ret_min, &sasl_mech_name);
+    gss_release_buffer(&ret_min, &mech_name);
+    gss_release_buffer(&ret_min, &mech_description);
+    gss_release_buffer(&ret_min, &name);
+    gss_release_buffer(&ret_min, &short_desc);
+    gss_release_buffer(&ret_min, &long_desc);
+    gss_release_oid_set(&ret_min, &mechs);
     close(data->srv_pipe[0]);
     close(data->cli_pipe[1]);
     pthread_exit(NULL);
