@@ -128,6 +128,30 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
         if (ret) {
             goto done;
         }
+        for (j = 0; j < mech_attrs->count; j++) {
+
+            ret_maj = gss_test_oid_set_member(&ret_min,
+                                              &mech_attrs->elements[j],
+                                              attr_set,
+                                              &present);
+            if (ret_maj) {
+                ret = EINVAL;
+                goto done;
+            }
+
+            if (present) {
+                continue;
+            }
+
+            ret_maj = gss_add_oid_set_member(&ret_min,
+                                             &mech_attrs->elements[j],
+                                             &attr_set);
+            if (ret_maj) {
+                ret = ENOMEM;
+                goto done;
+            }
+
+        }
         gss_release_oid_set(&ret_min, &mech_attrs);
 
         ret = gp_conv_oid_set_to_gssx(known_mech_attrs,
@@ -204,6 +228,11 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
     for (i = 0; i < attr_set->count; i++) {
 
         ma = &imr->mech_attr_descs.mech_attr_descs_val[i];
+
+        ret = gp_conv_oid_to_gssx(&attr_set->elements[i], &ma->attr);
+        if (ret) {
+            goto done;
+        }
 
         ret_maj = gss_display_mech_attr(&ret_min,
                                         &attr_set->elements[i],
