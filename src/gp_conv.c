@@ -631,3 +631,50 @@ int gp_conv_oid_set_to_gssx(gss_OID_set in, gssx_OID_set *out)
 
     return 0;
 }
+
+int gp_copy_gssx_name_alloc(gssx_name *in, gssx_name **out)
+{
+    gssx_name *o;
+    int ret;
+
+    o = calloc(1, sizeof(gssx_name));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    if (in->display_name) {
+        ret = gp_conv_octet_string_alloc(in->display_name->octet_string_len,
+                                         in->display_name->octet_string_val,
+                                         &o->display_name);
+        if (ret) {
+            goto done;
+        }
+    }
+    ret = gp_conv_octet_string(in->name_type.octet_string_len,
+                               in->name_type.octet_string_val,
+                               &o->name_type);
+    if (ret) {
+        goto done;
+    }
+    ret = gp_conv_octet_string(in->exported_name.octet_string_len,
+                               in->exported_name.octet_string_val,
+                               &o->exported_name);
+    if (ret) {
+        goto done;
+    }
+    ret = gp_conv_octet_string(in->exported_composite_name.octet_string_len,
+                               in->exported_composite_name.octet_string_val,
+                               &o->exported_composite_name);
+    if (ret) {
+        goto done;
+    }
+
+    *out = o;
+
+done:
+    if (ret) {
+        xdr_free((xdrproc_t)xdr_gssx_name, (char *)o);
+        free(o);
+    }
+    return ret;
+}

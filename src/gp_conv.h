@@ -68,4 +68,6 @@ int gp_copy_gssx_status_alloc(gssx_status *in, gssx_status **out);
 int gp_conv_gssx_to_oid_set(gssx_OID_set *in, gss_OID_set *out);
 int gp_conv_oid_set_to_gssx(gss_OID_set in, gssx_OID_set *out);
 
+int gp_copy_gssx_name_alloc(gssx_name *in, gssx_name **out);
+
 #endif /* _GSS_CONV_H_ */
