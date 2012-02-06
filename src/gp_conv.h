@@ -54,6 +54,7 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
                                utf8string *ret_str);
 
 int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out);
+int gp_conv_name_to_gssx_alloc(gss_name_t in, gssx_name **out);
 int gp_conv_gssx_to_name(gssx_name *in, gss_name_t *out);
 
 int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out);

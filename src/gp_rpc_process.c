@@ -374,10 +374,6 @@ int gp_get_call_context(gp_exec_std_args)
 {
     return 0;
 }
-int gp_import_and_canon_name(gp_exec_std_args)
-{
-    return 0;
-}
 int gp_export_cred(gp_exec_std_args)
 {
     return 0;

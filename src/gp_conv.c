@@ -317,14 +317,19 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
     }
 
     ret_maj = gss_export_name(&ret_min, in, &exported_name);
-    if (ret_maj) {
-        ret = -1;
-        goto done;
-    }
-
-    ret = gp_conv_buffer_to_gssx(&exported_name, &out->exported_name);
-    if (ret) {
-        goto done;
+    if (ret_maj == 0) {
+        ret = gp_conv_buffer_to_gssx(&exported_name, &out->exported_name);
+        if (ret) {
+            goto done;
+        }
+    } else {
+        /* In case the error is GSS_S_NAME_NOT_MN the name was not
+         * canonicalized but that is ok we simply do not export the name
+         * in this case */
+        if (ret_maj != GSS_S_NAME_NOT_MN) {
+            ret = -1;
+            goto done;
+        }
     }
 
     /* out->exported_composite_name */
@@ -341,17 +346,69 @@ done:
     return ret;
 }
 
+int gp_conv_name_to_gssx_alloc(gss_name_t in, gssx_name **out)
+{
+    gssx_name *o;
+    int ret;
+
+    o = calloc(1, sizeof(gssx_name));
+    if (!o) {
+        return ENOMEM;
+    }
+
+    ret = gp_conv_name_to_gssx(in, o);
+
+    if (ret) {
+        free(o);
+    }
+
+    *out = o;
+    return ret;
+}
+
 int gp_conv_gssx_to_name(gssx_name *in, gss_name_t *out)
 {
-    uint32_t ret_min;
+    gss_buffer_t input_name = GSS_C_NO_BUFFER;
+    gss_OID name_type = GSS_C_NO_OID;
     gss_buffer_desc name_buffer;
-    gss_OID_desc name_type;
+    uint32_t ret_maj;
+    uint32_t ret_min;
+    int ret;
 
-    gp_conv_gssx_to_oid(&in->name_type, &name_type);
+    if (in->display_name.octet_string_len != 0) {
+        /* ok we have a display name.
+         * In this case always import and canonicalize it so we can
+         * safely export the name using the original form, even if we
+         * already have exported_name */
+        ret = gp_conv_gssx_to_buffer_alloc(&in->display_name, &input_name);
+        if (ret) {
+            goto done;
+        }
+        ret = gp_conv_gssx_to_oid_alloc(&in->name_type, &name_type);
+        if (ret) {
+            goto done;
+        }
 
-    gp_conv_gssx_to_buffer(&in->exported_name, &name_buffer);
+        ret_maj = gss_import_name(&ret_min, input_name, name_type, out);
+        if (ret_maj) {
+            ret = ret_maj;
+            goto done;
+        }
+    } else {
+        gp_conv_gssx_to_buffer(&in->exported_name, &name_buffer);
 
-    return gss_import_name(&ret_min, &name_buffer, &name_type, out);
+        ret_maj = gss_import_name(&ret_min, &name_buffer,
+                                  GSS_C_NT_EXPORT_NAME, out);
+        if (ret_maj) {
+            ret = ret_maj;
+            goto done;
+        }
+    }
+
+done:
+    gss_release_buffer(&ret_min, input_name);
+    gss_release_oid(&ret_min, &name_type);
+    return ret;
 }
 
 int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
