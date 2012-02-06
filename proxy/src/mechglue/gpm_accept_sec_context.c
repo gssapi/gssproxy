@@ -24,6 +24,7 @@
 */
 
 #include "gssapi_gpm.h"
+#include "src/gp_conv.h"
 
 OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
                                  gss_ctx_id_t *context_handle,
@@ -102,6 +103,13 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         /* we are stealing the delegated creds on success, so we do not want
         * it to be freed by xdr_free */
         res->context_handle = NULL;
+    }
+
+    if (src_name) {
+        ret = gp_copy_gssx_name_alloc(&ctx->src_name, &name);
+        if (ret) {
+            goto done;
+        }
     }
 
     ret = gp_conv_gssx_to_buffer_alloc(res->output_token, &outbuf);
