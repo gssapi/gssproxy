@@ -109,6 +109,7 @@ gssproxy_SOURCES = \
     src/gp_rpc_release_handle.c \
     src/gp_rpc_acquire_cred.c \
     src/gp_rpc_indicate_mechs.c \
+    src/gp_rpc_import_and_canon_name.c \
     src/gssproxy.c
 
 accept_context_SOURCES = \
