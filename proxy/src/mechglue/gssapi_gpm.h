@@ -120,4 +120,23 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
                                       gss_const_OID_set critical_mech_attrs,
                                       gss_OID_set *mechs);
 
+OM_uint32 gpm_display_name(OM_uint32 *minor_status,
+                           gss_name_t input_name,
+                           gss_buffer_t output_name_buffer,
+                           gss_OID *output_name_type);
+OM_uint32 gpm_import_name(OM_uint32 *minor_status,
+                          gss_buffer_t input_name_buffer,
+                          gss_OID input_name_type,
+                          gss_name_t *output_name);
+OM_uint32 gpm_export_name(OM_uint32 *minor_status,
+                          const gss_name_t input_name,
+                          gss_buffer_t exported_name);
+OM_uint32 gpm_duplicate_name(OM_uint32 *minor_status,
+                             const gss_name_t input_name,
+                             gss_name_t *dest_name);
+OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
+                                const gss_name_t input_name,
+                                const gss_OID mech_type,
+                                gss_name_t *output_name);
+
 #endif /* _GSSAPI_GPM_H_ */
