@@ -88,6 +88,7 @@ GP_MECHGLUE_OBJ = \
     src/mechglue/gpm_acquire_cred.c \
     src/mechglue/gpm_indicate_mechs.c \
     src/mechglue/gpm_import_and_canon_name.c \
+    src/mechglue/gpm_init_sec_context.c \
     src/mechglue/gpm_common.c
 
 dist_noinst_HEADERS =

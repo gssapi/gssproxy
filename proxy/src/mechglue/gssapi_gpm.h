@@ -139,4 +139,17 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
                                 const gss_OID mech_type,
                                 gss_name_t *output_name);
 
+OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
+                               gss_cred_id_t claimant_cred_handle,
+                               gss_ctx_id_t *context_handle,
+                               gss_name_t target_name,
+                               gss_OID mech_type,
+                               OM_uint32 req_flags,
+                               OM_uint32 time_req,
+                               gss_channel_bindings_t input_cb,
+                               gss_buffer_t input_token,
+                               gss_OID *actual_mech_type,
+                               gss_buffer_t output_token,
+                               OM_uint32 *ret_flags,
+                               OM_uint32 *time_rec);
 #endif /* _GSSAPI_GPM_H_ */
