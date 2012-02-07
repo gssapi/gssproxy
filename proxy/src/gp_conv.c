@@ -307,13 +307,7 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
         return -1;
     }
 
-    out->display_name = calloc(1, sizeof(gssx_buffer));
-    if (!out->display_name) {
-        ret = ENOMEM;
-        goto done;
-    }
-
-    ret = gp_conv_buffer_to_gssx(&name_buffer, out->display_name);
+    ret = gp_conv_buffer_to_gssx(&name_buffer, &out->display_name);
     if (ret) {
         goto done;
     }
@@ -340,10 +334,7 @@ done:
     gss_release_buffer(&ret_min, &name_buffer);
     gss_release_buffer(&ret_min, &exported_name);
     if (ret) {
-        if (out->display_name) {
-            xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)out->display_name);
-            free(out->display_name);
-        }
+        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->display_name);
         xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->name_type);
         xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->exported_name);
     }
@@ -642,13 +633,11 @@ int gp_copy_gssx_name_alloc(gssx_name *in, gssx_name **out)
         return ENOMEM;
     }
 
-    if (in->display_name) {
-        ret = gp_conv_octet_string_alloc(in->display_name->octet_string_len,
-                                         in->display_name->octet_string_val,
-                                         &o->display_name);
-        if (ret) {
-            goto done;
-        }
+    ret = gp_conv_octet_string(in->display_name.octet_string_len,
+                               in->display_name.octet_string_val,
+                               &o->display_name);
+    if (ret) {
+        goto done;
     }
     ret = gp_conv_octet_string(in->name_type.octet_string_len,
                                in->name_type.octet_string_val,

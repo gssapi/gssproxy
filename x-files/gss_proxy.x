@@ -249,7 +249,7 @@ struct gssx_call_ctx {
  */
 struct gssx_name {
     /* Non-MNs MUST have these; MNs MAY have these */
-    gssx_buffer         *display_name;
+    gssx_buffer         display_name;
     gssx_OID            name_type;
     /* MNs MUST have at least one exported name form */
     gssx_buffer         exported_name;

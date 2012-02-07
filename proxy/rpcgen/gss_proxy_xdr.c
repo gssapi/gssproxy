@@ -203,7 +203,7 @@ xdr_gssx_call_ctx (XDR *xdrs, gssx_call_ctx *objp)
 bool_t
 xdr_gssx_name (XDR *xdrs, gssx_name *objp)
 {
-	 if (!xdr_pointer (xdrs, (char **)&objp->display_name, sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
+	 if (!xdr_gssx_buffer (xdrs, &objp->display_name))
 		 return FALSE;
 	 if (!xdr_gssx_OID (xdrs, &objp->name_type))
 		 return FALSE;
