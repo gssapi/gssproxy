@@ -35,6 +35,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
 #include "src/gp_proxy.h"
 #include "src/gp_rpc_process.h"
 #include "src/gp_conv.h"
@@ -328,10 +329,18 @@ void *server_thread(void *pvt)
     gss_buffer_desc short_desc = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc long_desc = GSS_C_EMPTY_BUFFER;
     gss_OID_set mechs = GSS_C_NO_OID_SET;
+    gss_buffer_desc target_buf;
+    gss_name_t target_name = GSS_C_NO_NAME;
+    gss_name_t canon_name = GSS_C_NO_NAME;
+    gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
+    gss_OID out_name_type = GSS_C_NO_OID;
     int ret;
     int fd;
 
     data = (struct athread *)pvt;
+
+    target_buf.value = (void *)data->target;
+    target_buf.length = strlen(data->target) + 1;
 
     /* connect to the socket first to make sure the proxy is available */
     fd = connect_unix_socket(data->cfg->socket_name);
@@ -345,6 +354,31 @@ void *server_thread(void *pvt)
         goto done;
     }
 
+    /* import name family functions tests */
+    ret_maj = gpm_import_name(&ret_min, &target_buf,
+                              GSS_C_NT_HOSTBASED_SERVICE, &target_name);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+    ret_maj = gpm_canonicalize_name(&ret_min, target_name,
+                                    gss_mech_krb5, &canon_name);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+    ret_maj = gpm_display_name(&ret_min, canon_name,
+                               &out_name_buf, &out_name_type);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+    fprintf(stdout, "Acquiring for: %s\n", (char *)out_name_buf.value);
+
+    /* indicate mechs family functions tests */
     ret_maj = gpm_indicate_mechs(&ret_min, &mech_set);
     if (ret_maj) {
         fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
@@ -397,6 +431,12 @@ void *server_thread(void *pvt)
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
+    ret_maj = gpm_inquire_mechs_for_name(&ret_min, target_name, &mech_types);
+    if (ret_maj) {
+        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
 
     ret_maj = gpm_acquire_cred(&ret_min,
                                GSS_C_NO_NAME,
@@ -432,13 +472,6 @@ void *server_thread(void *pvt)
         goto done;
     }
 
-    ret_maj = gpm_inquire_mechs_for_name(&ret_min, src_name, &mech_types);
-    if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
-        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
-        goto done;
-    }
-
     if (out_token.length) {
         ret = gp_send_buffer(data->cli_pipe[1],
                              out_token.value, out_token.length);
@@ -465,6 +498,10 @@ done:
     gss_release_buffer(&ret_min, &short_desc);
     gss_release_buffer(&ret_min, &long_desc);
     gss_release_oid_set(&ret_min, &mechs);
+    gpm_release_name(&ret_min, &target_name);
+    gpm_release_name(&ret_min, &canon_name);
+    gss_release_buffer(&ret_min, &out_name_buf);
+    gss_release_oid(&ret_min, &out_name_type);
     close(data->srv_pipe[0]);
     close(data->cli_pipe[1]);
     pthread_exit(NULL);
@@ -540,7 +577,7 @@ int main(int argc, const char *argv[])
     server.srv_pipe = srv_pipe;
     server.cli_pipe = cli_pipe;
     server.cfg = cfg;
-    server.target = NULL;
+    server.target = opt_target;
 
     ret = pthread_create(&server.tid, &attr, server_thread, &server);
     if (ret) {
