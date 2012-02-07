@@ -131,7 +131,7 @@ struct gssx_call_ctx {
 typedef struct gssx_call_ctx gssx_call_ctx;
 
 struct gssx_name {
-	gssx_buffer *display_name;
+	gssx_buffer display_name;
 	gssx_OID name_type;
 	gssx_buffer exported_name;
 	gssx_buffer exported_composite_name;
