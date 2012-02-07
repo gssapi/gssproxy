@@ -1,0 +1,10 @@
+We adopt a coding style derived from http://freeipa.org/page/Coding_Style
+
+There are minor differences including ut not limited to the following:
+- due to the fact we interface to GSSAPI which heavily used typedefs they
+  are not actively discouraged in this code base
+
+- Initializations and NULL-checks should use the appropriate GSS_C_NO_XXX
+  initializers
+
+
