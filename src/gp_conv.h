@@ -41,7 +41,9 @@ int gp_conv_oid_to_gssx_alloc(gss_OID in, gssx_OID **out);
 
 void gp_conv_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out);
 int gp_conv_gssx_to_buffer_alloc(gssx_buffer *in, gss_buffer_t *out);
+int gp_copy_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out);
 int gp_conv_buffer_to_gssx(gss_buffer_t in, gssx_buffer *out);
+int gp_conv_buffer_to_gssx_alloc(gss_buffer_t in, gssx_buffer **out);
 
 void gp_conv_gssx_to_cb(gssx_cb *in, gss_channel_bindings_t out);
 int gp_conv_cb_to_gssx(gss_channel_bindings_t in, gssx_cb *out);
@@ -69,6 +71,7 @@ int gp_copy_gssx_status_alloc(gssx_status *in, gssx_status **out);
 int gp_conv_gssx_to_oid_set(gssx_OID_set *in, gss_OID_set *out);
 int gp_conv_oid_set_to_gssx(gss_OID_set in, gssx_OID_set *out);
 
+int gp_copy_gssx_name(gssx_name *in, gssx_name *out);
 int gp_copy_gssx_name_alloc(gssx_name *in, gssx_name **out);
 
 #endif /* _GSS_CONV_H_ */
