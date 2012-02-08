@@ -82,6 +82,11 @@ int gp_conv_octet_string_alloc(size_t length, void *value,
 
 void gp_conv_gssx_to_oid(gssx_OID *in, gss_OID out)
 {
+    if (in == NULL) {
+        out->length = 0;
+        out->elements = NULL;
+        return;
+    }
     out->length = in->octet_string_len;
     out->elements = (void *)in->octet_string_val;
 }
@@ -108,11 +113,18 @@ int gp_conv_gssx_to_oid_alloc(gssx_OID *in, gss_OID *out)
 
 int gp_conv_oid_to_gssx(gss_OID in, gssx_OID *out)
 {
+    if (in == GSS_C_NO_OID) {
+        return gp_conv_octet_string(0, NULL, out);
+    }
     return gp_conv_octet_string(in->length, in->elements, out);
 }
 
 int gp_conv_oid_to_gssx_alloc(gss_OID in, gssx_OID **out)
 {
+    if (in == GSS_C_NO_OID) {
+        *out = NULL;
+        return 0;
+    }
     return gp_conv_octet_string_alloc(in->length, in->elements, out);
 }
 
