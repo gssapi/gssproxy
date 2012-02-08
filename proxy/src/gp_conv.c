@@ -95,7 +95,7 @@ int gp_conv_gssx_to_oid_alloc(gssx_OID *in, gss_OID *out)
 {
     gss_OID o;
 
-    o = calloc(1, sizeof(gss_OID));
+    o = calloc(1, sizeof(gss_OID_desc));
     if (!o) {
         return ENOMEM;
     }
