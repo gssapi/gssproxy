@@ -28,8 +28,8 @@ remove-potcdate.sin
 stamp-h1
 *.8
 *.5
-accept_context
 config.h.in~
 cscope.out
 dict.symbols
 .dirstamp
+cli_srv_conn

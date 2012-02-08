@@ -46,7 +46,7 @@ sbin_PROGRAMS = \
     gssproxy
 
 check_PROGRAMS = \
-    accept_context
+    cli_srv_comm
 
 dist_noinst_SCRIPTS =
 
@@ -115,25 +115,25 @@ gssproxy_SOURCES = \
     src/gp_rpc_init_sec_context.c \
     src/gssproxy.c
 
-accept_context_SOURCES = \
+cli_srv_comm_SOURCES = \
     src/gp_config.c \
     src/gp_conv.c \
     src/gp_debug.c \
     $(GP_RPCGEN_OBJ) \
     $(GP_MECHGLUE_OBJ) \
-    tests/accept_context.c
+    tests/cli_srv_comm.c
 
 gssproxy_LDADD = \
     $(GSS_PROXY_LIBS)
 
-accept_context_LDADD = \
+cli_srv_comm_LDADD = \
     $(GSS_PROXY_LIBS)
 
 dist_noinst_DATA += \
     examples/gssproxy-example.conf \
     m4
 
-noinst_PROGRAMS = accept_context
+noinst_PROGRAMS = cli_srv_comm
 
 ################
 # TRANSLATIONS #
