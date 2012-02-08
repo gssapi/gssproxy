@@ -204,6 +204,7 @@ void *client_thread(void *pvt)
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_name_t name = GSS_C_NO_NAME;
     gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     int ret = 0;
 
     data = (struct athread *)pvt;
@@ -211,15 +212,15 @@ void *client_thread(void *pvt)
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
 
-    ret_maj = gss_import_name(&ret_min, &target_buf,
+    ret_maj = gpm_import_name(&ret_min, &target_buf,
                               GSS_C_NT_HOSTBASED_SERVICE, &name);
     if (ret_maj) {
         goto done;
     }
 
     do {
-        ret_maj = gss_init_sec_context(&ret_min,
-                                       GSS_C_NO_CREDENTIAL,
+        ret_maj = gpm_init_sec_context(&ret_min,
+                                       cred_handle,
                                        &ctx,
                                        name,
                                        GSS_C_NO_OID,
@@ -231,42 +232,44 @@ void *client_thread(void *pvt)
                                        &out_token,
                                        NULL,
                                        NULL);
-        if (ret_maj == GSS_S_COMPLETE) {
-            break;
-        }
-        if (ret_maj != GSS_S_CONTINUE_NEEDED) {
+        if (ret_maj != GSS_S_COMPLETE &&
+            ret_maj != GSS_S_CONTINUE_NEEDED) {
             fprintf(stdout,
                     "gss_init_sec_context() failed with: %d\n", ret_maj);
             goto done;
         }
+        if (out_token.length != 0) {
+            /* send to server */
+            ret = gp_send_buffer(data->srv_pipe[1],
+                                 out_token.value, out_token.length);
+            if (ret) {
+                goto done;
+            }
+
+            gss_release_buffer(&ret_min, &out_token);
+        }
+
         if (!ctx) {
             goto done;
         }
 
-        /* send to server */
-        ret = gp_send_buffer(data->srv_pipe[1],
-                             out_token.value, out_token.length);
-        if (ret) {
-            goto done;
+        if (ret_maj == GSS_S_CONTINUE_NEEDED) {
+            /* and wait for reply */
+            ret = gp_recv_buffer(data->cli_pipe[0], buffer, &buflen);
+            if (ret) {
+                goto done;
+            }
+
+            in_token.value = buffer;
+            in_token.length = buflen;
         }
-
-        gss_release_buffer(&ret_min, &out_token);
-
-        /* and wait for reply */
-        ret = gp_recv_buffer(data->cli_pipe[0], buffer, &buflen);
-        if (ret) {
-            goto done;
-        }
-
-        in_token.value = buffer;
-        in_token.length = buflen;
 
     } while (ret_maj == GSS_S_CONTINUE_NEEDED);
 
     fprintf(stdout, "client: Success!\n");
 
 done:
-    gss_release_name(&ret_min, &name);
+    gpm_release_name(&ret_min, &name);
     gss_release_buffer(&ret_min, &out_token);
     close(data->cli_pipe[0]);
     close(data->srv_pipe[1]);
