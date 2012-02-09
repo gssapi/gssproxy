@@ -43,36 +43,6 @@
 #include "src/mechglue/gssapi_gpm.h"
 #include "popt.h"
 
-int connect_unix_socket(const char *file_name)
-{
-    struct sockaddr_un addr = {0};
-    int ret = 0;
-    int fd = -1;
-
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, file_name, sizeof(addr.sun_path)-1);
-    addr.sun_path[sizeof(addr.sun_path)-1] = '\0';
-
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd == -1) {
-        ret = errno;
-        goto done;
-    }
-
-    ret = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
-
-done:
-    if (ret) {
-        fprintf(stderr, "Failed to create Unix Socket! (%d:%s)",
-               ret, strerror(ret));
-        if (fd != -1) {
-            close(fd);
-            fd = -1;
-        }
-    }
-    return fd;
-}
-
 int gp_send_buffer(int fd, char *buf, uint32_t len)
 {
     uint32_t size;
@@ -335,18 +305,11 @@ void *server_thread(void *pvt)
     gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
     gss_OID out_name_type = GSS_C_NO_OID;
     int ret;
-    int fd;
 
     data = (struct athread *)pvt;
 
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
-
-    /* connect to the socket first to make sure the proxy is available */
-    fd = connect_unix_socket(data->cfg->socket_name);
-    if (fd == -1) {
-        goto done;
-    }
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
