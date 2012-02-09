@@ -311,12 +311,6 @@ void *server_thread(void *pvt)
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
 
-    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
-    if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
-        goto done;
-    }
-
     /* import name family functions tests */
     ret_maj = gpm_import_name(&ret_min, &target_buf,
                               GSS_C_NT_HOSTBASED_SERVICE, &target_name);
@@ -412,6 +406,12 @@ void *server_thread(void *pvt)
     if (ret_maj) {
         fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        fprintf(stdout, "Failed to get data from client!\n");
         goto done;
     }
 
