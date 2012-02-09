@@ -189,7 +189,6 @@ struct athread {
     pthread_t tid;
     int *cli_pipe;
     int *srv_pipe;
-    struct gp_config *cfg;
     char *target;
 };
 
@@ -475,8 +474,6 @@ int main(int argc, const char *argv[])
     int opt;
     poptContext pc;
     int opt_version = 0;
-    struct gp_config *cfg;
-    char *opt_config_file = NULL;
     char *opt_target = NULL;
     int srv_pipe[2];
     int cli_pipe[2];
@@ -488,10 +485,8 @@ int main(int argc, const char *argv[])
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
-        {"config", 'c', POPT_ARG_STRING, &opt_config_file, 0, \
-         _("Specify a non-default config file"), NULL}, \
         {"target", 't', POPT_ARG_STRING, &opt_target, 0, \
-         _("Specify a non-default config file"), NULL}, \
+         _("Specify the target name used for the tests"), NULL}, \
         {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
          _("Print version number and exit"), NULL }, \
         POPT_TABLEEND
@@ -519,11 +514,6 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    cfg = read_config(opt_config_file, 0);
-    if (!cfg) {
-        return -1;
-    }
-
     ret = pipe(srv_pipe);
     if (ret) {
         return -1;
@@ -539,7 +529,6 @@ int main(int argc, const char *argv[])
 
     server.srv_pipe = srv_pipe;
     server.cli_pipe = cli_pipe;
-    server.cfg = cfg;
     server.target = opt_target;
 
     ret = pthread_create(&server.tid, &attr, server_thread, &server);
@@ -549,7 +538,6 @@ int main(int argc, const char *argv[])
 
     client.srv_pipe = srv_pipe;
     client.cli_pipe = cli_pipe;
-    client.cfg = cfg;
     client.target = opt_target;
 
     ret = pthread_create(&client.tid, &attr, client_thread, &client);

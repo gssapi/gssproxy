@@ -116,7 +116,6 @@ gssproxy_SOURCES = \
     src/gssproxy.c
 
 cli_srv_comm_SOURCES = \
-    src/gp_config.c \
     src/gp_conv.c \
     src/gp_debug.c \
     $(GP_RPCGEN_OBJ) \
