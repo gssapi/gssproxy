@@ -40,16 +40,13 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     gss_channel_bindings_t pcbs;
     gss_name_t src_name = GSS_C_NO_NAME;
     gss_OID oid;
-    gss_buffer_desc obuf = { 0, NULL };
+    gss_buffer_desc obuf = GSS_C_EMPTY_BUFFER;
     uint32_t ret_flags;
-    uint32_t time_rec;
     gss_cred_id_t dch = GSS_C_NO_CREDENTIAL;
     int ret;
 
     asca = &arg->accept_sec_context;
     ascr = &res->accept_sec_context;
-
-    ctx = GSS_C_NO_CONTEXT;
 
     if (asca->cred_handle) {
         ret = gp_find_cred(asca->cred_handle, &ach);
@@ -76,7 +73,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
                                      &oid,
                                      &obuf,
                                      &ret_flags,
-                                     &time_rec,
+                                     NULL,
                                      &dch);
 
     ret = gp_conv_status_to_gssx(&asca->call_ctx,
