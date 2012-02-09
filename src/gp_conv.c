@@ -538,6 +538,22 @@ done:
     return ret;
 }
 
+int gp_conv_gssx_to_ctx_id(gssx_ctx *in, gss_ctx_id_t *out)
+{
+    gss_buffer_desc export_buffer = GSS_C_EMPTY_BUFFER;
+    uint32_t ret_maj;
+    uint32_t ret_min;
+
+    gp_conv_gssx_to_buffer(in->exported_context_token, &export_buffer);
+
+    ret_maj = gss_import_sec_context(&ret_min, &export_buffer, out);
+    if (ret_maj) {
+        return EINVAL;
+    }
+
+    return 0;
+}
+
 int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
                            uint32_t ret_maj, uint32_t ret_min,
                            gss_OID mech, struct gssx_status *status)
