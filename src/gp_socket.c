@@ -42,9 +42,7 @@
 
 struct gp_creds {
     int type;
-#ifdef HAVE_UCRED
     struct ucred ucred;
-#endif
 };
 
 #define FRAGMENT_BIT (1 << 31)
@@ -176,7 +174,6 @@ done:
 
 static int get_peercred(int fd, struct gp_conn *conn)
 {
-#ifdef HAVE_UCRED
     socklen_t len;
     int ret;
 
@@ -190,7 +187,6 @@ static int get_peercred(int fd, struct gp_conn *conn)
     }
 
     conn->creds.type |= CRED_TYPE_UNIX;
-#endif
     return 0;
 }
 
