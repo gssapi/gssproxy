@@ -39,7 +39,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     struct gss_channel_bindings_struct cbs;
     gss_channel_bindings_t pcbs;
     gss_name_t src_name = GSS_C_NO_NAME;
-    gss_OID oid;
+    gss_OID oid = GSS_C_NO_OID;
     gss_buffer_desc obuf = GSS_C_EMPTY_BUFFER;
     uint32_t ret_flags;
     gss_cred_id_t dch = GSS_C_NO_CREDENTIAL;
@@ -51,6 +51,8 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     if (asca->cred_handle) {
         ret = gp_find_cred(asca->cred_handle, &ach);
         if (ret) {
+            ret_maj = GSS_S_NO_CRED;
+            ret_min = ret;
             goto done;
         }
     }
@@ -75,53 +77,56 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
                                      &ret_flags,
                                      NULL,
                                      &dch);
-
-    ret = gp_conv_status_to_gssx(&asca->call_ctx,
-                                 ret_maj, ret_min, oid,
-                                 &ascr->status);
-    if (ret) {
-        goto done;
-    }
-
     if (ret_maj) {
-        ret = 0;
         goto done;
     }
 
     ascr->context_handle = calloc(1, sizeof(gssx_ctx));
     if (!ascr->context_handle) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     ret = gp_conv_ctx_id_to_gssx(&ctx, ascr->context_handle);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
     ascr->output_token = calloc(1, sizeof(gssx_buffer));
     if (!ascr->output_token) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     ret = gp_conv_buffer_to_gssx(&obuf, ascr->output_token);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
     if (ret_flags & GSS_C_DELEG_FLAG) {
         ascr->delegated_cred_handle = calloc(1, sizeof(gssx_cred));
         if (!ascr->delegated_cred_handle) {
-            ret = ENOMEM;
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
             goto done;
         }
-        ret = gp_export_gssx_cred(&dch, ascr->delegated_cred_handle);
-        if (ret) {
+        ret_maj = gp_export_gssx_cred(&ret_min,
+                                      &dch, ascr->delegated_cred_handle);
+        if (ret_maj) {
             goto done;
         }
     }
 
 done:
-    if (ret) {
+    ret = gp_conv_status_to_gssx(&asca->call_ctx,
+                                 ret_maj, ret_min, oid,
+                                 &ascr->status);
+
+    if (ret_maj) {
         if (ascr->context_handle) {
             xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ascr->context_handle);
             free(ascr->context_handle);
@@ -135,5 +140,6 @@ done:
     gss_release_buffer(&ret_min, &obuf);
     gss_release_cred(&ret_min, &dch);
     gss_delete_sec_context(&ret_min, &ctx, GSS_C_NO_BUFFER);
+
     return ret;
 }

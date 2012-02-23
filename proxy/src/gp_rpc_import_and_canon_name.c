@@ -53,8 +53,8 @@ int gp_import_and_canon_name(struct gssproxy_ctx *gpctx,
         goto done;
     }
 
-    ret = gp_conv_gssx_to_name(&icna->input_name, &import_name);
-    if (ret) {
+    ret_maj = gp_conv_gssx_to_name(&ret_min, &icna->input_name, &import_name);
+    if (ret_maj) {
         goto done;
     }
 
@@ -62,6 +62,8 @@ int gp_import_and_canon_name(struct gssproxy_ctx *gpctx,
 
         ret = gp_conv_gssx_to_oid_alloc(&icna->mech, &mech);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
 
@@ -71,20 +73,21 @@ int gp_import_and_canon_name(struct gssproxy_ctx *gpctx,
             goto done;
         }
 
-        ret = gp_conv_name_to_gssx_alloc(output_name, &icnr->output_name);
+        ret_maj = gp_conv_name_to_gssx_alloc(&ret_min,
+                                             output_name, &icnr->output_name);
     } else {
-        ret = gp_conv_name_to_gssx_alloc(import_name, &icnr->output_name);
+        ret_maj = gp_conv_name_to_gssx_alloc(&ret_min,
+                                             import_name, &icnr->output_name);
     }
 
     /* TODO: check also icna->input_name.exported_composite_name */
     /* TODO: icna->name_attributes */
 
 done:
-    if (!ret) {
-        ret = gp_conv_status_to_gssx(&icna->call_ctx,
-                                     ret_maj, ret_min, GSS_C_NO_OID,
-                                     &icnr->status);
-    }
+    ret = gp_conv_status_to_gssx(&icna->call_ctx,
+                                 ret_maj, ret_min, mech,
+                                 &icnr->status);
+
     gss_release_oid(&ret_min, &mech);
     gss_release_name(&ret_min, &import_name);
     gss_release_name(&ret_min, &output_name);

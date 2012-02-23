@@ -52,7 +52,8 @@
  * *MUST* BE FIXED BEFORE ANY OFFICIAL RELEASE.
  */
 
-int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
+uint32_t gp_export_gssx_cred(uint32_t *min,
+                             gss_cred_id_t *in, gssx_cred *out)
 {
     uint32_t ret_maj;
     uint32_t ret_min;
@@ -69,12 +70,11 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
     ret_maj = gss_inquire_cred(&ret_min, *in,
                                &name, &lifetime, &cred_usage, &mechanisms);
     if (ret_maj) {
-        ret = EINVAL;
         goto done;
     }
 
-    ret = gp_conv_name_to_gssx(name, &out->desired_name);
-    if (ret) {
+    ret_maj = gp_conv_name_to_gssx(&ret_min, name, &out->desired_name);
+    if (ret_maj) {
         goto done;
     }
     gss_release_name(&ret_min, &name);
@@ -84,7 +84,8 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
     out->elements.elements_val = calloc(out->elements.elements_len,
                                         sizeof(gssx_cred_element));
     if (!out->elements.elements_val) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
 
@@ -111,8 +112,8 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
 #endif
         }
 
-        ret = gp_conv_name_to_gssx(name, &el->MN);
-        if (ret) {
+        ret_maj = gp_conv_name_to_gssx(&ret_min, name, &el->MN);
+        if (ret_maj) {
             goto done;
         }
         gss_release_name(&ret_min, &name);
@@ -120,6 +121,8 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
 
         ret = gp_conv_oid_to_gssx(&mechanisms->elements[i], &el->mech);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         el->cred_usage = gp_conv_gssx_to_cred_usage(cred_usage);
@@ -131,6 +134,8 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
     ret = gp_conv_octet_string(sizeof(gss_cred_id_t), in,
                                &out->cred_handle_reference);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
     out->needs_release = true;
@@ -139,11 +144,14 @@ int gp_export_gssx_cred(gss_cred_id_t *in, gssx_cred *out)
     /* when we will have gss_export_cred() we will actually free
      * them immediately instead */
     *in = NULL;
+    ret_maj = GSS_S_COMPLETE;
+    ret_min = 0;
 
 done:
+    *min = ret_min;
     gss_release_name(&ret_min, &name);
     gss_release_oid_set(&ret_min, &mechanisms);
-    return ret;
+    return ret_maj;
 }
 
 int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)

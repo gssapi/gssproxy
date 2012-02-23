@@ -48,6 +48,8 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     if (aca->input_cred_handle) {
         ret = gp_find_cred(aca->input_cred_handle, &in_cred);
         if (ret) {
+            ret_maj = GSS_S_NO_CRED;
+            ret_min = ret;
             goto done;
         }
     }
@@ -57,14 +59,17 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     }
 
     if (aca->desired_name) {
-        ret = gp_conv_gssx_to_name(aca->desired_name, &desired_name);
-        if (ret) {
+        ret_maj = gp_conv_gssx_to_name(&ret_min,
+                                       aca->desired_name, &desired_name);
+        if (ret_maj) {
             goto done;
         }
     }
 
     ret = gp_conv_gssx_to_oid_set(&aca->desired_mechs, &desired_mechs);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
@@ -89,7 +94,8 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
                 desired_mech = &desired_mechs->elements[0];
                 break;
             default:
-                ret = EINVAL;
+                ret_maj = GSS_S_FAILURE;
+                ret_min = EINVAL;
                 goto done;
             }
         }
@@ -105,16 +111,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
                                NULL,
                                NULL);
     }
-
-    ret = gp_conv_status_to_gssx(&aca->call_ctx,
-                                 ret_maj, ret_min, GSS_C_NO_OID,
-                                 &acr->status);
-    if (ret) {
-        goto done;
-    }
-
     if (ret_maj) {
-        ret = 0;
         goto done;
     }
 
@@ -122,21 +119,27 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
         if (in_cred) {
             out_cred = in_cred;
         } else {
-            ret = EINVAL;
+            ret_maj = GSS_S_FAILURE;
+            ret_min = EINVAL;
             goto done;
         }
     }
     acr->output_cred_handle = calloc(1, sizeof(gssx_cred));
     if (!acr->output_cred_handle) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
-    ret = gp_export_gssx_cred(&out_cred, acr->output_cred_handle);
-    if (ret) {
+    ret_maj = gp_export_gssx_cred(&ret_min, &out_cred, acr->output_cred_handle);
+    if (ret_maj) {
         goto done;
     }
 
 done:
+    ret = gp_conv_status_to_gssx(&aca->call_ctx,
+                                 ret_maj, ret_min, desired_mech,
+                                 &acr->status);
+
     gss_release_cred(&ret_min, &out_cred);
     return ret;
 }
