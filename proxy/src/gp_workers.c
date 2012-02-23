@@ -378,24 +378,22 @@ static void *gp_worker_main(void *pvt)
 
     while (!t->pool->shutdown) {
 
-        /* wait for next query */
-        if (t->query == NULL) {
-            /* ======> COND_MUTEX */
-            pthread_mutex_lock(&t->cond_mutex);
-            while (t->query == NULL) {
-                pthread_cond_wait(&t->cond_wakeup, &t->cond_mutex);
-                if (t->pool->shutdown) {
-                    pthread_exit(NULL);
-                }
+        /* ======> COND_MUTEX */
+        pthread_mutex_lock(&t->cond_mutex);
+        while (t->query == NULL) {
+            /* wait for next query */
+            pthread_cond_wait(&t->cond_wakeup, &t->cond_mutex);
+            if (t->pool->shutdown) {
+                pthread_exit(NULL);
             }
-
-            /* grab the query off the shared pointer */
-            q = t->query;
-            t->query = NULL;
-
-            /* <====== COND_MUTEX */
-            pthread_mutex_unlock(&t->cond_mutex);
         }
+
+        /* grab the query off the shared pointer */
+        q = t->query;
+        t->query = NULL;
+
+        /* <====== COND_MUTEX */
+        pthread_mutex_unlock(&t->cond_mutex);
 
         /* handle the client request */
         gp_handle_query(t->pool, q);
