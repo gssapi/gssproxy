@@ -85,6 +85,7 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);
 void gp_conn_free(struct gp_conn *conn);
 void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
                          uint8_t *buffer, size_t buflen);
+struct gp_creds *gp_conn_get_creds(struct gp_conn *conn);
 
 /* from gp_workers.c */
 int gp_workers_init(struct gssproxy_ctx *gpctx);
@@ -94,7 +95,12 @@ int gp_query_new(struct gp_workers *w, struct gp_conn *conn,
 
 /* from gp_rpc.c */
 int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
+                        struct gp_service *gpsvc,
                         uint8_t *inbuf, size_t inlen,
                         uint8_t **outbuf, size_t *outlen);
+
+/* from gp_creds.c */
+struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
+                                       struct gp_conn *conn);
 
 #endif /* _GP_PROXY_H_ */

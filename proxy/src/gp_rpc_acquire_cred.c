@@ -26,6 +26,7 @@
 #include "gp_rpc_process.h"
 
 int gp_acquire_cred(struct gssproxy_ctx *gpctx,
+                    struct gp_service *gpsvc,
                     union gp_rpc_arg *arg,
                     union gp_rpc_res *res)
 {

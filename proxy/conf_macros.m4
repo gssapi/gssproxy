@@ -202,3 +202,20 @@ AC_ARG_ENABLE([all-experimental-features],
               [build_all_experimental_features=$enableval],
               [build_all_experimental_features=no])
 
+AC_DEFUN([WITH_CC_PATH],
+  [ AC_ARG_WITH([cc-path],
+                [AC_HELP_STRING([--with-cc-path=PATH],
+                                [Where to store ccache files for gssproxy [/var/run/user/gssproxy]]
+                               )
+                ]
+               )
+    config_ccpath="\"VARDIR\"/run/user/gssproxy"
+    ccpath="${localstatedir}/run/user/gssproxy"
+    if test x"$with_cc_path" != x; then
+        config_ccpath=$with_cc_path
+        ccpath=$with_cc_path
+    fi
+    AC_SUBST(ccpath)
+    AC_DEFINE_UNQUOTED(CCACHE_PATH, "$config_ccpath", [Where to store ccache files for gssproxy])
+  ])
+

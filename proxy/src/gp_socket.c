@@ -35,15 +35,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include "gp_proxy.h"
-
-#define CRED_TYPE_NONE 0x00
-#define CRED_TYPE_UNIX 0x01
-#define CRED_TYPE_SELINUX 0x02
-
-struct gp_creds {
-    int type;
-    struct ucred ucred;
-};
+#include "gp_creds.h"
 
 #define FRAGMENT_BIT (1 << 31)
 
@@ -68,6 +60,11 @@ struct gp_buffer {
     size_t size;
     size_t pos;
 };
+
+struct gp_creds *gp_conn_get_creds(struct gp_conn *conn)
+{
+    return &conn->creds;
+}
 
 void gp_conn_free(struct gp_conn *conn)
 {

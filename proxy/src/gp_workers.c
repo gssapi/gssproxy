@@ -428,11 +428,19 @@ static void *gp_worker_main(void *pvt)
 
 static void gp_handle_query(struct gp_workers *w, struct gp_query *q)
 {
+    struct gp_service *gpsvc;
     uint8_t *buffer;
     size_t buflen;
     int ret;
 
-    ret = gp_rpc_process_call(w->gpctx,
+    /* find service */
+    gpsvc = gp_creds_match_conn(w->gpctx, q->conn);
+    if (!gpsvc) {
+        q->status = GP_QUERY_ERR;
+        return;
+    }
+
+    ret = gp_rpc_process_call(w->gpctx, gpsvc,
                               q->buffer, q->buflen,
                               &buffer, &buflen);
     if (ret) {

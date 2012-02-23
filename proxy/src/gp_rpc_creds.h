@@ -23,43 +23,28 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _GP_RPC_PROCESS_H_
-#define _GP_RPC_PROCESS_H_
+#ifndef _GP_RPC_CREDS_H_
+#define _GP_RPC_CREDS_H_
 
 #include "config.h"
 #include <stdint.h>
-#include <stdbool.h>
-#include <errno.h>
 #include <gssapi/gssapi.h>
-#include "gp_common.h"
-#include "gp_conv.h"
-#include "gp_export.h"
-#include "rpcgen/gss_proxy.h"
-#include "rpcgen/gp_rpc.h"
-#include "gp_rpc_creds.h"
 
-struct gssproxy_ctx;
 struct gp_service;
 
-#define gp_exec_std_args struct gssproxy_ctx *gpctx, \
-                         struct gp_service *gpsvc, \
-                         union gp_rpc_arg *arg, \
-                         union gp_rpc_res *res
+bool gp_creds_allowed_mech(struct gp_service *svc, gss_OID desired_mech);
+uint32_t gp_get_supported_mechs(uint32_t *min,
+                                struct gp_service *svc, gss_OID_set *set);
 
-int gp_indicate_mechs(gp_exec_std_args);
-int gp_get_call_context(gp_exec_std_args);
-int gp_import_and_canon_name(gp_exec_std_args);
-int gp_export_cred(gp_exec_std_args);
-int gp_import_cred(gp_exec_std_args);
-int gp_acquire_cred(gp_exec_std_args);
-int gp_store_cred(gp_exec_std_args);
-int gp_init_sec_context(gp_exec_std_args);
-int gp_accept_sec_context(gp_exec_std_args);
-int gp_release_handle(gp_exec_std_args);
-int gp_get_mic(gp_exec_std_args);
-int gp_verify(gp_exec_std_args);
-int gp_wrap(gp_exec_std_args);
-int gp_unwrap(gp_exec_std_args);
-int gp_wrap_size_limit(gp_exec_std_args);
-
-#endif /* _GP_RPC_PROCESS_H_ */
+uint32_t gp_add_krb5_creds(uint32_t *min,
+                           struct gp_service *svc,
+                           gss_cred_id_t in_cred,
+                           gss_name_t desired_name,
+                           gss_cred_usage_t cred_usage,
+                           uint32_t initiator_time_req,
+                           uint32_t acceptor_time_req,
+                           gss_cred_id_t *output_cred_handle,
+                           gss_OID_set *actual_mechs,
+                           uint32_t *initiator_time_rec,
+                           uint32_t *acceptor_time_rec);
+#endif /* _GP_RPC_CREDS_H_ */

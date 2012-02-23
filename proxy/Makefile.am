@@ -20,6 +20,7 @@ gsspconfdir = $(sysconfdir)/gssproxy
 localedir = @localedir@
 
 pidpath = @pidpath@
+ccpath = @ccpath@
 pipepath = @pipepath@
 initdir = @initdir@
 systemdunitdir = @systemdunitdir@
@@ -102,6 +103,7 @@ gssproxy_SOURCES = \
     src/gp_init.c \
     src/gp_socket.c \
     src/gp_workers.c \
+    src/gp_creds.c \
     $(GP_RPCGEN_OBJ) \
     src/gp_rpc_process.c \
     src/gp_conv.c \

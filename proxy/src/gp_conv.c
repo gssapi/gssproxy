@@ -801,5 +801,3 @@ int gp_copy_gssx_name_alloc(gssx_name *in, gssx_name **out)
     *out = o;
     return 0;
 }
-
-

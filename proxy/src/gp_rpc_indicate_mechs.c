@@ -27,6 +27,7 @@
 #include "gp_debug.h"
 
 int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
+                      struct gp_service *gpsvc,
                       union gp_rpc_arg *arg,
                       union gp_rpc_res *res)
 {

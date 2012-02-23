@@ -56,6 +56,7 @@ m4_include([external/platform.m4])
 m4_include(conf_macros.m4)
 WITH_DISTRO_VERSION
 WITH_PID_PATH
+WITH_CC_PATH
 WITH_LOG_PATH
 WITH_PUBCONF_PATH
 WITH_PIPE_PATH

@@ -26,6 +26,7 @@
 #include "gp_rpc_process.h"
 
 int gp_init_sec_context(struct gssproxy_ctx *gpctx,
+                        struct gp_service *gpsvc,
                         union gp_rpc_arg *arg,
                         union gp_rpc_res *res)
 {
