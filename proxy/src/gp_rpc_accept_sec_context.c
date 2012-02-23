@@ -87,10 +87,8 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
         ret_min = ENOMEM;
         goto done;
     }
-    ret = gp_conv_ctx_id_to_gssx(&ctx, ascr->context_handle);
-    if (ret) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ret;
+    ret_maj = gp_conv_ctx_id_to_gssx(&ret_min, &ctx, ascr->context_handle);
+    if (ret_maj) {
         goto done;
     }
 
