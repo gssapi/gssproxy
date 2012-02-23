@@ -56,29 +56,20 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
 
     /* get all mechs */
     ret_maj = gss_indicate_mechs(&ret_min, &mech_set);
-
-    ret = gp_conv_status_to_gssx(&ima->call_ctx,
-                                 ret_maj, ret_min, GSS_C_NO_OID,
-                                 &imr->status);
-    if (ret) {
-        goto done;
-    }
-
     if (ret_maj) {
-        ret = 0;
         goto done;
     }
 
     ret_maj = gss_create_empty_oid_set(&ret_min, &attr_set);
     if (ret_maj) {
-        ret = ENOMEM;
         goto done;
     }
     /* fill up gssx_mech_info */
 
     imr->mechs.mechs_val = calloc(mech_set->count, sizeof(gssx_mech_info));
     if (!imr->mechs.mechs_val) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     imr->mechs.mechs_len = mech_set->count;
@@ -89,6 +80,8 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
 
         ret = gp_conv_oid_to_gssx(&mech_set->elements[i], &mi->mech);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
 
@@ -104,13 +97,16 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
             xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&mi->mech);
             continue;
 #if 0
-            ret = EINVAL;
+            ret_maj = GSS_S_FAILURE;
+            ret_min = EINVAL;
             goto done;
 #endif
         }
 
         ret = gp_conv_oid_set_to_gssx(name_types, &mi->name_types);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_oid_set(&ret_min, &name_types);
@@ -120,12 +116,13 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                              &mech_attrs,
                                              &known_mech_attrs);
         if (ret_maj) {
-            ret = EINVAL;
             goto done;
         }
 
         ret = gp_conv_oid_set_to_gssx(mech_attrs, &mi->mech_attrs);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         for (j = 0; j < mech_attrs->count; j++) {
@@ -135,7 +132,6 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                               attr_set,
                                               &present);
             if (ret_maj) {
-                ret = EINVAL;
                 goto done;
             }
 
@@ -147,7 +143,6 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                              &mech_attrs->elements[j],
                                              &attr_set);
             if (ret_maj) {
-                ret = ENOMEM;
                 goto done;
             }
 
@@ -157,6 +152,8 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
         ret = gp_conv_oid_set_to_gssx(known_mech_attrs,
                                       &mi->known_mech_attrs);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
 
@@ -167,7 +164,6 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                               attr_set,
                                               &present);
             if (ret_maj) {
-                ret = EINVAL;
                 goto done;
             }
 
@@ -179,7 +175,6 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                              &known_mech_attrs->elements[j],
                                              &attr_set);
             if (ret_maj) {
-                ret = ENOMEM;
                 goto done;
             }
 
@@ -192,24 +187,29 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                                 &mech_name,
                                                 &mech_desc);
         if (ret_maj) {
-            ret = EINVAL;
             goto done;
         }
 
         ret = gp_conv_buffer_to_gssx(&sasl_mech_name, &mi->saslname_sasl_mech_name);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_buffer(&ret_min, &sasl_mech_name);
 
         ret = gp_conv_buffer_to_gssx(&mech_name, &mi->saslname_mech_name);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_buffer(&ret_min, &mech_name);
 
         ret = gp_conv_buffer_to_gssx(&mech_desc, &mi->saslname_mech_desc);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_buffer(&ret_min, &mech_desc);
@@ -220,7 +220,8 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
     imr->mech_attr_descs.mech_attr_descs_val = calloc(attr_set->count,
                                                       sizeof(gssx_mech_attr));
     if (!imr->mech_attr_descs.mech_attr_descs_val) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     imr->mech_attr_descs.mech_attr_descs_len = attr_set->count;
@@ -231,6 +232,8 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
 
         ret = gp_conv_oid_to_gssx(&attr_set->elements[i], &ma->attr);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
 
@@ -240,32 +243,39 @@ int gp_indicate_mechs(struct gssproxy_ctx *gpctx,
                                         &short_desc,
                                         &long_desc);
         if (ret_maj) {
-            ret = EINVAL;
             goto done;
         }
 
         ret = gp_conv_buffer_to_gssx(&name, &ma->name);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_buffer(&ret_min, &name);
 
         ret = gp_conv_buffer_to_gssx(&short_desc, &ma->short_desc);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_buffer(&ret_min, &short_desc);
 
         ret = gp_conv_buffer_to_gssx(&long_desc, &ma->long_desc);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         gss_release_buffer(&ret_min, &long_desc);
     }
 
-    ret = 0;
-
 done:
+    ret = gp_conv_status_to_gssx(&ima->call_ctx,
+                                 ret_maj, ret_min, GSS_C_NO_OID,
+                                 &imr->status);
+
     gss_release_buffer(&ret_min, &long_desc);
     gss_release_buffer(&ret_min, &short_desc);
     gss_release_buffer(&ret_min, &name);

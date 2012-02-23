@@ -82,13 +82,14 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     gssx_res_acquire_cred *res = &ures.acquire_cred;
     uint32_t ret_min;
     uint32_t ret_maj;
-    int ret;
+    int ret = 0;
 
     memset(&uarg, 0, sizeof(union gp_rpc_arg));
     memset(&ures, 0, sizeof(union gp_rpc_res));
 
     if (output_cred_handle == NULL) {
-        ret = EINVAL;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = EINVAL;
         goto done;
     }
 
@@ -97,17 +98,21 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     if (desired_name) {
         arg->desired_name = calloc(1, sizeof(gssx_name));
         if (!arg->desired_name) {
-            ret = ENOMEM;
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
             goto done;
         }
-        ret = gp_conv_name_to_gssx(desired_name, arg->desired_name);
-        if (ret) {
+        ret_maj = gp_conv_name_to_gssx(&ret_min,
+                                       desired_name, arg->desired_name);
+        if (ret_maj) {
             goto done;
         }
     }
     if (desired_mechs) {
         ret = gp_conv_oid_set_to_gssx(desired_mechs, &arg->desired_mechs);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
     }
@@ -117,6 +122,8 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     /* execute proxy request */
     ret = gpm_make_call(GSSX_ACQUIRE_CRED, &uarg, &ures);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
@@ -124,7 +131,6 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
         gpm_save_status(&res->status);
         ret_min = res->status.minor_status;
         ret_maj = res->status.major_status;
-        ret = 0;
         goto done;
     }
 
@@ -132,6 +138,8 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
         ret = gpmint_cred_to_actual_mechs(res->output_cred_handle,
                                           actual_mechs);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
     }
@@ -157,14 +165,9 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     res->output_cred_handle = NULL;
     ret_maj = GSS_S_COMPLETE;
     ret_min = 0;
-    ret = 0;
 
 done:
     gpm_free_xdrs(GSSX_ACQUIRE_CRED, &uarg, &ures);
-    if (ret) {
-        *minor_status = ret;
-        return GSS_S_FAILURE;
-    }
     *minor_status = ret_min;
     return ret_maj;
 }
@@ -188,7 +191,7 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
     gss_OID_set_desc mechs;
     uint32_t ret_min;
     uint32_t ret_maj;
-    int ret;
+    int ret = 0;
 
     memset(&uarg, 0, sizeof(union gp_rpc_arg));
     memset(&ures, 0, sizeof(union gp_rpc_res));
@@ -207,8 +210,9 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
             ret = ENOMEM;
             goto done;
         }
-        ret = gp_conv_name_to_gssx(desired_name, arg->desired_name);
-        if (ret) {
+        ret_maj = gp_conv_name_to_gssx(&ret_min,
+                                       desired_name, arg->desired_name);
+        if (ret_maj) {
             goto done;
         }
     }
@@ -217,6 +221,8 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
         mechs.elements = desired_mech;
         ret = gp_conv_oid_set_to_gssx(&mechs, &arg->desired_mechs);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
     }
@@ -227,6 +233,8 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
     /* execute proxy request */
     ret = gpm_make_call(GSSX_ACQUIRE_CRED, &uarg, &ures);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
@@ -234,7 +242,6 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
         gpm_save_status(&res->status);
         ret_min = res->status.minor_status;
         ret_maj = res->status.major_status;
-        ret = 0;
         goto done;
     }
 
@@ -242,6 +249,8 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
         ret = gpmint_cred_to_actual_mechs(res->output_cred_handle,
                                           actual_mechs);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
     }
@@ -272,14 +281,9 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
 
     ret_maj = GSS_S_COMPLETE;
     ret_min = 0;
-    ret = 0;
 
 done:
     gpm_free_xdrs(GSSX_ACQUIRE_CRED, &uarg, &ures);
-    if (ret) {
-        *minor_status = ret;
-        return GSS_S_FAILURE;
-    }
     *minor_status = ret_min;
     return ret_maj;
 }

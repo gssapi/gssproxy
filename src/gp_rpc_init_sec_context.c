@@ -52,6 +52,8 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
     if (isca->context_handle) {
         ret = gp_conv_gssx_to_ctx_id(isca->context_handle, &ctx);
         if (ret) {
+            ret_maj = GSS_S_NO_CONTEXT;
+            ret_min = ret;
             goto done;
         }
     }
@@ -59,17 +61,21 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
     if (isca->cred_handle) {
         ret = gp_find_cred(isca->cred_handle, &ich);
         if (ret) {
+            ret_maj = GSS_S_NO_CRED;
+            ret_min = ret;
             goto done;
         }
     }
 
-    ret = gp_conv_gssx_to_name(isca->target_name, &target_name);
-    if (ret) {
+    ret_maj = gp_conv_gssx_to_name(&ret_min, isca->target_name, &target_name);
+    if (ret_maj) {
         goto done;
     }
 
     ret = gp_conv_gssx_to_oid_alloc(&isca->mech_type, &mech_type);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
@@ -105,31 +111,33 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
 
     iscr->context_handle = calloc(1, sizeof(gssx_ctx));
     if (!iscr->context_handle) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     ret = gp_conv_ctx_id_to_gssx(&ctx, iscr->context_handle);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
     if (obuf.length != 0) {
         iscr->output_token = calloc(1, sizeof(gssx_buffer));
         if (!iscr->output_token) {
-            ret = ENOMEM;
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
             goto done;
         }
         ret = gp_conv_buffer_to_gssx(&obuf, iscr->output_token);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
     }
 
 done:
-    if (ret) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ret;
-    }
     ret = gp_conv_status_to_gssx(&isca->call_ctx,
                                  ret_maj, ret_min, mech_type,
                                  &iscr->status);

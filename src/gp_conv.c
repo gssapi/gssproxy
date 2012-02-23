@@ -333,26 +333,30 @@ done:
     return ret;
 }
 
-int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
+uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
 {
     uint32_t ret_maj;
     uint32_t ret_min;
-    gss_buffer_desc name_buffer;
+    gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
     gss_OID name_type;
-    gss_buffer_desc exported_name;
+    gss_buffer_desc exported_name = GSS_C_EMPTY_BUFFER;
     int ret;
 
     ret_maj = gss_display_name(&ret_min, in, &name_buffer, &name_type);
     if (ret_maj) {
-        return -1;
+        goto done;
     }
 
     ret = gp_conv_buffer_to_gssx(&name_buffer, &out->display_name);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
     ret = gp_conv_oid_to_gssx(name_type, &out->name_type);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
@@ -360,6 +364,8 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
     if (ret_maj == 0) {
         ret = gp_conv_buffer_to_gssx(&exported_name, &out->exported_name);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
     } else {
@@ -367,7 +373,6 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
          * canonicalized but that is ok we simply do not export the name
          * in this case */
         if (ret_maj != GSS_S_NAME_NOT_MN) {
-            ret = -1;
             goto done;
         }
     }
@@ -376,37 +381,40 @@ int gp_conv_name_to_gssx(gss_name_t in, gssx_name *out)
     /* out->name_attributes */
 
 done:
+    *min = ret_min;
     gss_release_buffer(&ret_min, &name_buffer);
     gss_release_buffer(&ret_min, &exported_name);
-    if (ret) {
+    if (ret_maj) {
         xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->display_name);
         xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->name_type);
         xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->exported_name);
     }
-    return ret;
+    return ret_maj;
 }
 
-int gp_conv_name_to_gssx_alloc(gss_name_t in, gssx_name **out)
+uint32_t gp_conv_name_to_gssx_alloc(uint32_t *min,
+                                    gss_name_t in, gssx_name **out)
 {
     gssx_name *o;
-    int ret;
+    uint32_t ret_maj;
 
     o = calloc(1, sizeof(gssx_name));
     if (!o) {
         return ENOMEM;
     }
 
-    ret = gp_conv_name_to_gssx(in, o);
+    ret_maj = gp_conv_name_to_gssx(min, in, o);
 
-    if (ret) {
+    if (ret_maj) {
         free(o);
+    } else {
+        *out = o;
     }
 
-    *out = o;
-    return ret;
+    return ret_maj;
 }
 
-int gp_conv_gssx_to_name(gssx_name *in, gss_name_t *out)
+uint32_t gp_conv_gssx_to_name(uint32_t *min, gssx_name *in, gss_name_t *out)
 {
     gss_buffer_t input_name = GSS_C_NO_BUFFER;
     gss_OID name_type = GSS_C_NO_OID;
@@ -422,16 +430,19 @@ int gp_conv_gssx_to_name(gssx_name *in, gss_name_t *out)
          * already have exported_name */
         ret = gp_conv_gssx_to_buffer_alloc(&in->display_name, &input_name);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
         ret = gp_conv_gssx_to_oid_alloc(&in->name_type, &name_type);
         if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
             goto done;
         }
 
         ret_maj = gss_import_name(&ret_min, input_name, name_type, out);
         if (ret_maj) {
-            ret = ret_maj;
             goto done;
         }
     } else {
@@ -440,15 +451,15 @@ int gp_conv_gssx_to_name(gssx_name *in, gss_name_t *out)
         ret_maj = gss_import_name(&ret_min, &name_buffer,
                                   GSS_C_NT_EXPORT_NAME, out);
         if (ret_maj) {
-            ret = ret_maj;
             goto done;
         }
     }
 
 done:
+    *min = ret_min;
     gss_release_buffer(&ret_min, input_name);
     gss_release_oid(&ret_min, &name_type);
-    return ret;
+    return ret_maj;
 }
 
 int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
@@ -484,13 +495,15 @@ int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
         goto done;
     }
 
-    ret = gp_conv_name_to_gssx(src_name, &out->src_name);
-    if (ret) {
+    ret_maj = gp_conv_name_to_gssx(&ret_min, src_name, &out->src_name);
+    if (ret_maj) {
+        ret = EINVAL;
         goto done;
     }
 
-    ret = gp_conv_name_to_gssx(targ_name, &out->targ_name);
-    if (ret) {
+    ret_maj = gp_conv_name_to_gssx(&ret_min, targ_name, &out->targ_name);
+    if (ret_maj) {
+        ret = EINVAL;
         goto done;
     }
 
