@@ -289,10 +289,11 @@ static int gp_rpc_encode_reply(XDR *xdr_reply_ctx,
     return 0;
 }
 
-static int gp_rpc_execute(struct gssproxy_ctx *gpctx, uint32_t proc,
+static int gp_rpc_execute(struct gssproxy_ctx *gpctx,
+                          struct gp_service *gpsvc, uint32_t proc,
                           union gp_rpc_arg *arg, union gp_rpc_res *res)
 {
-    return gp_xdr_set[proc].exec_fn(gpctx, arg, res);
+    return gp_xdr_set[proc].exec_fn(gpctx, gpsvc, arg, res);
 }
 
 static int gp_rpc_return_buffer(XDR *xdr_reply_ctx, char *reply_buffer,
@@ -324,6 +325,7 @@ static void gp_rpc_free_xdrs(int proc,
 }
 
 int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
+                        struct gp_service *gpsvc,
                         uint8_t *inbuf, size_t inlen,
                         uint8_t **outbuf, size_t *outlen)
 {
@@ -349,7 +351,7 @@ int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
     ret = gp_rpc_decode_call(&xdr_call_ctx, &xid, &proc, &arg, &acc, &rej);
     if (!ret) {
         /* execute request */
-        ret = gp_rpc_execute(gpctx, proc, &arg, &res);
+        ret = gp_rpc_execute(gpctx, gpsvc, proc, &arg, &res);
         if (ret) {
             acc = GP_RPC_SYSTEM_ERR;
             ret = EINVAL;

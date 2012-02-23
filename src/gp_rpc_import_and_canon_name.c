@@ -32,6 +32,7 @@
  * touch this function */
 
 int gp_import_and_canon_name(struct gssproxy_ctx *gpctx,
+                             struct gp_service *gpsvc,
                              union gp_rpc_arg *arg,
                              union gp_rpc_res *res)
 {
