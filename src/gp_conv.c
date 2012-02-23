@@ -462,7 +462,7 @@ done:
     return ret_maj;
 }
 
-int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
+uint32_t gp_conv_ctx_id_to_gssx(uint32_t *min, gss_ctx_id_t *in, gssx_ctx *out)
 {
     uint32_t ret_maj;
     uint32_t ret_min;
@@ -486,24 +486,23 @@ int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
                                   &lifetime_rec, &mech_type, &ctx_flags,
                                   &is_locally_initiated, &is_open);
     if (ret_maj) {
-        ret = EINVAL;
         goto done;
     }
 
     ret = gp_conv_oid_to_gssx(mech_type, &out->mech);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
     ret_maj = gp_conv_name_to_gssx(&ret_min, src_name, &out->src_name);
     if (ret_maj) {
-        ret = EINVAL;
         goto done;
     }
 
     ret_maj = gp_conv_name_to_gssx(&ret_min, targ_name, &out->targ_name);
     if (ret_maj) {
-        ret = EINVAL;
         goto done;
     }
 
@@ -523,16 +522,20 @@ int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
      * so this must be the last call to use it */
     out->exported_context_token = calloc(1, sizeof(octet_string));
     if (!out->exported_context_token) {
-        ret = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     ret_maj = gss_export_sec_context(&ret_min, in, &export_buffer);
     if (ret_maj) {
-        ret = EINVAL;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
         goto done;
     }
     ret = gp_conv_buffer_to_gssx(&export_buffer, out->exported_context_token);
     if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
         goto done;
     }
 
@@ -540,15 +543,16 @@ int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out)
     /* out->gssx_option */
 
 done:
+    *min = ret_min;
     gss_release_name(&ret_min, &src_name);
     gss_release_name(&ret_min, &targ_name);
     gss_release_buffer(&ret_min, &export_buffer);
-    if (ret) {
+    if (ret_maj) {
         xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->mech);
         xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->src_name);
         xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->targ_name);
     }
-    return ret;
+    return ret_maj;
 }
 
 int gp_conv_gssx_to_ctx_id(gssx_ctx *in, gss_ctx_id_t *out)

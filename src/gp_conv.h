@@ -60,7 +60,8 @@ uint32_t gp_conv_name_to_gssx_alloc(uint32_t *min,
                                     gss_name_t in, gssx_name **out);
 uint32_t gp_conv_gssx_to_name(uint32_t *min, gssx_name *in, gss_name_t *out);
 
-int gp_conv_ctx_id_to_gssx(gss_ctx_id_t *in, gssx_ctx *out);
+uint32_t gp_conv_ctx_id_to_gssx(uint32_t *min,
+                                gss_ctx_id_t *in, gssx_ctx *out);
 int gp_conv_gssx_to_ctx_id(gssx_ctx *in, gss_ctx_id_t *out);
 
 int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
