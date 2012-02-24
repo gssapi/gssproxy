@@ -28,3 +28,18 @@
  - SPNEGO (any pseudo-mechanism) should not be proxied, as it will
    re-enter the mechglue and call the proxy(ies) if needed (or not) as
    appropriate.
+
+
+ - How to pass around ccaches ?
+    We simply don't.
+    1. For a user, we should probably deny init_sec_context initially, but if we
+    allow it we need to create a ccache like
+        /var/lib/gssproxy/cc/krb5cc_<userename>
+    The user will not have direct access to the cache.
+    2. For a normal service we will do the same, both accept and init contetx use
+    the configured keytab and the ccache will be in
+        /var/lib/gssproxy/cc/krb5cc_<servicename>
+    3. For a trusted service we do the same as in 2. except when the service
+    asks us to init_sec_context as a user, in that case we will try to use the
+    user's ccache in /run/user/<username>/krb5cc, erroring out if it does not
+    exist or is expired.
