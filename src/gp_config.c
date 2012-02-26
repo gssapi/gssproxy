@@ -34,20 +34,14 @@
 
 #define GP_SOCKET_NAME "gssproxy.socket"
 
-static void gp_credcfg_free(struct gp_credcfg *cred)
-{
-    free(cred->name);
-    if (cred->mech == GP_CRED_KRB5) {
-        free(cred->cred.krb5.keytab);
-        free(cred->cred.krb5.ccache);
-    }
-    memset(cred, 0, sizeof(struct gp_credcfg));
-}
-
 static void gp_service_free(struct gp_service *svc)
 {
     free(svc->name);
-    free(svc->creds);
+    if (svc->mechs & GP_CRED_KRB5) {
+        free(svc->krb5.principal);
+        free(svc->krb5.keytab);
+        free(svc->krb5.ccache);
+    }
     memset(svc, 0, sizeof(struct gp_service));
 }
 
@@ -86,80 +80,35 @@ static int get_int_value(dictionary *dict,
     return ret;
 }
 
-static int get_krb5_mech_cfg(struct gp_credcfg *cred,
+static int get_krb5_mech_cfg(struct gp_service *svc,
                              dictionary *dict,
                              const char *secname)
 {
     const char *value;
 
-    cred->name = strdup(&secname[11]); /* name after 'credentials/' */
-    if (!cred->name) {
-        return ENOMEM;
+    value = get_char_value(dict, secname, "krb5_principal");
+    if (value) {
+        svc->krb5.principal = strdup(value);
+        if (!svc->krb5.principal) {
+            return ENOMEM;
+        }
     }
-
-    cred->mech = GP_CRED_KRB5;
 
     value = get_char_value(dict, secname, "krb5_keytab");
     if (value) {
-        cred->cred.krb5.keytab = strdup(value);
-        if (!cred->cred.krb5.keytab) {
+        svc->krb5.keytab = strdup(value);
+        if (!svc->krb5.keytab) {
             return ENOMEM;
         }
     }
 
     value = get_char_value(dict, secname, "krb5_ccache");
     if (value) {
-        cred->cred.krb5.ccache = strdup(value);
-        if (!cred->cred.krb5.ccache) {
+        svc->krb5.ccache = strdup(value);
+        if (!svc->krb5.ccache) {
             return ENOMEM;
         }
     }
-
-    return 0;
-}
-
-static int get_creds_config(char *name, dictionary *dict,
-                            struct gp_service *svc,
-                            struct gp_credcfg **creds, int num_creds)
-{
-    char *value;
-    char *token;
-    char *handle;
-    int i, n;
-
-    svc->name = strdup(&name[8]); /* name after 'service/' */
-    if (!svc->name) {
-        return ENOMEM;
-    }
-
-    svc->creds = calloc(num_creds, sizeof(struct gp_credcfg *));
-    if (!svc->creds) {
-        return ENOMEM;
-    }
-
-    value = get_char_value(dict, name, "credentials");
-    if (value == NULL) {
-        /* malformed section, crentials is missing */
-        syslog(LOG_INFO,
-               "Credentials missing from [%s], ignoring.", name);
-        return EINVAL;
-    }
-
-    n = 0;
-    token = strtok_r(value, ", ", &handle);
-    do {
-        for (i = 0; i < num_creds; i++) {
-            if (strcmp(token, creds[i]->name) == 0) {
-                svc->creds[n] = creds[i];
-                n++;
-                break;
-            }
-        }
-
-        token = strtok_r(NULL, ", ", &handle);
-    } while (token != NULL);
-
-    svc->num_creds = n;
 
     return 0;
 }
@@ -169,19 +118,16 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
     int num_sec;
     char *secname;
     char *value;
+    char *token;
+    char *handle;
     int valnum;
     int ret;
     int i, n;
 
     num_sec = iniparser_getnsec(dict);
 
-    /* allocate enough space for num_sec services and creds, will trim it
-     * later when we know what is what */
-    cfg->creds = calloc(num_sec, sizeof(struct gp_credcfg *));
-    if (!cfg->creds) {
-        ret = ENOMEM;
-        goto done;
-    }
+    /* allocate enough space for num_sec services,
+     * we won't waste too much space by overallocating */
     cfg->svcs = calloc(num_sec, sizeof(struct gp_service *));
     if (!cfg->svcs) {
         ret = ENOMEM;
@@ -190,43 +136,6 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
 
     for (i = 0; i < num_sec; i++) {
         secname = iniparser_getsecname(dict, i);
-        ret = strncmp(secname, "credential/", 10);
-        if (ret == 0) {
-            n = cfg->num_creds;
-            cfg->creds[n] = calloc(1, sizeof(struct gp_credcfg));
-            if (!cfg->creds[n]) {
-                ret = ENOMEM;
-                goto done;
-            }
-            cfg->num_creds++;
-
-            value = get_char_value(dict, secname, "mech");
-            if (value == NULL) {
-                /* malformed section, mech is missing */
-                syslog(LOG_INFO,
-                       "Mech missing from [%s], ignoring.", secname);
-                gp_credcfg_free(cfg->creds[n]);
-                cfg->num_creds--;
-                continue;
-            }
-
-            ret = strcmp(value, "krb5");
-            if (ret == 0) {
-                ret = get_krb5_mech_cfg(cfg->creds[n], dict, secname);
-                if (ret != 0) {
-                    gp_credcfg_free(cfg->creds[n]);
-                    cfg->num_creds--;
-                    continue;
-                }
-            } else {
-                syslog(LOG_INFO,
-                       "Unknown mech: %s in [%s], ignoring.",
-                       value, secname);
-                gp_credcfg_free(cfg->creds[n]);
-                cfg->num_creds--;
-                continue;
-            }
-        }
 
         ret = strncmp(secname, "service/", 8);
         if (ret == 0) {
@@ -237,6 +146,12 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 goto done;
             }
             cfg->num_svcs++;
+
+            cfg->svcs[n]->name = strdup(secname + 8);
+            if (!cfg->svcs[n]->name) {
+                ret = ENOMEM;
+                goto done;
+            }
 
             valnum = get_int_value(dict, secname, "euid");
             if (valnum == -1) {
@@ -249,19 +164,56 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             }
             cfg->svcs[n]->euid = valnum;
 
-            ret = get_creds_config(secname, dict, cfg->svcs[n],
-                                   cfg->creds, cfg->num_creds);
-            if (ret) {
+            value = get_char_value(dict, secname, "trusted");
+            if (value != NULL) {
+                if (strcasecmp(value, "true") == 0 ||
+                    strcasecmp(value, "1") == 0 ||
+                    strcasecmp(value, "yes") == 0) {
+
+                    cfg->svcs[n]->trusted = true;
+                }
+            }
+
+            value = get_char_value(dict, secname, "mechs");
+            if (value == NULL) {
+                /* malformed section, mech is missing */
+                syslog(LOG_INFO,
+                       "Mechs missing from [%s], ignoring.", secname);
+                gp_service_free(cfg->svcs[n]);
+                cfg->num_svcs--;
+                continue;
+            }
+
+            token = strtok_r(value, ", ", &handle);
+            do {
+
+                ret = strcmp(value, "krb5");
+                if (ret == 0) {
+                    ret = get_krb5_mech_cfg(cfg->svcs[n], dict, secname);
+                    if (ret == 0) {
+                        cfg->svcs[n]->mechs |= GP_CRED_KRB5;
+                    } else {
+                        syslog(LOG_INFO,
+                               "Failed to read krb5 config for %s, ignoring.",
+                               secname);
+                    }
+                } else {
+                    syslog(LOG_INFO,
+                           "Unknown mech: %s in [%s], ignoring.",
+                            token, secname);
+                }
+
+                token = strtok_r(NULL, ", ", &handle);
+            } while (token != NULL);
+
+            if (cfg->svcs[n]->mechs == 0) {
+                syslog(LOG_INFO,
+                       "No mechs found for [%s], ignoring.", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
             }
         }
-    }
-
-    if (cfg->num_creds == 0){
-        syslog(LOG_ERR, "No credentials sections configured!");
-        return ENOENT;
     }
 
     if (cfg->num_svcs == 0) {

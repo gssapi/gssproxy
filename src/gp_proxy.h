@@ -34,32 +34,21 @@
 
 #define _(STRING) gettext(STRING)
 
+#define GP_CRED_KRB5    0x01
+
 struct gp_cred_krb5 {
+    char *principal;
     char *keytab;
     char *ccache;
 };
 
-struct gp_credcfg {
-    char *name;
-
-    enum {
-        GP_CRED_NONE = 0,
-        GP_CRED_KRB5,
-    } mech;
-
-    union {
-        struct gp_cred_krb5 krb5;
-    } cred;
-};
-
 struct gp_service {
     char *name;
-
     uid_t euid;
-    gid_t egid;
+    bool trusted;
 
-    struct gp_credcfg **creds;
-    int num_creds;
+    uint32_t mechs;
+    struct gp_cred_krb5 krb5;
 };
 
 struct gp_config {
@@ -67,9 +56,6 @@ struct gp_config {
     bool daemonize;         /* let gssproxy daemonize */
     char *socket_name;      /* the socket name to use for */
     int num_workers;        /* number of worker threads */
-
-    struct gp_credcfg **creds;
-    int num_creds;
 
     struct gp_service **svcs;
     int num_svcs;
