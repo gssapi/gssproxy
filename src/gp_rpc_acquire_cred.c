@@ -24,6 +24,7 @@
 */
 
 #include "gp_rpc_process.h"
+#include <gssapi/gssapi_krb5.h>
 
 int gp_acquire_cred(struct gssproxy_ctx *gpctx,
                     struct gp_service *gpsvc,
@@ -37,11 +38,13 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     gss_cred_id_t in_cred = GSS_C_NO_CREDENTIAL;
     gss_name_t desired_name = GSS_C_NO_NAME;
     gss_OID_set desired_mechs = GSS_C_NO_OID_SET;
+    gss_OID_set use_mechs = GSS_C_NO_OID_SET;
     gss_OID desired_mech = GSS_C_NO_OID;
     gss_cred_usage_t cred_usage;
     gss_cred_id_t out_cred = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t *add_out_cred = NULL;
     int ret;
+    int i;
 
     aca = &arg->acquire_cred;
     acr = &res->acquire_cred;
@@ -56,6 +59,8 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     }
 
     if (aca->add_cred_to_input_handle) {
+        add_out_cred = &in_cred;
+    } else {
         add_out_cred = &out_cred;
     }
 
@@ -74,57 +79,92 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
         goto done;
     }
 
-    cred_usage = gp_conv_gssx_to_cred_usage(aca->cred_usage);
+    /* if a mech list is specified check if it includes the mechs
+     * allowed by this service configuration */
+    if (desired_mechs != GSS_C_NO_OID_SET) {
+        ret_maj = gss_create_empty_oid_set(&ret_min, &use_mechs);
+        if (ret_maj) {
+            goto done;
+        }
 
-    if (in_cred == GSS_C_NO_CREDENTIAL) {
-        ret_maj = gss_acquire_cred(&ret_min,
-                                   desired_name,
-                                   aca->time_req,
-                                   desired_mechs,
-                                   cred_usage,
-                                   &out_cred,
-                                   NULL,
-                                   NULL);
-    } else {
-        if (desired_mechs != GSS_C_NO_OID_SET) {
-            switch (desired_mechs->count) {
-            case 0:
-                desired_mech = GSS_C_NO_OID;
-                break;
-            case 1:
-                desired_mech = &desired_mechs->elements[0];
-                break;
-            default:
-                ret_maj = GSS_S_FAILURE;
-                ret_min = EINVAL;
+        for (i = 0; i < desired_mechs->count; i++) {
+            desired_mech = &desired_mechs->elements[i];
+
+            if (!gp_creds_allowed_mech(gpsvc, desired_mech)) {
+                continue;
+            }
+
+            ret_maj = gss_add_oid_set_member(&ret_min,
+                                             desired_mech, &use_mechs);
+            if (ret_maj) {
                 goto done;
             }
         }
-        ret_maj = gss_add_cred(&ret_min,
-                               in_cred,
-                               desired_name,
-                               desired_mech,
-                               cred_usage,
-                               aca->initiator_time_req,
-                               aca->acceptor_time_req,
-                               add_out_cred,
-                               NULL,
-                               NULL,
-                               NULL);
-    }
-    if (ret_maj) {
-        goto done;
-    }
 
-    if (!out_cred) {
-        if (in_cred) {
-            out_cred = in_cred;
-        } else {
-            ret_maj = GSS_S_FAILURE;
-            ret_min = EINVAL;
+        if (use_mechs->count == 0) {
+            /* no allowed mech, return nothing */
+            desired_mech = GSS_C_NO_OID;
+            ret_maj = GSS_S_NO_CRED;
+            ret_min = 0;
+            goto done;
+        }
+    } else {
+        ret_maj = gp_get_supported_mechs(&ret_min, gpsvc, &use_mechs);
+        if (ret_maj) {
             goto done;
         }
     }
+
+    cred_usage = gp_conv_gssx_to_cred_usage(aca->cred_usage);
+
+    for (i = 0; i < use_mechs->count; i++) {
+        desired_mech = &use_mechs->elements[i];
+        /* this should really be folded into an extended
+         * gss_add_cred in gssapi that can accept a set of URIs
+         * that define keytabs and ccaches and principals */
+        if (gss_oid_equal(desired_mech, gss_mech_krb5)) {
+            ret_maj = gp_add_krb5_creds(&ret_min,
+                                        gpsvc,
+                                        in_cred,
+                                        desired_name,
+                                        cred_usage,
+                                        aca->initiator_time_req,
+                                        aca->acceptor_time_req,
+                                        add_out_cred,
+                                        NULL,
+                                        NULL,
+                                        NULL);
+            if (ret_maj) {
+                goto done;
+            }
+        } else {
+            ret_maj = gss_add_cred(&ret_min,
+                                   in_cred,
+                                   desired_name,
+                                   desired_mech,
+                                   cred_usage,
+                                   aca->initiator_time_req,
+                                   aca->acceptor_time_req,
+                                   add_out_cred,
+                                   NULL,
+                                   NULL,
+                                   NULL);
+            if (ret_maj) {
+                goto done;
+            }
+        }
+    }
+
+    if (out_cred == GSS_C_NO_CREDENTIAL) {
+        if (in_cred != GSS_C_NO_CREDENTIAL) {
+            out_cred = in_cred;
+        } else {
+            ret_maj = GSS_S_NO_CRED;
+            ret_min = 0;
+            goto done;
+        }
+    }
+
     acr->output_cred_handle = calloc(1, sizeof(gssx_cred));
     if (!acr->output_cred_handle) {
         ret_maj = GSS_S_FAILURE;
@@ -142,5 +182,6 @@ done:
                                  &acr->status);
 
     gss_release_cred(&ret_min, &out_cred);
+    gss_release_oid_set(&ret_min, &use_mechs);
     return ret;
 }

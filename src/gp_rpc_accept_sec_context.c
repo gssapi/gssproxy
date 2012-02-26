@@ -59,6 +59,18 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
         }
     }
 
+    if (ach == GSS_C_NO_CREDENTIAL) {
+        ret_maj = gp_add_krb5_creds(&ret_min, gpsvc,
+                                    NULL, NULL,
+                                    GSS_C_ACCEPT,
+                                    0, 0,
+                                    &ach,
+                                    NULL, NULL, NULL);
+        if (ret_maj) {
+            goto done;
+        }
+    }
+
     gp_conv_gssx_to_buffer(&asca->input_token, &ibuf);
 
     if (asca->input_cb) {
