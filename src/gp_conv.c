@@ -322,7 +322,7 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
         }
     } while (msg_ctx);
 
-    ret_str->utf8string_len = strlen(str + 1);
+    ret_str->utf8string_len = strlen(str) + 1;
     ret_str->utf8string_val = str;
     ret = 0;
 
