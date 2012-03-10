@@ -79,19 +79,11 @@ xdr_gssx_time (XDR *xdrs, gssx_time *objp)
 }
 
 bool_t
-xdr_gssx_ext_id (XDR *xdrs, gssx_ext_id *objp)
+xdr_gssx_option (XDR *xdrs, gssx_option *objp)
 {
-	 if (!xdr_enum (xdrs, (enum_t *) objp))
+	 if (!xdr_gssx_buffer (xdrs, &objp->option))
 		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_gssx_typed_hole (XDR *xdrs, gssx_typed_hole *objp)
-{
-	 if (!xdr_gssx_ext_id (xdrs, &objp->ext_type))
-		 return FALSE;
-	 if (!xdr_octet_string (xdrs, &objp->ext_data))
+	 if (!xdr_gssx_buffer (xdrs, &objp->value))
 		 return FALSE;
 	return TRUE;
 }
@@ -108,7 +100,7 @@ xdr_gssx_mech_attr (XDR *xdrs, gssx_mech_attr *objp)
 	 if (!xdr_gssx_buffer (xdrs, &objp->long_desc))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -135,7 +127,7 @@ xdr_gssx_mech_info (XDR *xdrs, gssx_mech_info *objp)
 	 if (!xdr_gssx_buffer (xdrs, &objp->saslname_mech_desc))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -148,20 +140,7 @@ xdr_gssx_name_attr (XDR *xdrs, gssx_name_attr *objp)
 	 if (!xdr_gssx_buffer (xdrs, &objp->value))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
-		 return FALSE;
-	return TRUE;
-}
-
-bool_t
-xdr_gssx_option (XDR *xdrs, gssx_option *objp)
-{
-	 if (!xdr_gssx_OID (xdrs, &objp->option))
-		 return FALSE;
-	 if (!xdr_gssx_buffer (xdrs, &objp->value))
-		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -181,8 +160,8 @@ xdr_gssx_status (XDR *xdrs, gssx_status *objp)
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->server_ctx))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -194,8 +173,8 @@ xdr_gssx_call_ctx (XDR *xdrs, gssx_call_ctx *objp)
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->server_ctx))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -215,7 +194,7 @@ xdr_gssx_name (XDR *xdrs, gssx_name *objp)
 		sizeof (gssx_name_attr), (xdrproc_t) xdr_gssx_name_attr))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -233,11 +212,8 @@ xdr_gssx_cred_element (XDR *xdrs, gssx_cred_element *objp)
 		 return FALSE;
 	 if (!xdr_gssx_time (xdrs, &objp->acceptor_time_rec))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->cred_options.cred_options_val, (u_int *) &objp->cred_options.cred_options_len, ~0,
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
 		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
-		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
 		 return FALSE;
 	return TRUE;
 }
@@ -280,11 +256,8 @@ xdr_gssx_ctx (XDR *xdrs, gssx_ctx *objp)
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->open))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->context_options.context_options_val, (u_int *) &objp->context_options.context_options_len, ~0,
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
 		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
-		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
 		 return FALSE;
 	return TRUE;
 }
@@ -373,10 +346,10 @@ xdr_gssx_res_indicate_mechs (XDR *xdrs, gssx_res_indicate_mechs *objp)
 		sizeof (gssx_mech_attr), (xdrproc_t) xdr_gssx_mech_attr))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->supported_extensions.supported_extensions_val, (u_int *) &objp->supported_extensions.supported_extensions_len, ~0,
-		sizeof (gssx_ext_id), (xdrproc_t) xdr_gssx_ext_id))
+		sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
 		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -393,8 +366,8 @@ xdr_gssx_arg_import_and_canon_name (XDR *xdrs, gssx_arg_import_and_canon_name *o
 	 if (!xdr_array (xdrs, (char **)&objp->name_attributes.name_attributes_val, (u_int *) &objp->name_attributes.name_attributes_len, ~0,
 		sizeof (gssx_name_attr), (xdrproc_t) xdr_gssx_name_attr))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -406,8 +379,8 @@ xdr_gssx_res_import_and_canon_name (XDR *xdrs, gssx_res_import_and_canon_name *o
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_name, sizeof (gssx_name), (xdrproc_t) xdr_gssx_name))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -417,8 +390,8 @@ xdr_gssx_arg_get_call_context (XDR *xdrs, gssx_arg_get_call_context *objp)
 {
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -430,8 +403,8 @@ xdr_gssx_res_get_call_context (XDR *xdrs, gssx_res_get_call_context *objp)
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->server_call_ctx))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -440,9 +413,6 @@ bool_t
 xdr_gssx_arg_acquire_cred (XDR *xdrs, gssx_arg_acquire_cred *objp)
 {
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
-		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->cred_options.cred_options_val, (u_int *) &objp->cred_options.cred_options_len, ~0,
-		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->input_cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
 		 return FALSE;
@@ -460,8 +430,8 @@ xdr_gssx_arg_acquire_cred (XDR *xdrs, gssx_arg_acquire_cred *objp)
 		 return FALSE;
 	 if (!xdr_gssx_time (xdrs, &objp->acceptor_time_req))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -473,8 +443,8 @@ xdr_gssx_res_acquire_cred (XDR *xdrs, gssx_res_acquire_cred *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -488,8 +458,8 @@ xdr_gssx_arg_export_cred (XDR *xdrs, gssx_arg_export_cred *objp)
 		 return FALSE;
 	 if (!xdr_gssx_cred_usage (xdrs, &objp->cred_usage))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -503,8 +473,8 @@ xdr_gssx_res_export_cred (XDR *xdrs, gssx_res_export_cred *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->exported_handle, sizeof (octet_string), (xdrproc_t) xdr_octet_string))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -516,8 +486,8 @@ xdr_gssx_arg_import_cred (XDR *xdrs, gssx_arg_import_cred *objp)
 		 return FALSE;
 	 if (!xdr_octet_string (xdrs, &objp->exported_handle))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -529,8 +499,8 @@ xdr_gssx_res_import_cred (XDR *xdrs, gssx_res_import_cred *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -550,8 +520,8 @@ xdr_gssx_arg_store_cred (XDR *xdrs, gssx_arg_store_cred *objp)
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->default_cred))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -565,8 +535,8 @@ xdr_gssx_res_store_cred (XDR *xdrs, gssx_res_store_cred *objp)
 		 return FALSE;
 	 if (!xdr_gssx_cred_usage (xdrs, &objp->cred_usage_stored))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -575,9 +545,6 @@ bool_t
 xdr_gssx_arg_init_sec_context (XDR *xdrs, gssx_arg_init_sec_context *objp)
 {
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
-		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->context_options.context_options_val, (u_int *) &objp->context_options.context_options_len, ~0,
-		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
 		 return FALSE;
@@ -595,8 +562,8 @@ xdr_gssx_arg_init_sec_context (XDR *xdrs, gssx_arg_init_sec_context *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->input_token, sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -610,8 +577,8 @@ xdr_gssx_res_init_sec_context (XDR *xdrs, gssx_res_init_sec_context *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->output_token, sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -621,9 +588,6 @@ xdr_gssx_arg_accept_sec_context (XDR *xdrs, gssx_arg_accept_sec_context *objp)
 {
 	 if (!xdr_gssx_call_ctx (xdrs, &objp->call_ctx))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->context_options.context_options_val, (u_int *) &objp->context_options.context_options_len, ~0,
-		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
-		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->context_handle, sizeof (gssx_ctx), (xdrproc_t) xdr_gssx_ctx))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
@@ -632,8 +596,8 @@ xdr_gssx_arg_accept_sec_context (XDR *xdrs, gssx_arg_accept_sec_context *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->input_cb, sizeof (gssx_cb), (xdrproc_t) xdr_gssx_cb))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }
@@ -649,8 +613,8 @@ xdr_gssx_res_accept_sec_context (XDR *xdrs, gssx_res_accept_sec_context *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->delegated_cred_handle, sizeof (gssx_cred), (xdrproc_t) xdr_gssx_cred))
 		 return FALSE;
-	 if (!xdr_array (xdrs, (char **)&objp->extensions.extensions_val, (u_int *) &objp->extensions.extensions_len, ~0,
-		sizeof (gssx_typed_hole), (xdrproc_t) xdr_gssx_typed_hole))
+	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
+		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
 	return TRUE;
 }

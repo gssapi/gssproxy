@@ -46,16 +46,11 @@ typedef enum gssx_cred_usage gssx_cred_usage;
 
 typedef u_quad_t gssx_time;
 
-enum gssx_ext_id {
-	GSSX_EXT_NONE = 0,
+struct gssx_option {
+	gssx_buffer option;
+	gssx_buffer value;
 };
-typedef enum gssx_ext_id gssx_ext_id;
-
-struct gssx_typed_hole {
-	gssx_ext_id ext_type;
-	octet_string ext_data;
-};
-typedef struct gssx_typed_hole gssx_typed_hole;
+typedef struct gssx_option gssx_option;
 
 struct gssx_mech_attr {
 	gssx_OID attr;
@@ -64,7 +59,7 @@ struct gssx_mech_attr {
 	gssx_buffer long_desc;
 	struct {
 		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
+		gssx_option *extensions_val;
 	} extensions;
 };
 typedef struct gssx_mech_attr gssx_mech_attr;
@@ -81,7 +76,7 @@ struct gssx_mech_info {
 	gssx_buffer saslname_mech_desc;
 	struct {
 		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
+		gssx_option *extensions_val;
 	} extensions;
 };
 typedef struct gssx_mech_info gssx_mech_info;
@@ -91,20 +86,10 @@ struct gssx_name_attr {
 	gssx_buffer value;
 	struct {
 		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
+		gssx_option *extensions_val;
 	} extensions;
 };
 typedef struct gssx_name_attr gssx_name_attr;
-
-struct gssx_option {
-	gssx_OID option;
-	gssx_buffer value;
-	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
-};
-typedef struct gssx_option gssx_option;
 
 struct gssx_status {
 	gssx_uint64 major_status;
@@ -114,9 +99,9 @@ struct gssx_status {
 	utf8string minor_status_string;
 	octet_string server_ctx;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_status gssx_status;
 
@@ -124,9 +109,9 @@ struct gssx_call_ctx {
 	utf8string locale;
 	octet_string server_ctx;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_call_ctx gssx_call_ctx;
 
@@ -141,7 +126,7 @@ struct gssx_name {
 	} name_attributes;
 	struct {
 		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
+		gssx_option *extensions_val;
 	} extensions;
 };
 typedef struct gssx_name gssx_name;
@@ -153,13 +138,9 @@ struct gssx_cred_element {
 	gssx_time initiator_time_rec;
 	gssx_time acceptor_time_rec;
 	struct {
-		u_int cred_options_len;
-		gssx_option *cred_options_val;
-	} cred_options;
-	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_cred_element gssx_cred_element;
 
@@ -186,13 +167,9 @@ struct gssx_ctx {
 	bool_t locally_initiated;
 	bool_t open;
 	struct {
-		u_int context_options_len;
-		gssx_option *context_options_val;
-	} context_options;
-	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_ctx gssx_ctx;
 
@@ -250,11 +227,11 @@ struct gssx_res_indicate_mechs {
 	} mech_attr_descs;
 	struct {
 		u_int supported_extensions_len;
-		gssx_ext_id *supported_extensions_val;
+		gssx_buffer *supported_extensions_val;
 	} supported_extensions;
 	struct {
 		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
+		gssx_option *extensions_val;
 	} extensions;
 };
 typedef struct gssx_res_indicate_mechs gssx_res_indicate_mechs;
@@ -268,9 +245,9 @@ struct gssx_arg_import_and_canon_name {
 		gssx_name_attr *name_attributes_val;
 	} name_attributes;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_import_and_canon_name gssx_arg_import_and_canon_name;
 
@@ -278,18 +255,18 @@ struct gssx_res_import_and_canon_name {
 	gssx_status status;
 	gssx_name *output_name;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_import_and_canon_name gssx_res_import_and_canon_name;
 
 struct gssx_arg_get_call_context {
 	gssx_call_ctx call_ctx;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_get_call_context gssx_arg_get_call_context;
 
@@ -297,18 +274,14 @@ struct gssx_res_get_call_context {
 	gssx_status status;
 	octet_string server_call_ctx;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_get_call_context gssx_res_get_call_context;
 
 struct gssx_arg_acquire_cred {
 	gssx_call_ctx call_ctx;
-	struct {
-		u_int cred_options_len;
-		gssx_option *cred_options_val;
-	} cred_options;
 	gssx_cred *input_cred_handle;
 	bool_t add_cred_to_input_handle;
 	gssx_name *desired_name;
@@ -318,9 +291,9 @@ struct gssx_arg_acquire_cred {
 	gssx_time initiator_time_req;
 	gssx_time acceptor_time_req;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_acquire_cred gssx_arg_acquire_cred;
 
@@ -328,9 +301,9 @@ struct gssx_res_acquire_cred {
 	gssx_status status;
 	gssx_cred *output_cred_handle;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_acquire_cred gssx_res_acquire_cred;
 
@@ -339,9 +312,9 @@ struct gssx_arg_export_cred {
 	gssx_cred input_cred_handle;
 	gssx_cred_usage cred_usage;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_export_cred gssx_arg_export_cred;
 
@@ -350,9 +323,9 @@ struct gssx_res_export_cred {
 	gssx_cred_usage usage_exported;
 	octet_string *exported_handle;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_export_cred gssx_res_export_cred;
 
@@ -360,9 +333,9 @@ struct gssx_arg_import_cred {
 	gssx_call_ctx call_ctx;
 	octet_string exported_handle;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_import_cred gssx_arg_import_cred;
 
@@ -370,9 +343,9 @@ struct gssx_res_import_cred {
 	gssx_status status;
 	gssx_cred *output_cred_handle;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_import_cred gssx_res_import_cred;
 
@@ -384,9 +357,9 @@ struct gssx_arg_store_cred {
 	bool_t overwrite_cred;
 	bool_t default_cred;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_store_cred gssx_arg_store_cred;
 
@@ -395,18 +368,14 @@ struct gssx_res_store_cred {
 	gssx_OID_set elements_stored;
 	gssx_cred_usage cred_usage_stored;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_store_cred gssx_res_store_cred;
 
 struct gssx_arg_init_sec_context {
 	gssx_call_ctx call_ctx;
-	struct {
-		u_int context_options_len;
-		gssx_option *context_options_val;
-	} context_options;
 	gssx_ctx *context_handle;
 	gssx_cred *cred_handle;
 	gssx_name *target_name;
@@ -416,9 +385,9 @@ struct gssx_arg_init_sec_context {
 	gssx_cb *input_cb;
 	gssx_buffer *input_token;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_init_sec_context gssx_arg_init_sec_context;
 
@@ -427,26 +396,22 @@ struct gssx_res_init_sec_context {
 	gssx_ctx *context_handle;
 	gssx_buffer *output_token;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_init_sec_context gssx_res_init_sec_context;
 
 struct gssx_arg_accept_sec_context {
 	gssx_call_ctx call_ctx;
-	struct {
-		u_int context_options_len;
-		gssx_option *context_options_val;
-	} context_options;
 	gssx_ctx *context_handle;
 	gssx_cred *cred_handle;
 	gssx_buffer input_token;
 	gssx_cb *input_cb;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_arg_accept_sec_context gssx_arg_accept_sec_context;
 
@@ -456,9 +421,9 @@ struct gssx_res_accept_sec_context {
 	gssx_buffer *output_token;
 	gssx_cred *delegated_cred_handle;
 	struct {
-		u_int extensions_len;
-		gssx_typed_hole *extensions_val;
-	} extensions;
+		u_int options_len;
+		gssx_option *options_val;
+	} options;
 };
 typedef struct gssx_res_accept_sec_context gssx_res_accept_sec_context;
 
@@ -667,12 +632,10 @@ extern  bool_t xdr_gssx_OID (XDR *, gssx_OID*);
 extern  bool_t xdr_gssx_OID_set (XDR *, gssx_OID_set*);
 extern  bool_t xdr_gssx_cred_usage (XDR *, gssx_cred_usage*);
 extern  bool_t xdr_gssx_time (XDR *, gssx_time*);
-extern  bool_t xdr_gssx_ext_id (XDR *, gssx_ext_id*);
-extern  bool_t xdr_gssx_typed_hole (XDR *, gssx_typed_hole*);
+extern  bool_t xdr_gssx_option (XDR *, gssx_option*);
 extern  bool_t xdr_gssx_mech_attr (XDR *, gssx_mech_attr*);
 extern  bool_t xdr_gssx_mech_info (XDR *, gssx_mech_info*);
 extern  bool_t xdr_gssx_name_attr (XDR *, gssx_name_attr*);
-extern  bool_t xdr_gssx_option (XDR *, gssx_option*);
 extern  bool_t xdr_gssx_status (XDR *, gssx_status*);
 extern  bool_t xdr_gssx_call_ctx (XDR *, gssx_call_ctx*);
 extern  bool_t xdr_gssx_name (XDR *, gssx_name*);
@@ -724,12 +687,10 @@ extern bool_t xdr_gssx_OID ();
 extern bool_t xdr_gssx_OID_set ();
 extern bool_t xdr_gssx_cred_usage ();
 extern bool_t xdr_gssx_time ();
-extern bool_t xdr_gssx_ext_id ();
-extern bool_t xdr_gssx_typed_hole ();
+extern bool_t xdr_gssx_option ();
 extern bool_t xdr_gssx_mech_attr ();
 extern bool_t xdr_gssx_mech_info ();
 extern bool_t xdr_gssx_name_attr ();
-extern bool_t xdr_gssx_option ();
 extern bool_t xdr_gssx_status ();
 extern bool_t xdr_gssx_call_ctx ();
 extern bool_t xdr_gssx_name ();
