@@ -75,9 +75,10 @@
  * added with such semantics).
  *
  * Most/all RPC arguments/results have typed holes for extensibility.
- * Most/all "handles" have typed holes for extensibility.  Name
- * attributes, credential options, and security context options are all
- * first-class types rather than extensions for those typed holes.
+ * We call these "options" where existing GSS extension APIs have such a
+ * concept or where we think we might have such extension APIs soon,
+ * else we call them "extensions" and think of them more as ASN.1
+ * extensibility markers.
  *
  * For functions like GSS_Set_name_attribute(), GSS_Set_cred_option(),
  * and GSS_Set_sec_ctx_option(), the way these are intended to be
@@ -130,23 +131,14 @@ typedef unsigned hyper          gssx_time;      /* seconds since Unix epoch */
 /*
  * Major status codes will be per-RFC2744, cast to gssx_uint64.
  *
- * XXX Should we define GSSX_S_...?  Should #include the RFC2744 headers
- * here?
+ * XXX Should #include the RFC2744 headers here?
  */
 
-/* Extensions types.  This file is the registry of extension types for now. */
-enum gssx_ext_id {
-    GSSX_EXT_NONE = 0
-};
 
 /* Extensions */
-struct gssx_typed_hole {
-    /*
-     * Values of ext_type with the high bit set will be for private use;
-     * all other values will require registration.
-     */
-    gssx_ext_id         ext_type;
-    octet_string        ext_data;
+struct gssx_option {
+    gssx_buffer         option; /* a URN, possibly a stringified OID */
+    gssx_buffer         value;  /* a string with format give by option */
 };
 
 /* Mechanism attributes */
@@ -155,7 +147,7 @@ struct gssx_mech_attr {
     gssx_buffer         name;
     gssx_buffer         short_desc;
     gssx_buffer         long_desc;
-    gssx_typed_hole     extensions<>;
+    gssx_option         extensions<>;
 };
 
 /* Mechanism meta-data */
@@ -169,21 +161,14 @@ struct gssx_mech_info {
     gssx_buffer         saslname_sasl_mech_name;
     gssx_buffer         saslname_mech_name;
     gssx_buffer         saslname_mech_desc;
-    gssx_typed_hole     extensions<>;
+    gssx_option         extensions<>;
 };
 
 /* Name attributes are {attribute name, attribute value} */
 struct gssx_name_attr {
     gssx_buffer         attr;
     gssx_buffer         value;
-    gssx_typed_hole     extensions<>;
-};
-
-/* Credential and security context options are {option OID, option value} */
-struct gssx_option {
-    gssx_OID            option;
-    gssx_buffer         value;
-    gssx_typed_hole     extensions<>;
+    gssx_option         extensions<>;
 };
 
 /*
@@ -208,7 +193,7 @@ struct gssx_status {
     utf8string          major_status_string;
     utf8string          minor_status_string;
     octet_string        server_ctx;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /*
@@ -232,7 +217,7 @@ struct gssx_status {
 struct gssx_call_ctx {
     utf8string          locale;     /* for status display string L10N */
     octet_string        server_ctx; /* server-assigned (see above) */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /*
@@ -257,7 +242,7 @@ struct gssx_name {
     /* Name attributes */
     gssx_name_attr      name_attributes<>;
     /* Future extensions */
-    gssx_typed_hole     extensions<>;
+    gssx_option         extensions<>;
 };
 
 /*
@@ -280,9 +265,7 @@ struct gssx_cred_element {
     gssx_cred_usage     cred_usage;
     gssx_time           initiator_time_rec;
     gssx_time           acceptor_time_rec;
-    gssx_option         cred_options<>;
-    /* Extensions */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /*
@@ -334,8 +317,7 @@ struct gssx_ctx {
     gssx_uint64         ctx_flags;
     bool                locally_initiated;
     bool                open;
-    gssx_option         context_options<>;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /*
@@ -399,8 +381,8 @@ struct gssx_res_indicate_mechs {
     gssx_status         status;
     gssx_mech_info      mechs<>;
     gssx_mech_attr      mech_attr_descs<>;
-    gssx_ext_id         supported_extensions<>;
-    gssx_typed_hole     extensions<>;
+    gssx_buffer         supported_extensions<>; /* and options */
+    gssx_option         extensions<>;
 };
 
 /* We unify GSS_Import/Canonicalize_name() and GSS_Get/Set_name_attribute() */
@@ -409,29 +391,28 @@ struct gssx_arg_import_and_canon_name {
     gssx_name           input_name;
     gssx_OID            mech;
     gssx_name_attr      name_attributes<>;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_import_and_canon_name {
     gssx_status         status;
     gssx_name           *output_name;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /* We probably don't need this RPC */
 struct gssx_arg_get_call_context {
     gssx_call_ctx       call_ctx;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_get_call_context {
     gssx_status         status;
     octet_string        server_call_ctx;    /* server-assigned (see above) */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /* We unify GSS_Acquire/Add_cred() here */
 struct gssx_arg_acquire_cred {
     gssx_call_ctx       call_ctx;
-    gssx_option         cred_options<>;
     gssx_cred           *input_cred_handle;
     bool                add_cred_to_input_handle;
     gssx_name           *desired_name; /* absent -> GSS_C_NO_NAME */
@@ -440,12 +421,12 @@ struct gssx_arg_acquire_cred {
     gssx_cred_usage     cred_usage;
     gssx_time           initiator_time_req;
     gssx_time           acceptor_time_req;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_acquire_cred {
     gssx_status         status;
     gssx_cred           *output_cred_handle; /* includes info */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /* GSS_Export/Import_cred() are not unified */
@@ -453,25 +434,25 @@ struct gssx_arg_export_cred {
     gssx_call_ctx       call_ctx;
     gssx_cred           input_cred_handle;
     gssx_cred_usage     cred_usage;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 struct gssx_res_export_cred {
     gssx_status         status;
     gssx_cred_usage     usage_exported;
     octet_string        *exported_handle;   /* exported credential token */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 struct gssx_arg_import_cred {
     gssx_call_ctx       call_ctx;
     octet_string        exported_handle;   /* exported credential token */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_import_cred {
     gssx_status         status;
     gssx_cred           *output_cred_handle; /* includes info */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /* GSS_Store_cred() */
@@ -482,13 +463,13 @@ struct gssx_arg_store_cred {
     gssx_OID            desired_mech;
     bool                overwrite_cred;
     bool                default_cred;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_store_cred {
     gssx_status         status;
     gssx_OID_set        elements_stored;
     gssx_cred_usage     cred_usage_stored;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /*
@@ -500,7 +481,6 @@ struct gssx_res_store_cred {
  */
 struct gssx_arg_init_sec_context {
     gssx_call_ctx       call_ctx;
-    gssx_option         context_options<>;
     gssx_ctx            *context_handle;
     gssx_cred           *cred_handle; /* absent -> GSS_C_NO_CREDENTIAL */
     gssx_name           *target_name; /* absent -> GSS_C_NO_NAME */
@@ -509,30 +489,29 @@ struct gssx_arg_init_sec_context {
     gssx_time           time_req;
     gssx_cb             *input_cb; /* input channel bindings */
     gssx_buffer         *input_token;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_init_sec_context {
     gssx_status         status;
     gssx_ctx            *context_handle; /* includes info outputs */
     gssx_buffer         *output_token;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 struct gssx_arg_accept_sec_context {
     gssx_call_ctx       call_ctx;
-    gssx_option         context_options<>;
     gssx_ctx            *context_handle;
     gssx_cred           *cred_handle; /* absent -> GSS_C_NO_CREDENTIAL */
     gssx_buffer         input_token;
     gssx_cb             *input_cb; /* input channel bindings */
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 struct gssx_res_accept_sec_context {
     gssx_status         status;
     gssx_ctx            *context_handle; /* includes info outputs */
     gssx_buffer         *output_token;
     gssx_cred           *delegated_cred_handle;
-    gssx_typed_hole     extensions<>;
+    gssx_option         options<>;
 };
 
 /*
