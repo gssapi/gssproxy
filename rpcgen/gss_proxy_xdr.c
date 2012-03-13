@@ -236,9 +236,9 @@ xdr_gssx_cred (XDR *xdrs, gssx_cred *objp)
 bool_t
 xdr_gssx_ctx (XDR *xdrs, gssx_ctx *objp)
 {
-	 if (!xdr_pointer (xdrs, (char **)&objp->exported_context_token, sizeof (gssx_buffer), (xdrproc_t) xdr_gssx_buffer))
+	 if (!xdr_gssx_buffer (xdrs, &objp->exported_context_token))
 		 return FALSE;
-	 if (!xdr_pointer (xdrs, (char **)&objp->state, sizeof (octet_string), (xdrproc_t) xdr_octet_string))
+	 if (!xdr_octet_string (xdrs, &objp->state))
 		 return FALSE;
 	 if (!xdr_bool (xdrs, &objp->needs_release))
 		 return FALSE;

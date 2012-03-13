@@ -156,8 +156,8 @@ struct gssx_cred {
 typedef struct gssx_cred gssx_cred;
 
 struct gssx_ctx {
-	gssx_buffer *exported_context_token;
-	octet_string *state;
+	gssx_buffer exported_context_token;
+	octet_string state;
 	bool_t needs_release;
 	gssx_OID mech;
 	gssx_name src_name;
