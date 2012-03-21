@@ -47,6 +47,8 @@ struct gp_creds {
 #endif
 };
 
+#define FRAGMENT_BIT (1 << 31)
+
 struct unix_sock_conn {
 
     int sd;
@@ -259,6 +261,17 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
 
         /* allocate buffer for receiving data */
         rbuf->size = ntohl(size);
+
+        /* FIXME: need to support multiple fragments */
+        /* for now just make sure we have the last fragment bit
+         * then remove it */
+        if (rbuf->size & FRAGMENT_BIT) {
+            rbuf->size &= ~FRAGMENT_BIT;
+        } else {
+            ret = EIO;
+            goto done;
+        }
+
         if (rbuf->size > MAX_RPC_SIZE) {
             /* req too big close conn. */
             ret = EIO;
@@ -375,7 +388,8 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
 
     if (wbuf->pos == 0) {
         /* first write, send the buffer size as packet header */
-        size = htonl(wbuf->size);
+        size = wbuf->size | FRAGMENT_BIT;
+        size = htonl(size);
 
         iov[0].iov_base = &size;
         iov[0].iov_len = sizeof(size);
