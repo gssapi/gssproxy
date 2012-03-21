@@ -30,6 +30,8 @@
 #include <time.h>
 #include <pthread.h>
 
+#define FRAGMENT_BIT (1 << 31)
+
 struct gpm_ctx {
     pthread_mutex_t lock;
     int fd;
@@ -168,7 +170,8 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
 
     gpm_grab_sock(gpmctx);
 
-    size = htonl(length);
+    size = length | FRAGMENT_BIT;
+    size = htonl(size);
 
     retry = false;
     do {
@@ -258,6 +261,7 @@ static int gpm_recv_buffer(struct gpm_ctx *gpmctx,
     } while (retry);
 
     *length = ntohl(size);
+    *length &= ~FRAGMENT_BIT;
 
     if (*length > MAX_RPC_SIZE) {
         ret = EMSGSIZE;
