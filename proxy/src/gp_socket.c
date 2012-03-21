@@ -129,28 +129,33 @@ int init_unix_socket(const char *file_name)
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd == -1) {
         ret = errno;
+        GPDEBUG("Failed to init socket! (%d: %s)\n", ret, strerror(ret));
         goto done;
     }
 
     ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
     if (ret == -1) {
         ret = errno;
+        GPDEBUG("Failed to bind socket! (%d: %s)\n", ret, strerror(ret));
         goto done;
     }
 
     ret = listen(fd, 10);
     if (ret == -1) {
         ret = errno;
+        GPDEBUG("Failed to listen! (%d: %s)\n", ret, strerror(ret));
         goto done;
     }
 
     ret = set_status_flags(fd, O_NONBLOCK);
     if (ret != 0) {
+        GPDEBUG("Failed to set O_NONBLOCK on %d!\n", fd);
         goto done;
     }
 
     ret = set_fd_flags(fd, FD_CLOEXEC);
     if (ret != 0) {
+        GPDEBUG("Failed to set FD_CLOEXEC on %d!\n", fd);
         goto done;
     }
 
@@ -177,7 +182,9 @@ static int get_peercred(int fd, struct gp_conn *conn)
     len = sizeof(struct ucred);
     ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &conn->creds.ucred, &len);
     if (ret == -1) {
-        return errno;
+        ret = errno;
+        GPDEBUG("Failed to get SO_PEERCRED options!\n", ret, strerror(ret));
+        return ret;
     }
     if (len != sizeof(struct ucred)) {
         return EIO;
@@ -197,6 +204,7 @@ static void gp_socket_schedule_read(verto_ctx *vctx, struct gp_buffer *rbuf)
     ev = verto_add_io(vctx, VERTO_EV_FLAG_IO_READ,
                       gp_socket_read, rbuf->conn->us.sd);
     if (!ev) {
+        GPDEBUG("Failed to add io/read event!\n");
         gp_conn_free(rbuf->conn);
         gp_buffer_free(rbuf);
         return;
@@ -339,6 +347,7 @@ static void gp_socket_schedule_write(verto_ctx *vctx, struct gp_buffer *wbuf)
     ev = verto_add_io(vctx, VERTO_EV_FLAG_IO_WRITE,
                       gp_socket_write, wbuf->conn->us.sd);
     if (!ev) {
+        GPDEBUG("Failed to add io/write event!\n");
         gp_conn_free(wbuf->conn);
         gp_buffer_free(wbuf);
         return;
@@ -458,13 +467,17 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
     }
     conn->us.sd = fd;
 
+    GPDEBUG("Client connected(fd = %d)\n", fd);
+
     ret = set_status_flags(fd, O_NONBLOCK);
     if (ret) {
+        GPDEBUG("Failed to set O_NONBLOCK on %d!\n", fd);
         goto done;
     }
 
     ret = set_fd_flags(fd, FD_CLOEXEC);
     if (ret) {
+        GPDEBUG("Failed to set FD_CLOEXEC on %d!\n", fd);
         goto done;
     }
 
