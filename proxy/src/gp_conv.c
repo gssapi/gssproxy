@@ -520,19 +520,13 @@ uint32_t gp_conv_ctx_id_to_gssx(uint32_t *min, gss_ctx_id_t *in, gssx_ctx *out)
 
     /* note: once converted the original context token is not usable anymore,
      * so this must be the last call to use it */
-    out->exported_context_token = calloc(1, sizeof(octet_string));
-    if (!out->exported_context_token) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ENOMEM;
-        goto done;
-    }
     ret_maj = gss_export_sec_context(&ret_min, in, &export_buffer);
     if (ret_maj) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ENOMEM;
         goto done;
     }
-    ret = gp_conv_buffer_to_gssx(&export_buffer, out->exported_context_token);
+    ret = gp_conv_buffer_to_gssx(&export_buffer, &out->exported_context_token);
     if (ret) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ret;
@@ -561,7 +555,7 @@ int gp_conv_gssx_to_ctx_id(gssx_ctx *in, gss_ctx_id_t *out)
     uint32_t ret_maj;
     uint32_t ret_min;
 
-    gp_conv_gssx_to_buffer(in->exported_context_token, &export_buffer);
+    gp_conv_gssx_to_buffer(&in->exported_context_token, &export_buffer);
 
     ret_maj = gss_import_sec_context(&ret_min, &export_buffer, out);
     if (ret_maj) {
