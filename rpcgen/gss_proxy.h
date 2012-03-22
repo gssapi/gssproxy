@@ -408,6 +408,7 @@ struct gssx_arg_accept_sec_context {
 	gssx_cred *cred_handle;
 	gssx_buffer input_token;
 	gssx_cb *input_cb;
+	bool_t ret_deleg_cred;
 	struct {
 		u_int options_len;
 		gssx_option *options_val;

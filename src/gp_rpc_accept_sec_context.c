@@ -43,6 +43,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     gss_buffer_desc obuf = GSS_C_EMPTY_BUFFER;
     uint32_t ret_flags;
     gss_cred_id_t dch = GSS_C_NO_CREDENTIAL;
+    gss_cred_id_t *pdch = NULL;
     int ret;
 
     asca = &arg->accept_sec_context;
@@ -66,6 +67,10 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
         pcbs = GSS_C_NO_CHANNEL_BINDINGS;
     }
 
+    if (asca->ret_deleg_cred) {
+        pdch = &dch;
+    }
+
     ret_maj = gss_accept_sec_context(&ret_min,
                                      &ctx,
                                      ach,
@@ -76,7 +81,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
                                      &obuf,
                                      &ret_flags,
                                      NULL,
-                                     &dch);
+                                     pdch);
     if (ret_maj) {
         goto done;
     }
@@ -105,7 +110,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
         goto done;
     }
 
-    if (ret_flags & GSS_C_DELEG_FLAG) {
+    if ((ret_flags & GSS_C_DELEG_FLAG) && asca->ret_deleg_cred) {
         ascr->delegated_cred_handle = calloc(1, sizeof(gssx_cred));
         if (!ascr->delegated_cred_handle) {
             ret_maj = GSS_S_FAILURE;

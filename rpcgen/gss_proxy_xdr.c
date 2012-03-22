@@ -596,6 +596,8 @@ xdr_gssx_arg_accept_sec_context (XDR *xdrs, gssx_arg_accept_sec_context *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->input_cb, sizeof (gssx_cb), (xdrproc_t) xdr_gssx_cb))
 		 return FALSE;
+	 if (!xdr_bool (xdrs, &objp->ret_deleg_cred))
+		 return FALSE;
 	 if (!xdr_array (xdrs, (char **)&objp->options.options_val, (u_int *) &objp->options.options_len, ~0,
 		sizeof (gssx_option), (xdrproc_t) xdr_gssx_option))
 		 return FALSE;
