@@ -34,4 +34,17 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
 int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out);
 int gp_find_cred(gssx_cred *cred, gss_cred_id_t *out);
 
+int gp_get_exported_context_type(struct gssx_call_ctx *ctx);
+uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
+                                  gss_ctx_id_t *in, gssx_ctx *out);
+uint32_t gp_import_gssx_to_ctx_id(uint32_t *min, int type,
+                                  gssx_ctx *in, gss_ctx_id_t *out);
+
+/* Compat fns */
+#define gp_conv_ctx_id_to_gssx(min, in, out) \
+    gp_export_ctx_id_to_gssx(min, 0, in, out)
+static int32_t dummy_min;
+#define gp_conv_gssx_to_ctx_id(in, out) \
+    (uint32_t)gp_import_gssx_to_ctx_id(&dummy_min, 0, in, out)
+
 #endif /* _GSS_EXPORT_H_ */
