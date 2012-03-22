@@ -168,3 +168,142 @@ int gp_find_cred(gssx_cred *cred, gss_cred_id_t *out)
 {
     return gp_import_gssx_cred(&cred->cred_handle_reference, out);
 }
+
+
+/* Exported Contexts */
+
+#define EXP_CTX_TYPE_OPTION "exported_contex_type"
+#define LINUX_LUCID_V1      "linux_lucid_v1"
+
+enum exp_ctx_types {
+    EXP_CTX_DEFAULT = 0,
+    EXP_CTX_LINUX_LUCID_V1 = 1,
+};
+
+int gp_get_exported_context_type(struct gssx_call_ctx *ctx)
+{
+
+    struct gssx_option *val;
+    int i;
+
+    for (i = 0; i < ctx->options.options_len; i++) {
+        val = &ctx->options.options_val[i];
+        if (val->option.octet_string_len == sizeof(EXP_CTX_TYPE_OPTION) &&
+            strncmp(EXP_CTX_TYPE_OPTION,
+                        val->option.octet_string_val,
+                        val->option.octet_string_len) == 0) {
+            if (strncmp(LINUX_LUCID_V1,
+                        val->value.octet_string_val,
+                        val->value.octet_string_len) == 0) {
+                return EXP_CTX_LINUX_LUCID_V1;
+            }
+            return -1;
+        }
+    }
+
+    return EXP_CTX_DEFAULT;
+}
+
+uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
+                                  gss_ctx_id_t *in, gssx_ctx *out)
+{
+    uint32_t ret_maj;
+    uint32_t ret_min;
+    gss_name_t src_name = GSS_C_NO_NAME;
+    gss_name_t targ_name = GSS_C_NO_NAME;
+    gss_buffer_desc export_buffer = GSS_C_EMPTY_BUFFER;
+    uint32_t lifetime_rec;
+    gss_OID mech_type;
+    uint32_t ctx_flags;
+    int is_locally_initiated;
+    int is_open;
+    int ret;
+
+    /* TODO: For mechs that need multiple roundtrips to complete */
+    /* out->state; */
+
+    /* we do not need the client to release anything until we handle state */
+    out->needs_release = false;
+
+    ret_maj = gss_inquire_context(&ret_min, *in, &src_name, &targ_name,
+                                  &lifetime_rec, &mech_type, &ctx_flags,
+                                  &is_locally_initiated, &is_open);
+    if (ret_maj) {
+        goto done;
+    }
+
+    ret = gp_conv_oid_to_gssx(mech_type, &out->mech);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
+
+    ret_maj = gp_conv_name_to_gssx(&ret_min, src_name, &out->src_name);
+    if (ret_maj) {
+        goto done;
+    }
+
+    ret_maj = gp_conv_name_to_gssx(&ret_min, targ_name, &out->targ_name);
+    if (ret_maj) {
+        goto done;
+    }
+
+    out->lifetime = lifetime_rec;
+
+    out->ctx_flags = ctx_flags;
+
+    if (is_locally_initiated) {
+        out->locally_initiated = true;
+    }
+
+    if (is_open) {
+        out->open = true;
+    }
+
+    /* note: once converted the original context token is not usable anymore,
+     * so this must be the last call to use it */
+    ret_maj = gss_export_sec_context(&ret_min, in, &export_buffer);
+    if (ret_maj) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
+        goto done;
+    }
+    ret = gp_conv_buffer_to_gssx(&export_buffer, &out->exported_context_token);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
+
+    /* Leave this empty, used only on the way in for init_sec_context */
+    /* out->gssx_option */
+
+done:
+    *min = ret_min;
+    gss_release_name(&ret_min, &src_name);
+    gss_release_name(&ret_min, &targ_name);
+    gss_release_buffer(&ret_min, &export_buffer);
+    if (ret_maj) {
+        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->mech);
+        xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->src_name);
+        xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->targ_name);
+    }
+    return ret_maj;
+}
+
+uint32_t gp_import_gssx_to_ctx_id(uint32_t *min, int type,
+                                  gssx_ctx *in, gss_ctx_id_t *out)
+{
+    gss_buffer_desc export_buffer = GSS_C_EMPTY_BUFFER;
+
+    if (type != EXP_CTX_DEFAULT) {
+        *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    gp_conv_gssx_to_buffer(&in->exported_context_token, &export_buffer);
+
+    return gss_import_sec_context(min, &export_buffer, out);
+}
+
