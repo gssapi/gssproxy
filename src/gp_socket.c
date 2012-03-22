@@ -362,41 +362,32 @@ void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
 static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
 {
     struct gp_buffer *wbuf;
+    struct iovec iov[2];
     uint32_t size;
     ssize_t wn;
+    int vecs;
     int fd;
 
     fd = verto_get_fd(ev);
     wbuf = verto_get_private(ev);
 
+    vecs = 0;
+
     if (wbuf->pos == 0) {
         /* first write, send the buffer size as packet header */
         size = htonl(wbuf->size);
 
-        errno = 0;
-        wn = write(fd, &size, sizeof(uint32_t));
-        if (wn == -1) {
-            if (errno == EAGAIN || errno == EINTR) {
-                /* try again later */
-                gp_socket_schedule_write(vctx, wbuf);
-            } else {
-                /* error on socket, close and release it */
-                gp_conn_free(wbuf->conn);
-                gp_buffer_free(wbuf);
-            }
-            return;
-        }
-        if (wn != 4) {
-            /* don't bother trying to handle sockets that can't
-             * buffer even 4 bytes */
-            gp_conn_free(wbuf->conn);
-            gp_buffer_free(wbuf);
-            return;
-        }
+        iov[0].iov_base = &size;
+        iov[0].iov_len = sizeof(size);
+        vecs = 1;
     }
 
+    iov[vecs].iov_base = wbuf->data + wbuf->pos;
+    iov[vecs].iov_len = wbuf->size - wbuf->pos;
+    vecs++;
+
     errno = 0;
-    wn = write(fd, wbuf->data + wbuf->pos, wbuf->size - wbuf->pos);
+    wn = writev(fd, iov, vecs);
     if (wn == -1) {
         if (errno == EAGAIN || errno == EINTR) {
             /* try again later */
@@ -407,6 +398,16 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
             gp_buffer_free(wbuf);
         }
         return;
+    }
+    if (vecs == 2) {
+        if (wn < sizeof(size)) {
+            /* don't bother trying to handle sockets that can't
+             * buffer even 4 bytes */
+            gp_conn_free(wbuf->conn);
+            gp_buffer_free(wbuf);
+            return;
+        }
+        wn -= sizeof(size);
     }
 
     wbuf->pos += wn;
