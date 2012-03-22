@@ -504,6 +504,7 @@ struct gssx_arg_accept_sec_context {
     gssx_cred           *cred_handle; /* absent -> GSS_C_NO_CREDENTIAL */
     gssx_buffer         input_token;
     gssx_cb             *input_cb; /* input channel bindings */
+    bool                ret_deleg_cred; /* return delegated credentials */
     gssx_option         options<>;
 };
 struct gssx_res_accept_sec_context {
