@@ -45,16 +45,23 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
     gss_buffer_desc obuf = GSS_C_EMPTY_BUFFER;
     uint32_t ret_maj;
     uint32_t ret_min;
+    int exp_ctx_type;
     int ret;
 
     isca = &arg->init_sec_context;
     iscr = &res->init_sec_context;
 
+    exp_ctx_type = gp_get_exported_context_type(&isca->call_ctx);
+    if (exp_ctx_type == -1) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = EINVAL;
+        goto done;
+    }
+
     if (isca->context_handle) {
-        ret = gp_conv_gssx_to_ctx_id(isca->context_handle, &ctx);
-        if (ret) {
-            ret_maj = GSS_S_NO_CONTEXT;
-            ret_min = ret;
+        ret_maj = gp_import_gssx_to_ctx_id(&ret_min, 0,
+                                           isca->context_handle, &ctx);
+        if (ret_maj) {
             goto done;
         }
     }
@@ -116,7 +123,8 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
         ret_min = ENOMEM;
         goto done;
     }
-    ret_maj = gp_conv_ctx_id_to_gssx(&ret_min, &ctx, iscr->context_handle);
+    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type,
+                                       &ctx, iscr->context_handle);
     if (ret_maj) {
         goto done;
     }
