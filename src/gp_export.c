@@ -30,6 +30,7 @@
 #include "gp_conv.h"
 #include "gp_export.h"
 #include "gp_debug.h"
+#include <gssapi/gssapi_krb5.h>
 
 /* FIXME: F I X M E
  *
@@ -172,7 +173,7 @@ int gp_find_cred(gssx_cred *cred, gss_cred_id_t *out)
 
 /* Exported Contexts */
 
-#define EXP_CTX_TYPE_OPTION "exported_contex_type"
+#define EXP_CTX_TYPE_OPTION "exported_context_type"
 #define LINUX_LUCID_V1      "linux_lucid_v1"
 
 enum exp_ctx_types {
@@ -204,6 +205,101 @@ int gp_get_exported_context_type(struct gssx_call_ctx *ctx)
     return EXP_CTX_DEFAULT;
 }
 
+#define KRB5_CTX_FLAG_INITIATOR         0x00000001
+#define KRB5_CTX_FLAG_CFX               0x00000002
+#define KRB5_CTX_FLAG_ACCEPTOR_SUBKEY   0x00000004
+
+/* we use what svcgssd calls a "krb5_rfc4121_buffer"
+ * Format:  uint32_t flags
+ *          int32_t  endtime
+ *          uint64_t seq_send
+ *          uint32_t enctype
+ *          u8[] raw key
+ */
+
+static uint32_t gp_format_linux_lucid_v1(uint32_t *min,
+                                         gss_krb5_lucid_context_v1_t *lucid,
+                                         gssx_buffer *out)
+{
+    uint8_t *buffer;
+    uint8_t *p;
+    size_t length;
+    uint32_t flags;
+    uint32_t enctype;
+    uint32_t keysize;
+    void *keydata;
+    uint32_t maj;
+
+    if (lucid->version != 1 ||
+        (lucid->protocol != 0 && lucid->protocol != 1)) {
+        *min = ENOTSUP;
+        return GSS_S_FAILURE;
+    }
+
+    flags = 0;
+    if (lucid->initiate) {
+        flags |= KRB5_CTX_FLAG_INITIATOR;
+    }
+    if (lucid->protocol == 1) {
+        flags |= KRB5_CTX_FLAG_CFX;
+    }
+    if (lucid->protocol == 1 && lucid->cfx_kd.have_acceptor_subkey == 1) {
+        flags |= KRB5_CTX_FLAG_ACCEPTOR_SUBKEY;
+    }
+
+    if (lucid->protocol == 0) {
+        enctype = lucid->rfc1964_kd.ctx_key.type;
+        keysize = lucid->rfc1964_kd.ctx_key.length;
+        keydata = lucid->rfc1964_kd.ctx_key.data;
+    } else {
+        if (lucid->cfx_kd.have_acceptor_subkey == 1) {
+            enctype = lucid->cfx_kd.acceptor_subkey.type;
+            keysize = lucid->cfx_kd.acceptor_subkey.length;
+            keydata = lucid->cfx_kd.acceptor_subkey.data;
+        } else {
+            enctype = lucid->cfx_kd.ctx_key.type;
+            keysize = lucid->cfx_kd.ctx_key.length;
+            keydata = lucid->cfx_kd.ctx_key.data;
+        }
+    }
+
+    length = sizeof(flags)
+             + sizeof(lucid->endtime)
+             + sizeof(lucid->send_seq)
+             + sizeof(enctype)
+             + keysize;
+
+    buffer = calloc(1, length);
+    if (!buffer) {
+        *min = ENOMEM;
+        maj = GSS_S_FAILURE;
+        goto done;
+    }
+    p = buffer;
+
+    memcpy(p, &flags, sizeof(flags));
+    p += sizeof(flags);
+    memcpy(p, &lucid->endtime, sizeof(lucid->endtime));
+    p += sizeof(lucid->endtime);
+    memcpy(p, &lucid->send_seq, sizeof(lucid->send_seq));
+    p += sizeof(lucid->send_seq);
+    memcpy(p, &enctype, sizeof(enctype));
+    p += sizeof(enctype);
+    memcpy(p, keydata, keysize);
+
+    out->octet_string_val = (void *)buffer;
+    out->octet_string_len = length;
+    maj = GSS_S_COMPLETE;
+    *min = 0;
+
+done:
+    if (maj) {
+        free(buffer);
+    }
+    return maj;
+}
+
+
 uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
                                   gss_ctx_id_t *in, gssx_ctx *out)
 {
@@ -212,6 +308,7 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
     gss_name_t src_name = GSS_C_NO_NAME;
     gss_name_t targ_name = GSS_C_NO_NAME;
     gss_buffer_desc export_buffer = GSS_C_EMPTY_BUFFER;
+    gss_krb5_lucid_context_v1_t *lucid = NULL;
     uint32_t lifetime_rec;
     gss_OID mech_type;
     uint32_t ctx_flags;
@@ -219,7 +316,7 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
     int is_open;
     int ret;
 
-    /* TODO: For mechs that need multiple roundtrips to complete */
+/* TODO: For mechs that need multiple roundtrips to complete */
     /* out->state; */
 
     /* we do not need the client to release anything until we handle state */
@@ -263,16 +360,35 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
 
     /* note: once converted the original context token is not usable anymore,
      * so this must be the last call to use it */
-    ret_maj = gss_export_sec_context(&ret_min, in, &export_buffer);
-    if (ret_maj) {
+    switch (type) {
+    case EXP_CTX_DEFAULT:
+        ret_maj = gss_export_sec_context(&ret_min, in, &export_buffer);
+        if (ret_maj) {
+            goto done;
+        }
+        ret = gp_conv_buffer_to_gssx(&export_buffer,
+                                     &out->exported_context_token);
+        if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
+            goto done;
+        }
+        break;
+    case EXP_CTX_LINUX_LUCID_V1:
+        ret_maj = gss_krb5_export_lucid_sec_context(&ret_min, in, 1,
+                                                    (void **)&lucid);
+        if (ret_maj) {
+            goto done;
+        }
+        ret_maj = gp_format_linux_lucid_v1(&ret_min, lucid,
+                                           &out->exported_context_token);
+        if (ret_maj) {
+            goto done;
+        }
+        break;
+    default:
         ret_maj = GSS_S_FAILURE;
-        ret_min = ENOMEM;
-        goto done;
-    }
-    ret = gp_conv_buffer_to_gssx(&export_buffer, &out->exported_context_token);
-    if (ret) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ret;
+        ret_min = EINVAL;
         goto done;
     }
 
@@ -284,6 +400,9 @@ done:
     gss_release_name(&ret_min, &src_name);
     gss_release_name(&ret_min, &targ_name);
     gss_release_buffer(&ret_min, &export_buffer);
+    if (lucid) {
+        gss_krb5_free_lucid_sec_context(&ret_min, lucid);
+    }
     if (ret_maj) {
         xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->mech);
         xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->src_name);
