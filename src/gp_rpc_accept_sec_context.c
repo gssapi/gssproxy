@@ -129,16 +129,6 @@ done:
                                  ret_maj, ret_min, oid,
                                  &ascr->status);
 
-    if (ret_maj) {
-        if (ascr->context_handle) {
-            xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ascr->context_handle);
-            free(ascr->context_handle);
-        }
-        if (ascr->output_token) {
-            xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)ascr->output_token);
-            free(ascr->output_token);
-        }
-    }
     gss_release_name(&ret_min, &src_name);
     gss_release_buffer(&ret_min, &obuf);
     gss_release_cred(&ret_min, &dch);
