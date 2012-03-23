@@ -31,6 +31,8 @@
 #include "gp_export.h"
 #include "gp_debug.h"
 #include <gssapi/gssapi_krb5.h>
+#include <pwd.h>
+#include <grp.h>
 
 /* FIXME: F I X M E
  *
@@ -426,3 +428,248 @@ uint32_t gp_import_gssx_to_ctx_id(uint32_t *min, int type,
     return gss_import_sec_context(min, &export_buffer, out);
 }
 
+/* Exported Creds */
+
+#define EXP_CREDS_TYPE_OPTION "exported_creds_type"
+#define LINUX_CREDS_V1        "linux_creds_v1"
+
+enum exp_creds_types {
+    EXP_CREDS_NO_CREDS = 0,
+    EXP_CREDS_LINUX_V1 = 1,
+};
+
+int gp_get_export_creds_type(struct gssx_call_ctx *ctx)
+{
+
+    struct gssx_option *val;
+    int i;
+
+    for (i = 0; i < ctx->options.options_len; i++) {
+        val = &ctx->options.options_val[i];
+        if (val->option.octet_string_len == sizeof(EXP_CREDS_TYPE_OPTION) &&
+            strncmp(EXP_CREDS_TYPE_OPTION,
+                        val->option.octet_string_val,
+                        val->option.octet_string_len) == 0) {
+            if (strncmp(LINUX_CREDS_V1,
+                        val->value.octet_string_val,
+                        val->value.octet_string_len) == 0) {
+                return EXP_CREDS_LINUX_V1;
+            }
+            return -1;
+        }
+    }
+
+    return EXP_CREDS_NO_CREDS;
+}
+
+#define CREDS_BUF_MAX (NGROUPS_MAX * sizeof(int32_t))
+#define CREDS_HDR (3 * sizeof(int32_t)) /* uid, gid, count */
+
+static uint32_t gp_export_creds_enoent(uint32_t *min, gss_buffer_t buf)
+{
+    int32_t *p;
+
+    p = malloc(CREDS_HDR);
+    if (!p) {
+        *min = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+    p[0] = -1; /* uid */
+    p[1] = -1; /* gid */
+    p[2] = 0; /* num groups */
+
+    buf->value = p;
+    buf->length = CREDS_HDR;
+    *min = 0;
+    return GSS_S_COMPLETE;
+}
+
+static uint32_t gp_export_creds_linux(uint32_t *min, gss_name_t name,
+                                      gss_const_OID mech, gss_buffer_t buf)
+{
+    gss_buffer_desc localname;
+    uint32_t ret_maj;
+    uint32_t ret_min;
+    struct passwd pwd, *res;
+    char *pwbuf = NULL;
+    char *grbuf = NULL;
+    int32_t *p;
+    size_t len;
+    int count, num;
+    int ret;
+
+    /* We use gss_localname() to map the name. Then just use nsswitch to
+     * look up the user.
+     *
+     * (TODO: If gss_localname() fails we may wanto agree with SSSD on a name
+     * format to match principal names, es: gss:foo@REALM.COM, or just
+     * foo@REALM.COM) until sssd can provide a libkrb5 interface to augment
+     * gss_localname() resolution for trusted realms */
+
+    ret_maj = gss_localname(&ret_min, name, mech, &localname);
+    if (ret_maj) {
+        if (ret_min == ENOENT) {
+            return gp_export_creds_enoent(min, buf);
+        }
+        *min = ret_min;
+        return ret_maj;
+    }
+
+    len = 1024;
+    pwbuf = malloc(len);
+    if (!pwbuf) {
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    ret = 0;
+    do {
+        if (ret == ERANGE) {
+            if (len == CREDS_BUF_MAX) {
+                ret_min = ENOSPC;
+                ret_maj = GSS_S_FAILURE;
+                goto done;
+            }
+            len *= 2;
+            if (len > CREDS_BUF_MAX) {
+                len = CREDS_BUF_MAX;
+            }
+            p = realloc(pwbuf, len);
+            if (!p) {
+                ret_min = ENOMEM;
+                ret_maj = GSS_S_FAILURE;
+                goto done;
+            }
+            pwbuf = (char *)p;
+        }
+        ret = getpwnam_r((char *)localname.value, &pwd, pwbuf, len, &res);
+    } while (ret == EINTR || ret == ERANGE);
+
+    switch (ret) {
+    case 0:
+        if (res != NULL) {
+            break;
+        }
+        /* fall through as ret == NULL is equivalent to ENOENT */
+    case ENOENT:
+    case ESRCH:
+        free(pwbuf);
+        return gp_export_creds_enoent(min, buf);
+    default:
+        ret_min = ret;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    /* start with a reasonably sized buffer */
+    count = 256;
+    num = 0;
+    do {
+        if (count >= NGROUPS_MAX) {
+            ret_min = ENOSPC;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
+        count *= 2;
+        if (count < num) {
+            count = num;
+        }
+        if (count > NGROUPS_MAX) {
+            count = NGROUPS_MAX;
+        }
+        len = count * sizeof(int32_t);
+        p = realloc(grbuf, len + CREDS_HDR);
+        if (!p) {
+            ret_min = ENOMEM;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
+        grbuf = (char *)p;
+        num = count;
+        ret = getgrouplist(pwd.pw_name, pwd.pw_gid, (gid_t *)&p[3], &num);
+    } while (ret == -1);
+
+    /* we got the buffer, now fill in [uid, gid, num] and we are done */
+    p[0] = pwd.pw_uid;
+    p[1] = pwd.pw_gid;
+    p[2] = num;
+    buf->value = p;
+    buf->length = (num + 3) * sizeof(int32_t);
+    ret_min = 0;
+    ret_maj = GSS_S_COMPLETE;
+
+done:
+    if (ret_maj) {
+       free(grbuf);
+    }
+    free(pwbuf);
+    *min = ret_min;
+    return ret_maj;
+}
+
+uint32_t gp_export_creds_to_gssx_options(uint32_t *min, int type,
+                                         gss_name_t src_name,
+                                         gss_const_OID mech_type,
+                                         unsigned int *opt_num,
+                                         gssx_option **opt_array)
+{
+    gss_buffer_desc export_buffer = GSS_C_EMPTY_BUFFER;
+    unsigned int num;
+    gssx_option *opta;
+    uint32_t ret_min;
+    uint32_t ret_maj;
+
+    switch (type) {
+    case EXP_CREDS_NO_CREDS:
+        *min = 0;
+        return GSS_S_COMPLETE;
+
+    case EXP_CREDS_LINUX_V1:
+        ret_maj = gp_export_creds_linux(&ret_min, src_name,
+                                        mech_type, &export_buffer);
+        if (ret_maj) {
+            if (ret_min == ENOENT) {
+                /* if not user, return w/o adding anything to the array */
+                ret_min = 0;
+                ret_maj = GSS_S_COMPLETE;
+            }
+            *min = ret_min;
+            return ret_maj;
+        }
+        break;
+
+    default:
+        *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    num = *opt_num;
+    opta = realloc(*opt_array, sizeof(gssx_option) * (num + 1));
+    if (!opta) {
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    opta[num].option.octet_string_val = strdup(LINUX_CREDS_V1);
+    if (!opta[num].option.octet_string_val) {
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    opta[num].option.octet_string_len = sizeof(LINUX_CREDS_V1);
+    opta[num].value.octet_string_val = export_buffer.value;
+    opta[num].value.octet_string_len = export_buffer.length;
+
+    num++;
+    *opt_num = num;
+    *opt_array = opta;
+    ret_min = 0;
+    ret_maj = GSS_S_COMPLETE;
+
+done:
+    *min = ret_min;
+    if (ret_maj) {
+        gss_release_buffer(&ret_min, &export_buffer);
+    }
+    return ret_maj;
+}

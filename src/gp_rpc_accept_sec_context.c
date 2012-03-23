@@ -46,6 +46,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     gss_cred_id_t dch = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t *pdch = NULL;
     int exp_ctx_type;
+    int exp_creds_type;
     int ret;
 
     asca = &arg->accept_sec_context;
@@ -53,6 +54,13 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
 
     exp_ctx_type = gp_get_exported_context_type(&asca->call_ctx);
     if (exp_ctx_type == -1) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = EINVAL;
+        goto done;
+    }
+
+    exp_creds_type = gp_get_export_creds_type(&asca->call_ctx);
+    if (exp_creds_type == -1) {
         ret_maj = GSS_S_FAILURE;
         ret_min = EINVAL;
         goto done;
@@ -145,6 +153,12 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
             goto done;
         }
     }
+
+    ret_maj = gp_export_creds_to_gssx_options(&ret_min,
+                                              exp_creds_type,
+                                              src_name, oid,
+                                              &ascr->options.options_len,
+                                              &ascr->options.options_val);
 
 done:
     ret = gp_conv_status_to_gssx(&asca->call_ctx,
