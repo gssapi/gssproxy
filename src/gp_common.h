@@ -26,6 +26,8 @@
 #ifndef _GP_COMMON_H_
 #define _GP_COMMON_H_
 
+#include "gp_debug.h"
+
 /* add element to list head */
 #define LIST_ADD(list, elem) do { \
     elem->prev = NULL; \

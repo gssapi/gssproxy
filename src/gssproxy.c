@@ -36,6 +36,7 @@ int main(int argc, const char *argv[])
     int opt_interactive = 0;
     int opt_version = 0;
     char *opt_config_file = NULL;
+    int opt_debug = 0;
     verto_ctx *vctx;
     verto_ev *ev;
     int vflags;
@@ -50,6 +51,8 @@ int main(int argc, const char *argv[])
         {"interactive", 'i', POPT_ARG_NONE, &opt_interactive, 0, \
          _("Run interactive (not a daemon)"), NULL}, \
         {"config", 'c', POPT_ARG_STRING, &opt_config_file, 0, \
+         _("Specify a non-default config file"), NULL}, \
+        {"debug", 'd', POPT_ARG_NONE, &opt_debug, 0, \
          _("Specify a non-default config file"), NULL}, \
          {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
           _("Print version number and exit"), NULL }, \
@@ -70,6 +73,10 @@ int main(int argc, const char *argv[])
     if (opt_version) {
         puts(VERSION""DISTRO_VERSION""PRERELEASE_VERSION);
         return 0;
+    }
+
+    if (opt_debug) {
+        gp_debug_enable();
     }
 
     if (opt_daemon && opt_interactive) {
