@@ -637,4 +637,4 @@ program GSSPROXY {
     gssx_res_wrap_size_limit
         GSSX_WRAP_SIZE_LIMIT(gssx_arg_wrap_size_limit) = 15;
     } = 1;
-} = 412345; /* XXX obtain from Oracle (Bill Baker, I think) */
+} = 400112; /* gss-proxy: http://www.iana.org/assignments/rpc-program-numbers */

@@ -521,7 +521,7 @@ struct gssx_res_wrap_size_limit {
 };
 typedef struct gssx_res_wrap_size_limit gssx_res_wrap_size_limit;
 
-#define GSSPROXY 412345
+#define GSSPROXY 400112
 #define GSSPROXYVERS 1
 
 #if defined(__STDC__) || defined(__cplusplus)
