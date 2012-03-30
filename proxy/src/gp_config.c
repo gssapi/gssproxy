@@ -286,6 +286,15 @@ int load_config(struct gp_config *cfg)
         return ENOENT;
     }
 
+    tmpstr = iniparser_getstring(d, "gssproxy:debug", NULL);
+    if (tmpstr) {
+        if (strcasecmp(tmpstr, "1") == 0 ||
+            strcasecmp(tmpstr, "on") == 0 ||
+            strcasecmp(tmpstr, "true") == 0) {
+            gp_debug_enable();
+        }
+    }
+
     tmpstr = iniparser_getstring(d, "gssproxy:socket", NULL);
     if (tmpstr) {
         cfg->socket_name = strdup(tmpstr);
