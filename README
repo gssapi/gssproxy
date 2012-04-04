@@ -15,3 +15,6 @@ are several motivations for this some of which are:
 
  - Possibly an ssh-agent-like SSH agent for GSS credentials -- a
    gss-agent.
+
+gss-proxy uses libverto for dealing with event loops. Note that you need to
+have at least one libverto event library installed (e.g. libverto-tevent).
