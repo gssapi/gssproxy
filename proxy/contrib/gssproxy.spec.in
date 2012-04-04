@@ -1,32 +1,23 @@
-%if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
-%endif
+Name:		@PACKAGE_NAME@
+Version:	@PACKAGE_VERSION@
+Release:	0@PRERELEASE_VERSION@%{?dist}
+Summary:	GSSAPI Proxy
 
-Name: @PACKAGE_NAME@
-Version: @PACKAGE_VERSION@
-Release: 0@PRERELEASE_VERSION@%{?dist}
-Group: Applications/System
-Summary: System Security Services Daemon
-License: MIT
-URL: http://fedorahosted.org/gss-proxy/
-Source0: %{name}-%{version}.tar.gz
-BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+Group:		System Environment/Libraries
+License:	MIT
+URL:		http://fedorahosted.org/gss-proxy
+Source0:	http://fedorahosted.org/released/gss-proxy/%{name}-%{version}.tar.gz
+BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
+
+%global servicename gssproxy
+%global pubconfpath %{_sysconfdir}/gssproxy
 
 ### Patches ###
 
 ### Dependencies ###
 
-Requires: krb5-libs
+Requires: krb5-libs >= 1.11.1
 Requires: keyutils-libs
-Requires(post): initscripts chkconfig /sbin/ldconfig
-Requires(preun):  initscripts chkconfig
-Requires(postun): initscripts chkconfig /sbin/ldconfig
-
-%global servicename gssproxy
-%global gsspstatedir %{_localstatedir}/lib/gssproxy
-%global pipepath %{gsspstatedir}/pipes
-%global pubconfpath %{sysconfdir}/gssproxy
 
 ### Build Dependencies ###
 
@@ -34,23 +25,20 @@ BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: libtool
 BuildRequires: m4
-%{?fedora:BuildRequires: popt-devel}
-%if 0%{?rhel} <= 5
-BuildRequires: popt
-%endif
-%if 0%{?rhel} >= 6
-BuildRequires: popt-devel
-%endif
 BuildRequires: libxslt
 BuildRequires: libxml2
 BuildRequires: docbook-style-xsl
-BuildRequires: krb5-devel
 BuildRequires: doxygen
-BuildRequires: libselinux-devel
-BuildRequires: keyutils-libs-devel
 BuildRequires: gettext-devel
 BuildRequires: pkgconfig
+BuildRequires: krb5-devel
+BuildRequires: libselinux-devel
+BuildRequires: keyutils-libs-devel
+BuildRequires: iniparser-devel
+BuildRequires: libverto-devel
+BuildRequires: popt-devel
 BuildRequires: findutils
+
 
 %description
 A proxy for GSSAPI credential handling
@@ -58,20 +46,11 @@ A proxy for GSSAPI credential handling
 %prep
 %setup -q
 
+
 %build
-
-# RHEL 5 uses an old libtool, so we need to force it to reconfigure
-# This is safe to do on newer packages too, as it will just
-# gather the appropriate m4 files from the libtool package
-for i in libtool.m4  lt~obsolete.m4  ltoptions.m4  ltsugar.m4  ltversion.m4
-do
-    find . -name $i -exec rm -f {} \;
-done
-
-autoreconf -ivf
-
+cd proxy
+autoreconf -f -i
 %configure \
-    --with-pipe-path=%{pipepath} \
     --with-pubconf-path=%{pubconfpath} \
     --with-init-dir=%{_initrddir} \
     --disable-static \
@@ -80,45 +59,24 @@ autoreconf -ivf
 make %{?_smp_mflags} all
 
 
-# Only build docs on recent distros
-%if 0%{?fedora}
-make %{?_smp_mflags} docs
-%endif
-
-%if 0%{?rhel} >= 6
-make %{?_smp_mflags} docs
-%endif
-
 %install
 rm -rf $RPM_BUILD_ROOT
-
+cd proxy
 make install DESTDIR=$RPM_BUILD_ROOT
-
-# Prepare language files
-/usr/lib/rpm/find-lang.sh $RPM_BUILD_ROOT gssproxy
-
-# Remove .la files created by libtool
-find $RPM_BUILD_ROOT -name "*.la" -exec rm -f {} \;
-
-# Suppress developer-only documentation
-rm -Rf ${RPM_BUILD_ROOT}/%{_docdir}/%{name}/doc
+mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/gssproxy
+install -m644 examples/gssproxy-example.conf $RPM_BUILD_ROOT%{_sysconfdir}/gssproxy/gssproxy.conf
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+
 %files
 %defattr(-,root,root,-)
-%doc COPYING
-%doc examples/gssproxy-example.conf
-%{_initrddir}/%{name}
+#%{_initrddir}/%{name}
 %{_sbindir}/gssproxy
-%{_libdir}/%{name}/
-%dir %{gsspstatedir}
-%attr(755,root,root) %dir %{pipepath}
 %attr(755,root,root) %dir %{pubconfpath}
-%attr(750,root,root) %dir %{_var}/log/%{name}
-%attr(711,root,root) %dir %{_sysconfdir}/gssproxy
-%ghost %attr(0600,root,root) %config(noreplace) %%{_sysconfdir}/gssproxy/gssproxy.conf
+%attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
+%{_libdir}/gssproxy/proxymech.so
 %{_mandir}/man5/gssproxy.conf.5*
 %{_mandir}/man8/gssproxy.8*
 
@@ -136,12 +94,9 @@ if [ $1 = 0 ]; then
     /sbin/chkconfig --del %{servicename}
 fi
 
-%postun -p /sbin/ldconfig
-
-%post client -p /sbin/ldconfig
-
-%postun client -p /sbin/ldconfig
-
 %changelog
-* Mon Dec 12 2011 Simo Sorce <simo@redhat.com> - @PACKAGE_VERSION@-0@PRERELEASE_VERSION@
+* Fri Mar 22 2013 Guenther Deschner <gdeschner@redhat.com> - @PACKAGE_VERSION@-0@PRERELEASE_VERSION@
+- Various specfile and packaging fixes
+
+* Mon Dec 12 2011 Simo Sorce <simo@redhat.com> - 0.0.1-0
 - Automated build of the gssproxy daemon
