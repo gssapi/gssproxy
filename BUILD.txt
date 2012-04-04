@@ -3,3 +3,23 @@ First off, run:
 # autoreconf -f -i
 
 Then the usual ./configure and make
+
+In order to build gss-proxy the following development packages are needed:
+
+    autoconf
+    automake
+    docbook-style-xsl
+    doxygen
+    findutils
+    gettext-devel
+    iniparser-devel
+    keyutils-libs-devel
+    krb5-devel
+    libselinux-devel
+    libtool
+    libverto-devel
+    libxml2
+    libxslt
+    m4
+    pkgconfig
+    popt-devel
