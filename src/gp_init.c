@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <locale.h>
-#include <syslog.h>
 #include <signal.h>
 #include "gp_proxy.h"
 
@@ -66,9 +65,7 @@ void init_server(bool daemonize)
     /* Set up neutral locale */
     setlocale(LC_ALL, "");
 
-    openlog("gssproxy",
-            LOG_CONS|LOG_NDELAY|LOG_NOWAIT|LOG_PERROR|LOG_PID,
-            LOG_AUTHPRIV);
+    gp_logging_init();
 }
 
 void fini_server(void)
