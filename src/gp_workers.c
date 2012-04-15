@@ -30,7 +30,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <syslog.h>
 #include <errno.h>
 #include "gp_proxy.h"
 
@@ -419,7 +418,7 @@ static void *gp_worker_main(void *pvt)
         /* and wake up dispatcher so it will handle it */
         ret = write(t->pool->sig_pipe[1], &dummy, 1);
         if (ret == -1) {
-            syslog(LOG_ERR, "Failed to signal dispatcher!");
+            GPERROR("Failed to signal dispatcher!");
         }
     }
 

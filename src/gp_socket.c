@@ -31,7 +31,6 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <syslog.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include "gp_proxy.h"
@@ -161,8 +160,8 @@ int init_unix_socket(const char *file_name)
 
 done:
     if (ret) {
-        syslog(LOG_ERR, "Failed to create Unix Socket! (%d:%s)",
-               ret, strerror(ret));
+        GPERROR("Failed to create Unix Socket! (%d:%s)",
+                ret, strerror(ret));
         if (fd != -1) {
             close(fd);
             fd = -1;
@@ -492,8 +491,8 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
 
 done:
     if (ret) {
-        syslog(LOG_WARNING, "Error connecting client: (%d:%s)",
-                            ret, strerror(ret));
+        GPERROR("Error connecting client: (%d:%s)",
+                ret, strerror(ret));
         gp_conn_free(conn);
     }
 }
