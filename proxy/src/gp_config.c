@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
 #include <errno.h>
 #include "gp_proxy.h"
 #include "iniparser.h"
@@ -156,8 +155,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             valnum = get_int_value(dict, secname, "euid");
             if (valnum == -1) {
                 /* malformed section, mech is missing */
-                syslog(LOG_INFO,
-                       "Euid missing from [%s], ignoring.", secname);
+                GPDEBUG("Euid missing from [%s], ignoring.", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
@@ -177,8 +175,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             value = get_char_value(dict, secname, "mechs");
             if (value == NULL) {
                 /* malformed section, mech is missing */
-                syslog(LOG_INFO,
-                       "Mechs missing from [%s], ignoring.", secname);
+                GPDEBUG("Mechs missing from [%s], ignoring.", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
@@ -193,13 +190,11 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                     if (ret == 0) {
                         cfg->svcs[n]->mechs |= GP_CRED_KRB5;
                     } else {
-                        syslog(LOG_INFO,
-                               "Failed to read krb5 config for %s, ignoring.",
-                               secname);
+                        GPDEBUG("Failed to read krb5 config for %s, ignoring.",
+                                secname);
                     }
                 } else {
-                    syslog(LOG_INFO,
-                           "Unknown mech: %s in [%s], ignoring.",
+                    GPDEBUG("Unknown mech: %s in [%s], ignoring.",
                             token, secname);
                 }
 
@@ -207,8 +202,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             } while (token != NULL);
 
             if (cfg->svcs[n]->mechs == 0) {
-                syslog(LOG_INFO,
-                       "No mechs found for [%s], ignoring.", secname);
+                GPDEBUG("No mechs found for [%s], ignoring.", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
@@ -217,7 +211,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
     }
 
     if (cfg->num_svcs == 0) {
-        syslog(LOG_ERR, "No service sections configured!");
+        GPERROR("No service sections configured!");
         return ENOENT;
     }
 
@@ -309,7 +303,7 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
 
     ret = load_config(cfg);
     if (ret) {
-        syslog(LOG_INFO, "Config file not found! Proceeding with defaults.");
+        GPDEBUG("Config file not found! Proceeding with defaults.");
     }
 
     return cfg;

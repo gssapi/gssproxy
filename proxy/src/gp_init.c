@@ -75,13 +75,13 @@ void fini_server(void)
 
 static void break_loop(verto_ctx *vctx, verto_ev *ev)
 {
-    syslog(LOG_WARNING, "Exiting after receiving a signal");
+    GPDEBUG("Exiting after receiving a signal");
     verto_break(vctx);
 }
 
 static void reload_conf(verto_ctx *vctx, verto_ev *ev)
 {
-    syslog(LOG_INFO, "Reloading configuration after receiving a signal");
+    GPDEBUG("Reloading configuration after receiving a signal");
     /* TODO */
 }
 
