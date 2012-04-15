@@ -27,6 +27,7 @@
 #define _GP_COMMON_H_
 
 #include "gp_debug.h"
+#include "gp_log.h"
 
 /* add element to list head */
 #define LIST_ADD(list, elem) do { \
