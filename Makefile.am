@@ -49,6 +49,9 @@ sbin_PROGRAMS = \
 check_PROGRAMS = \
     cli_srv_comm
 
+gssplib_LTLIBRARIES = \
+    proxymech.la
+
 dist_noinst_SCRIPTS =
 
 dist_noinst_DATA =
@@ -141,6 +144,16 @@ gssproxy_SOURCES = \
     src/gp_rpc_unwrap.c \
     src/gp_rpc_wrap_size_limit.c \
     src/gssproxy.c
+
+proxymech_la_SOURCES = \
+    src/gp_conv.c \
+    $(GP_RPCGEN_OBJ) \
+    $(GP_MECHGLUE_OBJ)
+proxymech_la_CFLAGS = \
+    $(AM_FLAGS)
+proxymech_la_LDFLAGS = \
+    -avoid-version \
+    -module
 
 cli_srv_comm_SOURCES = \
     src/gp_conv.c \

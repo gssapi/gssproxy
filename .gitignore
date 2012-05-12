@@ -33,3 +33,5 @@ cscope.out
 dict.symbols
 .dirstamp
 cli_srv_conn
+*.la
+*.lo
