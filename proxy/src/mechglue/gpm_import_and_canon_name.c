@@ -266,3 +266,65 @@ done:
     *minor_status = ret_min;
     return ret_maj;
 }
+
+OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
+                           gss_name_t name,
+                           int *name_is_MN,
+                           gss_OID *MN_mech,
+                           gss_buffer_set_t *attrs)
+{
+    gss_buffer_set_t xattrs = GSS_C_NO_BUFFER_SET;
+    gssx_name *xname;
+    uint32_t i;
+    int ret;
+
+    *minor_status = 0;
+    xname = (gssx_name *)name;
+
+    if (xname->exported_name.octet_string_len != 0) {
+        if (name_is_MN != NULL) {
+            *name_is_MN = 1;
+        }
+    }
+
+    if (MN_mech != NULL) {
+        ret = gp_conv_gssx_to_oid_alloc(&xname->name_type, MN_mech);
+        if (ret) {
+            *minor_status = ret;
+            return GSS_S_FAILURE;
+        }
+    }
+
+    if (xname->name_attributes.name_attributes_len != 0) {
+        xattrs = calloc(1, sizeof(gss_buffer_set_desc));
+        if (!xattrs) {
+            *minor_status = ENOMEM;
+            return GSS_S_FAILURE;
+        }
+        xattrs->count = xname->name_attributes.name_attributes_len;
+        xattrs->elements = calloc(xattrs->count, sizeof(gss_buffer_desc));
+        if (!xattrs->elements) {
+            free(xattrs);
+            *minor_status = ENOMEM;
+            return GSS_S_FAILURE;
+        }
+        for (i = 0; i < xattrs->count; i++) {
+            ret = gp_copy_gssx_to_buffer(
+                        &xname->name_attributes.name_attributes_val[i].attr,
+                        &xattrs->elements[i]);
+            if (ret) {
+                for (--i; i >= 0; i--) {
+                    free(xattrs->elements[i].value);
+                }
+                free(xattrs->elements);
+                free(xattrs);
+                *minor_status = ENOMEM;
+                return GSS_S_FAILURE;
+            }
+        }
+    }
+    *attrs = xattrs;
+
+    return GSS_S_COMPLETE;
+}
+
