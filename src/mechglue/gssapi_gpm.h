@@ -31,6 +31,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <gssapi/gssapi.h>
+#include <gssapi/gssapi_ext.h>
 #include "rpcgen/gp_rpc.h"
 #include "rpcgen/gss_proxy.h"
 #include "src/gp_common.h"
@@ -138,6 +139,11 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
                                 const gss_name_t input_name,
                                 const gss_OID mech_type,
                                 gss_name_t *output_name);
+OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
+                           gss_name_t name,
+                           int *name_is_NM,
+                           gss_OID *NM_mech,
+                           gss_buffer_set_t *attrs);
 
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gss_cred_id_t claimant_cred_handle,
