@@ -58,6 +58,7 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
     switch(status_type) {
     case GSS_C_GSS_CODE:
         if (tls_last_status &&
+            tls_last_status->major_status == status_value &&
             tls_last_status->major_status_string.utf8string_len) {
                 ret = gp_copy_utf8string(&tls_last_status->major_status_string,
                                          &tmp);
@@ -70,21 +71,20 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
                 *minor_status = 0;
                 return GSS_S_COMPLETE;
         } else {
-            return gss_display_status(minor_status,
-                                      status_value,
-                                      GSS_C_GSS_CODE,
-                                      GSS_C_NO_OID,
-                                      message_context,
-                                      status_string);
+            /* if we do not have it, make it clear */
+            return GSS_S_UNAVAILABLE;
         }
     case GSS_C_MECH_CODE:
-        if (*message_context) {
-            /* we do not support multiple messages for now */
-            *minor_status = EINVAL;
-            return GSS_S_FAILURE;
-        }
         if (tls_last_status &&
+            tls_last_status->minor_status == status_value &&
             tls_last_status->minor_status_string.utf8string_len) {
+
+            if (*message_context) {
+                /* we do not support multiple messages for now */
+                *minor_status = EINVAL;
+                return GSS_S_FAILURE;
+            }
+
             ret = gp_copy_utf8string(&tls_last_status->minor_status_string,
                                      &tmp);
             if (ret) {
@@ -94,14 +94,8 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
             status_string->value = tmp.utf8string_val;
             status_string->length = tmp.utf8string_len;
         } else {
-            status_string->value = strdup(strerror(status_value));
-            if (!status_string->value) {
-                status_string->length = 0;
-                *minor_status = ENOMEM;
-                return GSS_S_FAILURE;
-            } else {
-                status_string->length = strlen(status_string->value) + 1;
-            }
+            /* if we do not have it, make it clear */
+            return GSS_S_UNAVAILABLE;
         }
         *minor_status = 0;
         return GSS_S_COMPLETE;
