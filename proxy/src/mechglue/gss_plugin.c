@@ -24,6 +24,7 @@
 */
 
 #include "gss_plugin.h"
+#include <signal.h>
 #include <gssapi/gssapi_krb5.h>
 
 #define KRB5_OID_LEN 9
@@ -133,6 +134,9 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
         }
     }
 
+    /* while there also initiaize special_mechs */
+    (void)gpp_special_available_mechs(interposed_mechs);
+
 done:
     if (maj != 0) {
         (void)gss_release_oid_set(&min, &interposed_mechs);
@@ -140,4 +144,200 @@ done:
     }
 
     return interposed_mechs;
+}
+
+bool gpp_is_special_oid(const gss_OID mech_type)
+{
+    if (mech_type != GSS_C_NO_OID &&
+        mech_type->length >= gssproxy_mech_interposer.length &&
+        memcmp(gssproxy_mech_interposer.elements,
+               mech_type->elements,
+               gssproxy_mech_interposer.length) == 0) {
+        return true;
+    }
+    return false;
+}
+
+static bool gpp_special_equal(const gss_OID s, const gss_OID n)
+{
+    int base_len = gssproxy_mech_interposer.length;
+
+    if (s->length - base_len == n->length &&
+        memcmp(s->elements + base_len, n->elements, n->length) == 0) {
+        return true;
+    }
+    return false;
+}
+
+struct gpp_special_oid_list {
+    gss_OID_desc oid;
+    struct gpp_special_oid_list *next;
+    sig_atomic_t next_is_set;
+};
+
+/* This is an ADD-ONLY list, and the pointer to next is updated
+ * atomically so that we can avoid using mutexes for mere access
+ * to the list. */
+static struct gpp_special_oid_list *gpp_s_mechs;
+static sig_atomic_t gpp_s_mechs_is_set;
+
+static inline struct gpp_special_oid_list *gpp_get_special_oids(void)
+{
+    int is_set;
+
+    is_set = gpp_s_mechs_is_set;
+    __sync_synchronize();
+    if (is_set != 0) {
+        return gpp_s_mechs;
+    }
+    return NULL;
+}
+
+static inline struct gpp_special_oid_list *gpp_next_special_oids(
+                                            struct gpp_special_oid_list *item)
+{
+    int is_set;
+
+    is_set = item->next_is_set;
+    __sync_synchronize();
+    if (is_set != 0) {
+        return item->next;
+    }
+    return NULL;
+}
+
+static inline struct gpp_special_oid_list *gpp_last_special_oids(
+                                            struct gpp_special_oid_list *list)
+{
+    struct gpp_special_oid_list *item;
+
+    item = list;
+    while (item && item->next_is_set) {
+        item = item->next;
+    }
+    return item;
+}
+
+static inline void gpp_add_special_oids(struct gpp_special_oid_list *item)
+{
+    struct gpp_special_oid_list *list, *last;
+
+    list = gpp_get_special_oids();
+    if (list == NULL) {
+        gpp_s_mechs = item;
+        __sync_synchronize();
+        gpp_s_mechs_is_set = 1;
+    } else {
+        last = gpp_last_special_oids(list);
+        last->next = item;
+        __sync_synchronize();
+        last->next_is_set = 1;
+    }
+}
+
+static const gss_OID gpp_new_special_mech(const gss_OID n)
+{
+    gss_const_OID base = &gssproxy_mech_interposer;
+    struct gpp_special_oid_list *item;
+
+    item = calloc(1, sizeof(struct gpp_special_oid_list));
+    if (!item) {
+        return GSS_C_NO_OID;
+    }
+    item->oid.length = base->length + n->length;
+    item->oid.elements = malloc(item->oid.length);
+    if (!item->oid.elements) {
+        free(item);
+        return GSS_C_NO_OID;
+    }
+
+    memcpy(item->oid.elements, base->elements, base->length);
+    memcpy(item->oid.elements + base->length, n->elements, n->length);
+
+    gpp_add_special_oids(item);
+
+    return (const gss_OID)&item->oid;
+}
+
+const gss_OID gpp_special_mech(const gss_OID mech_type)
+{
+    struct gpp_special_oid_list *item = NULL;
+
+    if (gpp_is_special_oid(mech_type)) {
+        return mech_type;
+    }
+
+    item = gpp_get_special_oids();
+
+    if (mech_type == GSS_C_NO_OID) {
+        /* return the first special one if none specified */
+        if (item) {
+            return (const gss_OID)&item->oid;
+        }
+        return GSS_C_NO_OID;
+    }
+
+    while (item) {
+        if (gpp_special_equal(&item->oid, mech_type)) {
+            return (const gss_OID)&item->oid;
+        }
+        item = gpp_next_special_oids(item);
+    }
+
+    /* none matched, add new special oid to the set */
+    return gpp_new_special_mech(mech_type);
+}
+
+gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs)
+{
+    gss_OID_set amechs = GSS_C_NO_OID_SET;
+    struct gpp_special_oid_list *item;
+    gss_OID n;
+    uint32_t maj, min;
+    int i;
+
+    item = gpp_get_special_oids();
+
+    maj = gss_create_empty_oid_set(&min, &amechs);
+    if (maj) {
+        return GSS_C_NO_OID_SET;
+    }
+    for (i = 0; i < mechs->count; i++) {
+        while (item) {
+            if (gpp_is_special_oid(&mechs->elements[i])) {
+                maj = gss_add_oid_set_member(&min,
+                                             &mechs->elements[i], &amechs);
+                if (maj != GSS_S_COMPLETE) {
+                    goto done;
+                }
+                break;
+            }
+            if (gpp_special_equal(&item->oid, &mechs->elements[i])) {
+                maj = gss_add_oid_set_member(&min, &item->oid, &amechs);
+                if (maj != GSS_S_COMPLETE) {
+                    goto done;
+                }
+                break;
+            }
+            item = gpp_next_special_oids(item);
+        }
+        if (item == NULL) {
+            /* not found, add to static list */
+            n = gpp_new_special_mech(&mechs->elements[i]);
+            if (n == GSS_C_NO_OID) {
+                maj = GSS_S_FAILURE;
+            } else {
+                maj = gss_add_oid_set_member(&min, n, &amechs);
+            }
+            if (maj != GSS_S_COMPLETE) {
+                goto done;
+            }
+        }
+    }
+
+done:
+    if (maj != GSS_S_COMPLETE || amechs->count == 0) {
+        (void)gss_release_oid_set(&min, &amechs);
+    }
+    return amechs;
 }

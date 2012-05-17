@@ -40,5 +40,8 @@ enum gpp_behavior {
 
 gss_OID_set gss_mech_interposer(gss_OID mech_type);
 enum gpp_behavior gpp_get_behavior(void);
+bool gpp_is_special_oid(const gss_OID mech_type);
+const gss_OID gpp_special_mech(const gss_OID mech_type);
+gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs);
 
 #endif /* _GSS_PLUGIN_H_ */
