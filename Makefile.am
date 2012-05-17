@@ -84,7 +84,7 @@ if BUILD_SELINUX
 endif
 
 GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c
-GP_MECHGLUE_OBJ = \
+GP_RPCCLI_OBJ = \
     src/client/gpm_display_status.c \
     src/client/gpm_accept_sec_context.c \
     src/client/gpm_release_handle.c \
@@ -99,6 +99,8 @@ GP_MECHGLUE_OBJ = \
     src/client/gpm_unwrap.c \
     src/client/gpm_wrap_size_limit.c \
     src/client/gpm_common.c
+GP_MECHGLUE_OBJ = \
+    src/mechglue/gss_plugin.c
 
 dist_noinst_HEADERS = \
     rpcgen/gp_rpc.h \
@@ -148,6 +150,7 @@ gssproxy_SOURCES = \
 proxymech_la_SOURCES = \
     src/gp_conv.c \
     $(GP_RPCGEN_OBJ) \
+    $(GP_RPCCLI_OBJ) \
     $(GP_MECHGLUE_OBJ)
 proxymech_la_CFLAGS = \
     $(AM_FLAGS)
@@ -159,7 +162,7 @@ cli_srv_comm_SOURCES = \
     src/gp_conv.c \
     src/gp_debug.c \
     $(GP_RPCGEN_OBJ) \
-    $(GP_MECHGLUE_OBJ) \
+    $(GP_RPCCLI_OBJ) \
     tests/cli_srv_comm.c
 
 gssproxy_LDADD = \
