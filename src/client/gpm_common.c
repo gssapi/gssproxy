@@ -518,3 +518,4 @@ void gpm_free_xdrs(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     xdr_free(gpm_xdr_set[proc].arg_fn, (char *)arg);
     xdr_free(gpm_xdr_set[proc].res_fn, (char *)res);
 }
+
