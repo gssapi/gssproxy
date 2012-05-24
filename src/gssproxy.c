@@ -53,7 +53,7 @@ int main(int argc, const char *argv[])
         {"config", 'c', POPT_ARG_STRING, &opt_config_file, 0, \
          _("Specify a non-default config file"), NULL}, \
         {"debug", 'd', POPT_ARG_NONE, &opt_debug, 0, \
-         _("Specify a non-default config file"), NULL}, \
+         _("Enable debugging"), NULL}, \
          {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
           _("Print version number and exit"), NULL }, \
         POPT_TABLEEND
