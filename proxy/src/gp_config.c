@@ -176,10 +176,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
 
             value = get_char_value(dict, secname, "trusted");
             if (value != NULL) {
-                if (strcasecmp(value, "true") == 0 ||
-                    strcasecmp(value, "1") == 0 ||
-                    strcasecmp(value, "yes") == 0) {
-
+                if (option_is_set(value)) {
                     cfg->svcs[n]->trusted = true;
                 }
             }
@@ -246,9 +243,7 @@ int load_config(struct gp_config *cfg)
 
     tmpstr = iniparser_getstring(d, "gssproxy:debug", NULL);
     if (tmpstr) {
-        if (strcasecmp(tmpstr, "1") == 0 ||
-            strcasecmp(tmpstr, "on") == 0 ||
-            strcasecmp(tmpstr, "true") == 0) {
+        if (option_is_set(tmpstr)) {
             gp_debug_enable();
         }
     }
