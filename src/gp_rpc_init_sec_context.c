@@ -41,6 +41,7 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
     struct gss_channel_bindings_struct cbs;
     gss_channel_bindings_t pcbs;
     gss_buffer_desc ibuf;
+    gss_buffer_t pibuf;
     gss_OID actual_mech_type = GSS_C_NO_OID;
     gss_buffer_desc obuf = GSS_C_EMPTY_BUFFER;
     uint32_t ret_maj;
@@ -97,7 +98,10 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
         pcbs = GSS_C_NO_CHANNEL_BINDINGS;
     }
 
-    gp_conv_gssx_to_buffer(isca->input_token, &ibuf);
+    if (isca->input_token) {
+        gp_conv_gssx_to_buffer(isca->input_token, &ibuf);
+        pibuf = &ibuf;
+    }
 
     ret_maj = gss_init_sec_context(&ret_min,
                                    ich,
@@ -107,7 +111,7 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
                                    req_flags,
                                    time_req,
                                    pcbs,
-                                   &ibuf,
+                                   pibuf,
                                    &actual_mech_type,
                                    &obuf,
                                    NULL,
