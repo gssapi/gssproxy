@@ -126,6 +126,42 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     return 0;
 }
 
+static int setup_service_ring_buffer(struct gp_config *cfg,
+                                     struct gp_service *svc,
+                                     int buffer_size)
+{
+    uint32_t ret_maj, ret_min;
+    struct gp_ring_buffer **newrb;
+    uint32_t num;
+
+    if (buffer_size == -1) {
+        /* a reasonable default ? */
+        buffer_size = GP_RING_BUFFER_SIZE;
+    }
+
+    num = cfg->num_ring_buffers;
+    newrb = realloc(cfg->ring_buffers,
+                    sizeof(struct gp_ring_buffer *) * (num + 1));
+    if (!newrb) {
+        return ENOMEM;
+    }
+    cfg->ring_buffers = newrb;
+
+    ret_maj = gp_init_ring_buffer(&ret_min,
+                                  svc->name,
+                                  buffer_size,
+                                  &cfg->ring_buffers[num]);
+    if (ret_maj) {
+        return ret_min;
+    }
+
+    cfg->num_ring_buffers++;
+
+    svc->ring_buffer = cfg->ring_buffers[num];
+
+    return 0;
+}
+
 static int load_services(struct gp_config *cfg, dictionary *dict)
 {
     int num_sec;
@@ -189,6 +225,15 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             } else {
                 /* buffer 1 is untrusted */
                 cfg->svcs[n]->ring_buffer = cfg->ring_buffers[1];
+            }
+
+            value = get_char_value(dict, secname, "dedicated_ring_buffer");
+            if (value && option_is_set(value)) {
+                valnum = get_int_value(dict, secname, "ring_buffer_size");
+                ret = setup_service_ring_buffer(cfg, cfg->svcs[n], valnum);
+                if (ret) {
+                    goto done;
+                }
             }
 
             value = get_char_value(dict, secname, "mechs");
