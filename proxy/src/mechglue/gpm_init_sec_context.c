@@ -79,9 +79,11 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
         }
     }
 
-    ret = gp_conv_buffer_to_gssx_alloc(input_token, &arg->input_token);
-    if (ret) {
-        goto done;
+    if (input_token != GSS_C_NO_BUFFER) {
+        ret = gp_conv_buffer_to_gssx_alloc(input_token, &arg->input_token);
+        if (ret) {
+            goto done;
+        }
     }
 
     /* execute proxy request */
