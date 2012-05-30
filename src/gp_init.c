@@ -65,6 +65,9 @@ void init_server(bool daemonize)
     /* Set up neutral locale */
     setlocale(LC_ALL, "");
 
+    /* Set env var to avoid looping to ourselves in GSSAPI */
+    setenv("_GSSPROXY_LOOPS", "NO", 0);
+
     gp_logging_init();
 }
 

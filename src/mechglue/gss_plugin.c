@@ -66,6 +66,14 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
 {
     gss_OID_set interposed_mechs;
     OM_uint32 maj, min;
+    char *envval;
+
+    /* avoid looping in the gssproxy daemon by avoiding to interpose
+     * any mechanism */
+    envval = getenv("_GSSPROXY_LOOPS");
+    if (envval && strcmp(envval, "NO") == 0) {
+        return NULL;
+    }
 
     interposed_mechs = NULL;
     maj = 0;
