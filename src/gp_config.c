@@ -79,6 +79,18 @@ static int get_int_value(dictionary *dict,
     return ret;
 }
 
+static bool option_is_set(const char *s)
+{
+    if (strcasecmp(s, "1") == 0 ||
+        strcasecmp(s, "on") == 0 ||
+        strcasecmp(s, "true") == 0 ||
+        strcasecmp(s, "yes")) {
+        return true;
+    }
+
+    return false;
+}
+
 static int get_krb5_mech_cfg(struct gp_service *svc,
                              dictionary *dict,
                              const char *secname)
