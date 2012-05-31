@@ -220,4 +220,11 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                                 OM_uint32 *ret_flags,
                                 OM_uint32 *time_rec);
 
+OM_uint32 gssi_display_status(OM_uint32 *minor_status,
+                              OM_uint32 status_value,
+                              int status_type,
+                              const gss_OID mech_type,
+                              OM_uint32 *message_context,
+                              gss_buffer_t status_string);
+
 #endif /* _GSS_PLUGIN_H_ */
