@@ -39,6 +39,7 @@ struct gpp_context_handle {
 };
 
 struct gpp_name_handle {
+    gss_OID mech_type;
     gssx_name *remote;
     gss_name_t local;
 };
@@ -226,5 +227,67 @@ OM_uint32 gssi_display_status(OM_uint32 *minor_status,
                               const gss_OID mech_type,
                               OM_uint32 *message_context,
                               gss_buffer_t status_string);
+
+OM_uint32 gssi_display_name(OM_uint32 *minor_status,
+                            gss_name_t input_name,
+                            gss_buffer_t output_name_buffer,
+                            gss_OID *output_name_type);
+
+OM_uint32 gssi_display_name_ext(OM_uint32 *minor_status,
+                                gss_name_t name,
+                                gss_OID display_as_name_type,
+                                gss_buffer_t display_name);
+
+OM_uint32 gssi_import_name(OM_uint32 *minor_status,
+                          gss_buffer_t input_name_buffer,
+                          gss_OID input_name_type,
+                          gss_name_t *output_name);
+
+OM_uint32 gssi_import_name_by_mech(OM_uint32 *minor_status,
+                                   gss_OID mech_type,
+                                   gss_buffer_t input_name_buffer,
+                                   gss_OID input_name_type,
+                                   gss_name_t *output_name);
+
+OM_uint32 gssi_release_name(OM_uint32 *minor_status,
+                            gss_name_t *input_name);
+
+OM_uint32 gssi_export_name(OM_uint32 *minor_status,
+                           const gss_name_t input_name,
+                           gss_buffer_t exported_name);
+
+OM_uint32 gssi_duplicate_name(OM_uint32 *minor_status,
+                              const gss_name_t input_name,
+                              gss_name_t *dest_name);
+
+OM_uint32 gssi_compare_name(OM_uint32 *minor_status,
+                            gss_name_t name1,
+                            gss_name_t name2,
+                            int *name_equal);
+
+OM_uint32 gssi_inquire_name(OM_uint32 *minor_status,
+                            gss_name_t name,
+                            int *name_is_NM,
+                            gss_OID *NM_mech,
+                            gss_buffer_set_t *attrs);
+
+OM_uint32 gssi_get_name_attribute(OM_uint32 *minor_status,
+                                  gss_name_t input_name,
+                                  gss_buffer_t attr,
+                                  int *authenticated,
+                                  int *complete,
+                                  gss_buffer_t value,
+                                  gss_buffer_t display_value,
+                                  int *more);
+
+OM_uint32 gssi_set_name_attribute(OM_uint32 *minor_status,
+                                  gss_name_t input_name,
+                                  int complete,
+                                  gss_buffer_t attr,
+                                  gss_buffer_t value);
+
+OM_uint32 gssi_delete_name_attribute(OM_uint32 *minor_status,
+                                     gss_name_t input_name,
+                                     gss_buffer_t attr);
 
 #endif /* _GSS_PLUGIN_H_ */
