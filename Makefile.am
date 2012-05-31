@@ -104,6 +104,7 @@ GP_MECHGLUE_OBJ = \
     src/mechglue/gpp_acquire_cred.c \
     src/mechglue/gpp_creds.c \
     src/mechglue/gpp_context.c \
+    src/mechglue/gpp_init_sec_context.c \
     src/mechglue/gss_plugin.c
 
 dist_noinst_HEADERS = \

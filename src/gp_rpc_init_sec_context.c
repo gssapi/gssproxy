@@ -76,6 +76,8 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
         }
     }
 
+    /* FIXME: gett ccache from gpsvc */
+
     ret_maj = gp_conv_gssx_to_name(&ret_min, isca->target_name, &target_name);
     if (ret_maj) {
         goto done;
