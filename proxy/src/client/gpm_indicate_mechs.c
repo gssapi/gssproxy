@@ -729,4 +729,3 @@ done:
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }
-

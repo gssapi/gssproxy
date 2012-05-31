@@ -290,4 +290,25 @@ OM_uint32 gssi_delete_name_attribute(OM_uint32 *minor_status,
                                      gss_name_t input_name,
                                      gss_buffer_t attr);
 
+OM_uint32 gssi_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set);
+
+OM_uint32 gssi_inquire_names_for_mech(OM_uint32 *minor_status,
+                                      gss_OID mech_type,
+                                      gss_OID_set *mech_names);
+
+OM_uint32 gssi_inquire_attrs_for_mech(OM_uint32 *minor_status,
+                                      gss_OID mech,
+                                      gss_OID_set *mech_attrs,
+                                      gss_OID_set *known_mech_attrs);
+
+OM_uint32 gssi_inquire_saslname_for_mech(OM_uint32 *minor_status,
+                                         const gss_OID desired_mech,
+                                         gss_buffer_t sasl_mech_name,
+                                         gss_buffer_t mech_name,
+                                         gss_buffer_t mech_description);
+
+OM_uint32 gssi_inquire_mech_for_saslname(OM_uint32 *minor_status,
+                                         const gss_buffer_t sasl_mech_name,
+                                         gss_OID *mech_type);
+
 #endif /* _GSS_PLUGIN_H_ */
