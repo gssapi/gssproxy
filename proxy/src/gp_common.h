@@ -29,6 +29,8 @@
 #include "gp_debug.h"
 #include "gp_log.h"
 
+#define no_const(ptr) ((void *)((uintptr_t)(ptr)))
+
 /* add element to list head */
 #define LIST_ADD(list, elem) do { \
     elem->prev = NULL; \
