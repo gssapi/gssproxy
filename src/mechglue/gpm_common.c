@@ -336,17 +336,6 @@ static void gpm_release_ctx(struct gpm_ctx *gpmctx)
     gpm_release_sock(gpmctx);
 }
 
-OM_uint32 gpm_release_name(OM_uint32 *minor_status,
-                           gss_name_t *input_name)
-{
-    if (*input_name != GSS_C_NO_NAME) {
-        xdr_free((xdrproc_t)xdr_gssx_name, (char *)(*input_name));
-        free(*input_name);
-        *input_name = GSS_C_NO_NAME;
-    }
-    return GSS_S_COMPLETE;
-}
-
 OM_uint32 gpm_release_buffer(OM_uint32 *minor_status,
                              gss_buffer_t buffer)
 {
