@@ -30,8 +30,10 @@
 #include <errno.h>
 #include "gp_proxy.h"
 #include "iniparser.h"
+#include "gp_ring_buffer.h"
 
 #define GP_SOCKET_NAME "gssproxy.socket"
+#define GP_RING_BUFFER_SIZE 4096
 
 static void gp_service_free(struct gp_service *svc)
 {
@@ -235,6 +237,7 @@ int load_config(struct gp_config *cfg)
     dictionary *d;
     char *tmpstr;
     int ret;
+    uint32_t ret_min, ret_maj;
 
     d = iniparser_load(cfg->config_file);
     if (!d) {
@@ -265,6 +268,34 @@ int load_config(struct gp_config *cfg)
     }
 
     cfg->num_workers = iniparser_getint(d, "gssproxy:worker threads", 0);
+
+    /* The two main ring_buffers need to be initialized before any dedicated
+     * ring_buffers (from services) are appended - gd */
+
+    cfg->num_ring_buffers = 2;
+    cfg->ring_buffers = calloc(cfg->num_ring_buffers, sizeof(struct gp_ring_buffer *));
+    if (!cfg->ring_buffers) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    ret_maj = gp_init_ring_buffer(&ret_min,
+                                  "default_trusted",
+                                  GP_RING_BUFFER_SIZE,
+                                  &cfg->ring_buffers[0]);
+    if (ret_maj) {
+        ret = ret_min;
+        goto done;
+    }
+
+    ret_maj = gp_init_ring_buffer(&ret_min,
+                                  "default_untrusted",
+                                  GP_RING_BUFFER_SIZE,
+                                  &cfg->ring_buffers[1]);
+    if (ret_maj) {
+        ret = ret_min;
+        goto done;
+    }
 
     ret = load_services(cfg, d);
 

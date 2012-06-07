@@ -51,6 +51,8 @@ struct gp_service {
     struct gp_cred_krb5 krb5;
 };
 
+struct gp_ring_buffer;
+
 struct gp_config {
     char *config_file;      /* gssproxy configuration file */
     bool daemonize;         /* let gssproxy daemonize */
@@ -59,6 +61,9 @@ struct gp_config {
 
     struct gp_service **svcs;
     int num_svcs;
+
+    struct gp_ring_buffer **ring_buffers;
+    int num_ring_buffers;
 };
 
 struct gp_workers;
