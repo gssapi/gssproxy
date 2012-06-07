@@ -84,7 +84,7 @@ static bool option_is_set(const char *s)
     if (strcasecmp(s, "1") == 0 ||
         strcasecmp(s, "on") == 0 ||
         strcasecmp(s, "true") == 0 ||
-        strcasecmp(s, "yes")) {
+        strcasecmp(s, "yes") == 0) {
         return true;
     }
 
