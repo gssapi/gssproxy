@@ -404,3 +404,27 @@ struct gp_ring_buffer *gp_service_get_ring_buffer(struct gp_service *svc)
 {
     return svc->ring_buffer;
 }
+
+void free_config(struct gp_config *config)
+{
+    uint32_t i;
+
+    if (!config) {
+        return;
+    }
+
+    free(config->config_file);
+    free(config->socket_name);
+
+    for (i=0; i < config->num_svcs; i++) {
+        gp_service_free(config->svcs[i]);
+    }
+
+    free(config->svcs);
+
+    for (i=0; i < config->num_ring_buffers; i++) {
+        gp_free_ring_buffer(config->ring_buffers[i]);
+    }
+
+    free(config->ring_buffers);
+}

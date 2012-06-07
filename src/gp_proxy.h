@@ -83,6 +83,7 @@ struct gp_conn;
 /* from gp_config.c */
 struct gp_config *read_config(char *config_file, int opt_daemonize);
 struct gp_ring_buffer *gp_service_get_ring_buffer(struct gp_service *svc);
+void free_config(struct gp_config *config);
 
 /* from gp_init.c */
 void init_server(bool daemonize);
