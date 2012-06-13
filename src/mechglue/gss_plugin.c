@@ -341,3 +341,27 @@ done:
     }
     return amechs;
 }
+
+#define MAP_ERROR_BASE 0x04200000
+
+uint32_t gpp_map_error(uint32_t err)
+{
+    /* placeholder,
+     * we will need an actual map but to speed up testing just make a sum with
+     * a special base and hope no conflicts will happen in the mechglue */
+    if (err) {
+        err += MAP_ERROR_BASE;
+    }
+    return err;
+}
+
+uint32_t gpp_unmap_error(uint32_t err)
+{
+    /* placeholder,
+     * we will need an actual map but to speed up testing just make a sum with
+     * a special base and hope no conflicts will happen in the mechglue */
+    if (err) {
+        err -= MAP_ERROR_BASE;
+    }
+    return err;
+}
