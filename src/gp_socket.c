@@ -183,7 +183,8 @@ static int get_peercred(int fd, struct gp_conn *conn)
     ret = getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &conn->creds.ucred, &len);
     if (ret == -1) {
         ret = errno;
-        GPDEBUG("Failed to get SO_PEERCRED options!\n", ret, strerror(ret));
+        GPDEBUG("Failed to get SO_PEERCRED options! (%d:%s)\n",
+                ret, strerror(ret));
         return ret;
     }
     if (len != sizeof(struct ucred)) {
