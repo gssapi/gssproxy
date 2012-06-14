@@ -135,7 +135,8 @@ int init_unix_socket(const char *file_name)
     ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
     if (ret == -1) {
         ret = errno;
-        GPDEBUG("Failed to bind socket! (%d: %s)\n", ret, strerror(ret));
+        GPDEBUG("Failed to bind socket %s! (%d: %s)\n", addr.sun_path,
+            ret, strerror(ret));
         goto done;
     }
 
