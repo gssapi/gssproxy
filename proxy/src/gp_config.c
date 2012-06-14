@@ -183,6 +183,14 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 }
             }
 
+            if (cfg->svcs[n]->trusted) {
+                /* buffer 0 is trusted */
+                cfg->svcs[n]->ring_buffer = cfg->ring_buffers[0];
+            } else {
+                /* buffer 1 is untrusted */
+                cfg->svcs[n]->ring_buffer = cfg->ring_buffers[1];
+            }
+
             value = get_char_value(dict, secname, "mechs");
             if (value == NULL) {
                 /* malformed section, mech is missing */
