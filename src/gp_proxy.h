@@ -42,6 +42,8 @@ struct gp_cred_krb5 {
     char *ccache;
 };
 
+struct gp_ring_buffer;
+
 struct gp_service {
     char *name;
     uid_t euid;
@@ -49,6 +51,8 @@ struct gp_service {
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
+
+    struct gp_ring_buffer *ring_buffer;
 };
 
 struct gp_ring_buffer;
