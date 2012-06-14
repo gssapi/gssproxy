@@ -347,3 +347,7 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
     return cfg;
 }
 
+struct gp_ring_buffer *gp_service_get_ring_buffer(struct gp_service *svc)
+{
+    return svc->ring_buffer;
+}
