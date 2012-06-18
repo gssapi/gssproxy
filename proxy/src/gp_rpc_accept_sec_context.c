@@ -67,7 +67,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     }
 
     if (asca->cred_handle) {
-        ret = gp_find_cred(asca->cred_handle, &ach);
+        ret = gp_find_cred(gpsvc, asca->cred_handle, &ach);
         if (ret) {
             ret_maj = GSS_S_NO_CRED;
             ret_min = ret;
@@ -148,6 +148,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
             goto done;
         }
         ret_maj = gp_export_gssx_cred(&ret_min,
+                                      gpsvc,
                                       &dch, ascr->delegated_cred_handle);
         if (ret_maj) {
             goto done;

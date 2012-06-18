@@ -67,7 +67,7 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
     }
 
     if (isca->cred_handle) {
-        ret = gp_find_cred(isca->cred_handle, &ich);
+        ret = gp_find_cred(gpsvc, isca->cred_handle, &ich);
         if (ret) {
             ret_maj = GSS_S_NO_CRED;
             ret_min = ret;

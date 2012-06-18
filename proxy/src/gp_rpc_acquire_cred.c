@@ -50,7 +50,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     acr = &res->acquire_cred;
 
     if (aca->input_cred_handle) {
-        ret = gp_find_cred(aca->input_cred_handle, &in_cred);
+        ret = gp_find_cred(gpsvc, aca->input_cred_handle, &in_cred);
         if (ret) {
             ret_maj = GSS_S_NO_CRED;
             ret_min = ret;
@@ -171,7 +171,8 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
         ret_min = ENOMEM;
         goto done;
     }
-    ret_maj = gp_export_gssx_cred(&ret_min, &out_cred, acr->output_cred_handle);
+    ret_maj = gp_export_gssx_cred(&ret_min, gpsvc,
+                                  &out_cred, acr->output_cred_handle);
     if (ret_maj) {
         goto done;
     }
