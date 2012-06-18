@@ -254,6 +254,40 @@ static uint32_t gp_read_gss_creds_from_ring_buffer(uint32_t *min,
     return GSS_S_COMPLETE;
 }
 
+static int gp_conv_cred_handle_to_octet_string(struct gp_credential_handle *in,
+                                               octet_string *out)
+{
+    if (!in || !out) {
+        return EINVAL;
+    }
+
+    out->octet_string_len = sizeof(struct gp_credential_handle);
+    out->octet_string_val = malloc(out->octet_string_len);
+    if (!out->octet_string_val) {
+        return ENOMEM;
+    }
+
+    memcpy(out->octet_string_val, in, out->octet_string_len);
+
+    return 0;
+}
+
+static int gp_conv_octet_string_to_cred_handle(octet_string *in,
+                                               struct gp_credential_handle *out)
+{
+    if (!in || !out) {
+        return EINVAL;
+    }
+
+    if (in->octet_string_len != sizeof(struct gp_credential_handle)) {
+        return EINVAL;
+    }
+
+    memcpy(out, in->octet_string_val, in->octet_string_len);
+
+    return 0;
+}
+
 uint32_t gp_export_gssx_cred(uint32_t *min,
                              struct gp_service *svc,
                              gss_cred_id_t *in, gssx_cred *out)
@@ -269,6 +303,8 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
     struct gssx_cred_element *el;
     int ret;
     int i, j;
+    struct gp_ring_buffer *ring_buffer = NULL;
+    struct gp_credential_handle handle;
 
     ret_maj = gss_inquire_cred(&ret_min, *in,
                                &name, &lifetime, &cred_usage, &mechanisms);
@@ -334,8 +370,25 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
         el->acceptor_time_rec = acceptor_lifetime;
     }
 
-    ret = gp_conv_octet_string(sizeof(gss_cred_id_t), in,
-                               &out->cred_handle_reference);
+    ring_buffer = gp_service_get_ring_buffer(svc);
+    if (!ring_buffer) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = EINVAL;
+        goto done;
+    }
+
+    ret = gp_write_gss_cred_to_ring_buffer(&ret_min,
+                                           ring_buffer,
+                                           in,
+                                           &handle);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
+
+    ret = gp_conv_cred_handle_to_octet_string(&handle,
+                                              &out->cred_handle_reference);
     if (ret) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ret;
@@ -357,20 +410,43 @@ done:
     return ret_maj;
 }
 
-static int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)
+static int gp_import_gssx_cred(struct gp_ring_buffer *ring_buffer,
+                               struct gp_credential_handle *in,
+                               gss_cred_id_t *out)
 {
-    if (in) {
-        memcpy(out, in->octet_string_val, sizeof(gss_cred_id_t));
-    } else {
-        *out = NULL;
+    uint32_t ret = 0;
+    uint32_t ret_min = 0;
+
+    ret = gp_read_gss_creds_from_ring_buffer(&ret_min,
+                                             ring_buffer,
+                                             in,
+                                             out);
+    if (ret) {
+        return ret_min;
     }
+
     return 0;
 }
 
 int gp_find_cred(struct gp_service *svc,
                  gssx_cred *cred, gss_cred_id_t *out)
 {
-    return gp_import_gssx_cred(&cred->cred_handle_reference, out);
+    struct gp_ring_buffer *ring_buffer;
+    struct gp_credential_handle handle;
+    int ret;
+
+    ring_buffer = gp_service_get_ring_buffer(svc);
+    if (!ring_buffer) {
+        return EINVAL;
+    }
+
+    ret = gp_conv_octet_string_to_cred_handle(&cred->cred_handle_reference,
+                                              &handle);
+    if (ret) {
+        return ENOENT;
+    }
+
+    return gp_import_gssx_cred(ring_buffer, &handle, out);
 }
 
 
