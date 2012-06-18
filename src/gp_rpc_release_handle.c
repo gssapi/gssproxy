@@ -48,7 +48,7 @@ int gp_release_handle(struct gssproxy_ctx *gpctx,
         ret_min = 0;
         break;
     case GSSX_C_HANDLE_CRED:
-        ret = gp_find_cred(&rha->cred_handle.gssx_handle_u.cred_info, &cred);
+        ret = gp_find_cred(gpsvc, &rha->cred_handle.gssx_handle_u.cred_info, &cred);
         if (ret) {
             ret_maj = GSS_S_UNAVAILABLE;
             ret_min = 0;

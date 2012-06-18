@@ -31,6 +31,7 @@
 #include "gp_conv.h"
 #include "gp_export.h"
 #include "gp_debug.h"
+#include "gp_proxy.h"
 #include <gssapi/gssapi_krb5.h>
 #include <pwd.h>
 #include <grp.h>
@@ -254,6 +255,7 @@ static uint32_t gp_read_gss_creds_from_ring_buffer(uint32_t *min,
 }
 
 uint32_t gp_export_gssx_cred(uint32_t *min,
+                             struct gp_service *svc,
                              gss_cred_id_t *in, gssx_cred *out)
 {
     uint32_t ret_maj;
@@ -365,7 +367,8 @@ int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)
     return 0;
 }
 
-int gp_find_cred(gssx_cred *cred, gss_cred_id_t *out)
+int gp_find_cred(struct gp_service *svc,
+                 gssx_cred *cred, gss_cred_id_t *out)
 {
     return gp_import_gssx_cred(&cred->cred_handle_reference, out);
 }
