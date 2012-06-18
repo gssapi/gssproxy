@@ -46,7 +46,6 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     gssx_name *name = NULL;
     gss_OID_desc *mech = NULL;
     gss_buffer_t outbuf = NULL;
-    gssx_cred *deleg_cred = NULL;
     uint32_t ret_maj;
     int ret;
 
@@ -117,13 +116,6 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         goto done;
     }
 
-    if (res->delegated_cred_handle) {
-        deleg_cred = res->delegated_cred_handle;
-        /* we are stealing the delegated creds on success, so we do not want
-        * it to be freed by xdr_free */
-        res->delegated_cred_handle = NULL;
-    }
-
     /* replace old ctx handle if any */
     if (*context_handle) {
         xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
@@ -146,7 +138,16 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     if (time_rec) {
         *time_rec = ctx->lifetime;
     }
-    *delegated_cred_handle = (gss_cred_id_t)deleg_cred;
+
+    if (res->delegated_cred_handle) {
+        if (delegated_cred_handle) {
+            *delegated_cred_handle = (gss_cred_id_t)res->delegated_cred_handle;
+        }
+        /* we are stealing the delegated creds on success, so we do not want
+        * it to be freed by xdr_free */
+        res->delegated_cred_handle = NULL;
+    }
+
     *minor_status = 0;
     ret_maj = GSS_S_COMPLETE;
 
@@ -172,10 +173,6 @@ done:
         if (outbuf) {
             free(outbuf->value);
             free(outbuf);
-        }
-        if (deleg_cred) {
-            xdr_free((xdrproc_t)xdr_gssx_cred, (char *)deleg_cred);
-            free(deleg_cred);
         }
         *minor_status = ret;
         return GSS_S_FAILURE;
