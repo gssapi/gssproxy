@@ -1,8 +1,9 @@
 /*
    GSS-PROXY
 
-   Copyright (C) 2011 Red Hat, Inc.
+   Copyright (C) 2011-2012 Red Hat, Inc.
    Copyright (C) 2011 Simo Sorce <simo.sorce@redhat.com>
+   Copyright (C) 2012 Guenther Deschner <guenther.deschner@redhat.com>
 
    Permission is hereby granted, free of charge, to any person obtaining a
    copy of this software and associated documentation files (the "Software"),
@@ -33,6 +34,7 @@
 #include <gssapi/gssapi_krb5.h>
 #include <pwd.h>
 #include <grp.h>
+#include <pthread.h>
 
 /* FIXME: F I X M E
  *
@@ -54,6 +56,109 @@
  *
  * *MUST* BE FIXED BEFORE ANY OFFICIAL RELEASE.
  */
+
+struct gp_ring_buffer_cred {
+    uint64_t count;
+    gss_cred_id_t cred;
+};
+
+struct gp_ring_buffer {
+    char *name;
+    uint32_t end;
+    uint64_t count;
+    pthread_mutex_t lock;
+    struct gp_ring_buffer_cred **creds;
+    uint32_t num_creds;
+};
+
+static void gp_free_ring_buffer_cred(struct gp_ring_buffer_cred *cred)
+{
+    uint32_t ret_min;
+
+    if (!cred) {
+        return;
+    }
+
+    gss_release_cred(&ret_min, &cred->cred);
+
+    free(cred);
+}
+
+void gp_free_ring_buffer(struct gp_ring_buffer *buffer)
+{
+    uint32_t i;
+
+    if (!buffer) {
+        return;
+    }
+
+    free(buffer->name);
+
+    for (i=0; i < buffer->num_creds; i++) {
+        gp_free_ring_buffer_cred(buffer->creds[i]);
+    }
+
+    free(buffer->creds);
+
+    pthread_mutex_destroy(&buffer->lock);
+
+    free(buffer);
+}
+
+uint32_t gp_init_ring_buffer(uint32_t *min,
+                             const char *name,
+                             uint32_t ring_size,
+                             struct gp_ring_buffer **buffer_out)
+{
+    struct gp_ring_buffer *buffer;
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    int ret;
+
+    GPDEBUG("gp_init_ring_buffer %s (size: %d)\n", name, ring_size);
+
+    buffer = calloc(1, sizeof(struct gp_ring_buffer));
+    if (!buffer) {
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    buffer->name = strdup(name);
+    if (!buffer->name) {
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    buffer->num_creds = ring_size;
+
+    buffer->creds = calloc(sizeof(struct gp_ring_buffer_cred *), buffer->num_creds);
+    if (!buffer->creds) {
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    ret = pthread_mutex_init(&buffer->lock, NULL);
+    if (ret) {
+        ret_min = ret;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    ret_maj = GSS_S_COMPLETE;
+    ret_min = 0;
+
+done:
+    *min = ret_min;
+    if (ret_maj) {
+        gp_free_ring_buffer(buffer);
+    }
+    *buffer_out = buffer;
+
+    return ret_maj;
+}
 
 uint32_t gp_export_gssx_cred(uint32_t *min,
                              gss_cred_id_t *in, gssx_cred *out)
