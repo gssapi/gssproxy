@@ -71,6 +71,11 @@ struct gp_ring_buffer {
     uint32_t num_creds;
 };
 
+struct gp_credential_handle {
+    uint32_t index;
+    uint64_t count;
+};
+
 static void gp_free_ring_buffer_cred(struct gp_ring_buffer_cred *cred)
 {
     uint32_t ret_min;
@@ -158,6 +163,94 @@ done:
     *buffer_out = buffer;
 
     return ret_maj;
+}
+
+static uint32_t gp_write_gss_cred_to_ring_buffer(uint32_t *min,
+                                                 struct gp_ring_buffer *buffer,
+                                                 gss_cred_id_t *cred,
+                                                 struct gp_credential_handle *handle)
+{
+    struct gp_ring_buffer_cred *bcred = NULL;
+
+    if (!buffer || !cred) {
+        *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    bcred = calloc(1, sizeof(struct gp_ring_buffer_cred));
+    if (!bcred) {
+        *min = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+
+    /* ======> LOCK */
+    pthread_mutex_lock(&buffer->lock);
+
+    /* setup ring buffer credential */
+    bcred->count = buffer->count;
+    bcred->cred = *cred;
+
+    /* setup credential handle */
+    handle->count = buffer->count;
+    handle->index = buffer->end;
+
+    /* store ring buffer credential */
+    gp_free_ring_buffer_cred(buffer->creds[buffer->end]);
+
+    buffer->creds[buffer->end] = bcred;
+    buffer->end = (buffer->end + 1) % buffer->num_creds;
+
+    buffer->count++;
+
+    /* <====== LOCK */
+    pthread_mutex_unlock(&buffer->lock);
+
+    *min = 0;
+
+    return GSS_S_COMPLETE;
+}
+
+static uint32_t gp_read_gss_creds_from_ring_buffer(uint32_t *min,
+                                                   struct gp_ring_buffer *buffer,
+                                                   struct gp_credential_handle *handle,
+                                                   gss_cred_id_t *cred)
+{
+    struct gp_ring_buffer_cred *bcred;
+
+    if (!buffer || !cred || !handle) {
+        *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    /* some basic sanity checks */
+    if (handle->index > buffer->num_creds) {
+         *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    /* ======> LOCK */
+    pthread_mutex_lock(&buffer->lock);
+
+    /* pick ring buffer credential */
+    bcred = buffer->creds[handle->index];
+    if (bcred &&
+        (bcred->count == handle->count)) {
+        *cred = bcred->cred;
+    } else {
+        *cred = NULL;
+    }
+
+    /* <====== LOCK */
+    pthread_mutex_unlock(&buffer->lock);
+
+    if (*cred == NULL) {
+        *min = GSS_S_CRED_UNAVAIL;
+        return GSS_S_FAILURE;
+    }
+
+    *min = 0;
+
+    return GSS_S_COMPLETE;
 }
 
 uint32_t gp_export_gssx_cred(uint32_t *min,
