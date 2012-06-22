@@ -37,27 +37,6 @@
 #include <grp.h>
 #include <pthread.h>
 
-/* FIXME: F I X M E
- *
- * FFFFF  I  X    X  M    M  EEEEE
- * F      I   X  X   MM  MM  E
- * FFF    I    XX    M MM M  EEE
- * F      I   X  X   M    M  E
- * F      I  X    X  M    M  EEEEE
- *
- * Credential functions should either be implemented with gss_export_cred()
- * or, lacking those calls in the gssapi implementation, by keeping state
- * in a table/list and returning a token.
- * In both cases the content should be encrypted.
- *
- * Temporarily we simply return straight out the gss_cred_id_t pointer as
- * a handle.
- *
- * THIS IS ONLY FOR THE PROTOTYPE
- *
- * *MUST* BE FIXED BEFORE ANY OFFICIAL RELEASE.
- */
-
 #define GP_RING_BUFFER_KEY_ENCTYPE ENCTYPE_AES256_CTS_HMAC_SHA1_96
 
 struct gp_ring_buffer_cred {
