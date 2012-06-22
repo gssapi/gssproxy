@@ -357,7 +357,7 @@ done:
     return ret_maj;
 }
 
-int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)
+static int gp_import_gssx_cred(octet_string *in, gss_cred_id_t *out)
 {
     if (in) {
         memcpy(out, in->octet_string_val, sizeof(gss_cred_id_t));
