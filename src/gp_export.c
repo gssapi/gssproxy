@@ -449,6 +449,34 @@ int gp_find_cred(struct gp_service *svc,
     return gp_import_gssx_cred(ring_buffer, &handle, out);
 }
 
+int gp_find_and_free_cred(struct gp_service *svc,
+                          gssx_cred *cred)
+{
+    struct gp_ring_buffer *ring_buffer;
+    struct gp_credential_handle handle;
+    gss_cred_id_t gss_cred;
+    int ret;
+
+    ring_buffer = gp_service_get_ring_buffer(svc);
+    if (!ring_buffer) {
+        return EINVAL;
+    }
+
+    ret = gp_conv_octet_string_to_cred_handle(&cred->cred_handle_reference,
+                                              &handle);
+    if (ret) {
+        return ret;
+    }
+
+    ret = gp_import_gssx_cred(ring_buffer, &handle, &gss_cred);
+    if (ret) {
+        return ret;
+    }
+
+    gp_free_ring_buffer_cred(ring_buffer->creds[handle.index]);
+
+    return 0;
+}
 
 /* Exported Contexts */
 
