@@ -35,6 +35,8 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
                              struct gp_service *svc,
                              gss_cred_id_t *in, gssx_cred *out);
 int gp_find_cred(struct gp_service *svc, gssx_cred *cred, gss_cred_id_t *out);
+int gp_find_and_free_cred(struct gp_service *svc,
+                          gssx_cred *cred);
 
 int gp_get_exported_context_type(struct gssx_call_ctx *ctx);
 uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
