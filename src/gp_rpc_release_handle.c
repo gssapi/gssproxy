@@ -34,7 +34,6 @@ int gp_release_handle(struct gssproxy_ctx *gpctx,
     struct gssx_res_release_handle *rhr;
     uint32_t ret_maj;
     uint32_t ret_min;
-    gss_cred_id_t cred;
     int ret;
 
     rha = &arg->release_handle;
@@ -48,12 +47,10 @@ int gp_release_handle(struct gssproxy_ctx *gpctx,
         ret_min = 0;
         break;
     case GSSX_C_HANDLE_CRED:
-        ret = gp_find_cred(gpsvc, &rha->cred_handle.gssx_handle_u.cred_info, &cred);
+        ret = gp_find_and_free_cred(gpsvc, &rha->cred_handle.gssx_handle_u.cred_info);
         if (ret) {
             ret_maj = GSS_S_UNAVAILABLE;
             ret_min = 0;
-        } else {
-            ret_maj = gss_release_cred(&ret_min, &cred);
         }
         break;
     default:
