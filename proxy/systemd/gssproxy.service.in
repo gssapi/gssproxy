@@ -4,7 +4,7 @@ Description=GSSAPI Proxy Daemon
 After=syslog.target
 
 [Service]
-ExecStart=@sbindir@/gssproxy -D -f
+ExecStart=@sbindir@/gssproxy -D
 # These two should be used with traditional UNIX forking daemons
 # consult systemd.service(5) for more details
 Type=forking
