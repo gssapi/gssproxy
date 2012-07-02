@@ -18,6 +18,9 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 Requires: krb5-libs >= 1.11.1
 Requires: keyutils-libs
+Requires(post): systemd-units
+Requires(preun): systemd-units
+Requires(postun): systemd-units
 
 ### Build Dependencies ###
 
@@ -38,6 +41,7 @@ BuildRequires: iniparser-devel
 BuildRequires: libverto-devel
 BuildRequires: popt-devel
 BuildRequires: findutils
+BuildRequires: systemd-units
 
 
 %description
@@ -64,7 +68,9 @@ rm -rf $RPM_BUILD_ROOT
 cd proxy
 make install DESTDIR=$RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/gssproxy
+mkdir -p $RPM_BUILD_ROOT/%{_unitdir}
 install -m644 examples/gssproxy-example.conf $RPM_BUILD_ROOT%{_sysconfdir}/gssproxy/gssproxy.conf
+install -m644 systemd/gssproxy.service $RPM_BUILD_ROOT%{_unitdir}/gssproxy.service
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -72,7 +78,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-#%{_initrddir}/%{name}
+%{_unitdir}/gssproxy.service
 %{_sbindir}/gssproxy
 %attr(755,root,root) %dir %{pubconfpath}
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
@@ -81,22 +87,29 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/gssproxy.8*
 
 %post
-/sbin/ldconfig
-/sbin/chkconfig --add %{servicename}
-
-if [ $1 -ge 1 ] ; then
-    /sbin/service %{servicename} condrestart 2>&1 > /dev/null
+if [ $1 -eq 1 ] ; then
+    # Initial installation
+    /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 fi
 
 %preun
-if [ $1 = 0 ]; then
-    /sbin/service %{servicename} stop 2>&1 > /dev/null
-    /sbin/chkconfig --del %{servicename}
+if [ $1 -eq 0 ] ; then
+    # Package removal, not upgrade
+    /bin/systemctl --no-reload disable gssproxy.service > /dev/null 2>&1 || :
+    /bin/systemctl stop gssproxy.service > /dev/null 2>&1 || :
+fi
+
+%postun
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+    # Package upgrade, not uninstall
+    /bin/systemctl try-restart gssproxy.service >/dev/null 2>&1 || :
 fi
 
 %changelog
 * Fri Mar 22 2013 Guenther Deschner <gdeschner@redhat.com> - @PACKAGE_VERSION@-0@PRERELEASE_VERSION@
 - Various specfile and packaging fixes
+- Add systemd packaging
 
 * Mon Dec 12 2011 Simo Sorce <simo@redhat.com> - 0.0.1-0
 - Automated build of the gssproxy daemon
