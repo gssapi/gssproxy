@@ -52,7 +52,6 @@ A proxy for GSSAPI credential handling
 
 
 %build
-cd proxy
 autoreconf -f -i
 %configure \
     --with-pubconf-path=%{pubconfpath} \
@@ -62,18 +61,17 @@ autoreconf -f -i
 
 make %{?_smp_mflags} all
 
-
 %install
-rm -rf $RPM_BUILD_ROOT
-cd proxy
-make install DESTDIR=$RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/gssproxy
-mkdir -p $RPM_BUILD_ROOT/%{_unitdir}
-install -m644 examples/gssproxy-example.conf $RPM_BUILD_ROOT%{_sysconfdir}/gssproxy/gssproxy.conf
-install -m644 systemd/gssproxy.service $RPM_BUILD_ROOT%{_unitdir}/gssproxy.service
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}
+rm -f %{buildroot}%{_libdir}/gssproxy/proxymech.la
+install -d -m755 %{buildroot}%{_sysconfdir}/gssproxy
+install -d -m755 %{buildroot}%{_unitdir}
+install -m644 examples/gssproxy-example.conf %{buildroot}%{_sysconfdir}/gssproxy/gssproxy.conf
+install -m644 systemd/gssproxy.service %{buildroot}%{_unitdir}/gssproxy.service
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 
 %files
