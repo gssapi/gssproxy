@@ -428,29 +428,36 @@ static int gp_import_gssx_cred(struct gp_ring_buffer *ring_buffer,
     return 0;
 }
 
-int gp_find_cred(struct gp_service *svc,
-                 gssx_cred *cred, gss_cred_id_t *out)
+
+
+int gp_find_cred_int(struct gp_ring_buffer *ring_buffer, gssx_cred *cred,
+                     gss_cred_id_t *out, struct gp_credential_handle *handle)
+{
+    int ret;
+
+    ret = gp_conv_octet_string_to_cred_handle(&cred->cred_handle_reference,
+                                              handle);
+    if (ret) {
+        return ENOENT;
+    }
+
+    return gp_import_gssx_cred(ring_buffer, handle, out);
+}
+
+int gp_find_cred(struct gp_service *svc, gssx_cred *cred, gss_cred_id_t *out)
 {
     struct gp_ring_buffer *ring_buffer;
     struct gp_credential_handle handle;
-    int ret;
 
     ring_buffer = gp_service_get_ring_buffer(svc);
     if (!ring_buffer) {
         return EINVAL;
     }
 
-    ret = gp_conv_octet_string_to_cred_handle(&cred->cred_handle_reference,
-                                              &handle);
-    if (ret) {
-        return ENOENT;
-    }
-
-    return gp_import_gssx_cred(ring_buffer, &handle, out);
+    return gp_find_cred_int(ring_buffer, cred, out, &handle);
 }
 
-int gp_find_and_free_cred(struct gp_service *svc,
-                          gssx_cred *cred)
+int gp_find_and_free_cred(struct gp_service *svc, gssx_cred *cred)
 {
     struct gp_ring_buffer *ring_buffer;
     struct gp_credential_handle handle;
@@ -462,13 +469,7 @@ int gp_find_and_free_cred(struct gp_service *svc,
         return EINVAL;
     }
 
-    ret = gp_conv_octet_string_to_cred_handle(&cred->cred_handle_reference,
-                                              &handle);
-    if (ret) {
-        return ret;
-    }
-
-    ret = gp_import_gssx_cred(ring_buffer, &handle, &gss_cred);
+    ret = gp_find_cred_int(ring_buffer, cred, &gss_cred, &handle);
     if (ret) {
         return ret;
     }
