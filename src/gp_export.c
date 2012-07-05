@@ -58,6 +58,8 @@
  * *MUST* BE FIXED BEFORE ANY OFFICIAL RELEASE.
  */
 
+#define GP_RING_BUFFER_KEY_ENCTYPE ENCTYPE_AES256_CTS_HMAC_SHA1_96
+
 struct gp_ring_buffer_cred {
     uint64_t count;
     gss_cred_id_t cred;
@@ -70,6 +72,8 @@ struct gp_ring_buffer {
     pthread_mutex_t lock;
     struct gp_ring_buffer_cred **creds;
     uint32_t num_creds;
+    krb5_keyblock key;
+    krb5_context context;
 };
 
 struct gp_credential_handle {
@@ -105,6 +109,11 @@ void gp_free_ring_buffer(struct gp_ring_buffer *buffer)
     }
 
     free(buffer->creds);
+
+    if (buffer->context) {
+        krb5_free_keyblock_contents(buffer->context, &buffer->key);
+        krb5_free_context(buffer->context);
+    }
 
     pthread_mutex_destroy(&buffer->lock);
 
@@ -147,6 +156,24 @@ uint32_t gp_init_ring_buffer(uint32_t *min,
     }
 
     ret = pthread_mutex_init(&buffer->lock, NULL);
+    if (ret) {
+        ret_min = ret;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    /* initialize key */
+
+    ret = krb5_init_context(&buffer->context);
+    if (ret) {
+        ret_min = ret;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    ret = krb5_c_make_random_key(buffer->context,
+                                 GP_RING_BUFFER_KEY_ENCTYPE,
+                                 &buffer->key);
     if (ret) {
         ret_min = ret;
         ret_maj = GSS_S_FAILURE;
@@ -284,6 +311,85 @@ static int gp_conv_octet_string_to_cred_handle(octet_string *in,
     }
 
     memcpy(out, in->octet_string_val, in->octet_string_len);
+
+    return 0;
+}
+
+
+static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
+                             size_t len, void *buf, octet_string *out)
+{
+    int ret;
+    krb5_data data_in;
+    krb5_enc_data enc_handle;
+
+    data_in.length = len;
+    data_in.data = buf;
+
+    memset(&enc_handle, '\0', sizeof(krb5_enc_data));
+
+    ret = krb5_c_encrypt_length(context,
+                                GP_RING_BUFFER_KEY_ENCTYPE,
+                                data_in.length,
+                                (size_t *)&enc_handle.ciphertext.length);
+    if (ret) {
+        goto done;
+    }
+
+    enc_handle.ciphertext.data = malloc(enc_handle.ciphertext.length);
+    if (!enc_handle.ciphertext.data) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    ret = krb5_c_encrypt(context,
+                         key,
+                         KRB5_KEYUSAGE_APP_DATA_ENCRYPT,
+                         NULL,
+                         &data_in,
+                         &enc_handle);
+    if (ret) {
+        ret = EINVAL;
+        goto done;
+    }
+
+    ret = gp_conv_octet_string(enc_handle.ciphertext.length,
+                               enc_handle.ciphertext.data,
+                               out);
+    if (ret) {
+        goto done;
+    }
+
+done:
+    free(enc_handle.ciphertext.data);
+    return ret;
+}
+
+static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
+                             octet_string *in, size_t len, void *buf)
+{
+    int ret;
+    krb5_data data_out;
+    krb5_enc_data enc_handle;
+
+    memset(&enc_handle, '\0', sizeof(krb5_enc_data));
+
+    enc_handle.enctype = GP_RING_BUFFER_KEY_ENCTYPE;
+    enc_handle.ciphertext.data = in->octet_string_val;
+    enc_handle.ciphertext.length = in->octet_string_len;
+
+    data_out.length = len;
+    data_out.data = buf;
+
+    ret = krb5_c_decrypt(context,
+                         key,
+                         KRB5_KEYUSAGE_APP_DATA_ENCRYPT,
+                         NULL,
+                         &enc_handle,
+                         &data_out);
+    if (ret) {
+        return EINVAL;
+    }
 
     return 0;
 }
