@@ -281,40 +281,6 @@ static uint32_t gp_read_gss_creds_from_ring_buffer(uint32_t *min,
     return GSS_S_COMPLETE;
 }
 
-static int gp_conv_cred_handle_to_octet_string(struct gp_credential_handle *in,
-                                               octet_string *out)
-{
-    if (!in || !out) {
-        return EINVAL;
-    }
-
-    out->octet_string_len = sizeof(struct gp_credential_handle);
-    out->octet_string_val = malloc(out->octet_string_len);
-    if (!out->octet_string_val) {
-        return ENOMEM;
-    }
-
-    memcpy(out->octet_string_val, in, out->octet_string_len);
-
-    return 0;
-}
-
-static int gp_conv_octet_string_to_cred_handle(octet_string *in,
-                                               struct gp_credential_handle *out)
-{
-    if (!in || !out) {
-        return EINVAL;
-    }
-
-    if (in->octet_string_len != sizeof(struct gp_credential_handle)) {
-        return EINVAL;
-    }
-
-    memcpy(out, in->octet_string_val, in->octet_string_len);
-
-    return 0;
-}
-
 
 static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
                              size_t len, void *buf, octet_string *out)
