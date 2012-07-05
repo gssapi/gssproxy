@@ -493,8 +493,9 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
         goto done;
     }
 
-    ret = gp_conv_cred_handle_to_octet_string(&handle,
-                                              &out->cred_handle_reference);
+    ret = gp_encrypt_buffer(ring_buffer->context, &ring_buffer->key,
+                            sizeof(handle), &handle,
+                            &out->cred_handle_reference);
     if (ret) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ret;
@@ -541,8 +542,9 @@ int gp_find_cred_int(struct gp_ring_buffer *ring_buffer, gssx_cred *cred,
 {
     int ret;
 
-    ret = gp_conv_octet_string_to_cred_handle(&cred->cred_handle_reference,
-                                              handle);
+    ret = gp_decrypt_buffer(ring_buffer->context, &ring_buffer->key,
+                            &cred->cred_handle_reference,
+                            sizeof(*handle), handle);
     if (ret) {
         return ENOENT;
     }
