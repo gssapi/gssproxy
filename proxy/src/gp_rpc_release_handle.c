@@ -32,8 +32,8 @@ int gp_release_handle(struct gssproxy_ctx *gpctx,
 {
     struct gssx_arg_release_handle *rha;
     struct gssx_res_release_handle *rhr;
-    uint32_t ret_maj;
-    uint32_t ret_min;
+    uint32_t ret_maj = GSS_S_COMPLETE;
+    uint32_t ret_min = 0;
     int ret;
 
     rha = &arg->release_handle;
