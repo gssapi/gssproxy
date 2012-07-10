@@ -92,7 +92,21 @@ GP_MECHGLUE_OBJ = \
     src/mechglue/gpm_init_sec_context.c \
     src/mechglue/gpm_common.c
 
-dist_noinst_HEADERS =
+dist_noinst_HEADERS = \
+    rpcgen/gp_rpc.h \
+    rpcgen/gss_proxy.h \
+    src/gp_rpc_process.h \
+    src/gp_proxy.h \
+    src/mechglue/gssapi_gpm.h \
+    src/gp_common.h \
+    src/gp_log.h \
+    src/gp_creds.h \
+    src/gp_export.h \
+    src/gp_conv.h \
+    src/gp_ring_buffer.h \
+    src/gp_debug.h \
+    src/gp_rpc_creds.h
+
 
 ####################
 # Program Binaries #
