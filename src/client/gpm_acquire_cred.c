@@ -72,7 +72,7 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
                            OM_uint32 time_req,
                            const gss_OID_set desired_mechs,
                            gss_cred_usage_t cred_usage,
-                           gss_cred_id_t *output_cred_handle,
+                           gssx_cred **output_cred_handle,
                            gss_OID_set *actual_mechs,
                            OM_uint32 *time_rec)
 {
@@ -161,7 +161,7 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     }
 
     /* we steal the cred handler here */
-    *output_cred_handle = (gss_cred_id_t)res->output_cred_handle;
+    *output_cred_handle = res->output_cred_handle;
     res->output_cred_handle = NULL;
     ret_maj = GSS_S_COMPLETE;
     ret_min = 0;
@@ -173,13 +173,13 @@ done:
 }
 
 OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
-                       const gss_cred_id_t input_cred_handle,
+                       gssx_cred *input_cred_handle,
                        const gss_name_t desired_name,
                        const gss_OID desired_mech,
                        gss_cred_usage_t cred_usage,
                        OM_uint32 initiator_time_req,
                        OM_uint32 acceptor_time_req,
-                       gss_cred_id_t *output_cred_handle,
+                       gssx_cred **output_cred_handle,
                        gss_OID_set *actual_mechs,
                        OM_uint32 *initiator_time_rec,
                        OM_uint32 *acceptor_time_rec)
@@ -199,7 +199,7 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
     /* ignore call_ctx for now */
 
     if (input_cred_handle) {
-        arg->input_cred_handle = (gssx_cred *)input_cred_handle;
+        arg->input_cred_handle = input_cred_handle;
     }
     if (output_cred_handle != NULL) {
         arg->add_cred_to_input_handle = true;
@@ -275,7 +275,7 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
 
     if (output_cred_handle) {
         /* we steal the cred handler here */
-        *output_cred_handle = (gss_cred_id_t)res->output_cred_handle;
+        *output_cred_handle = res->output_cred_handle;
         res->output_cred_handle = NULL;
     }
 

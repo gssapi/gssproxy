@@ -28,6 +28,11 @@
 
 #include "src/client/gssapi_gpm.h"
 
+struct gpp_cred_handle {
+    gssx_cred *remote;
+    gss_cred_id_t local;
+};
+
 extern const gss_OID_desc gssproxy_mech_interposer;
 
 enum gpp_behavior {

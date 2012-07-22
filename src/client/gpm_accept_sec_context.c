@@ -28,7 +28,7 @@
 
 OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
                                  gss_ctx_id_t *context_handle,
-                                 gss_cred_id_t acceptor_cred_handle,
+                                 gssx_cred *acceptor_cred_handle,
                                  gss_buffer_t input_token_buffer,
                                  gss_channel_bindings_t input_chan_bindings,
                                  gss_name_t *src_name,
@@ -36,7 +36,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
                                  gss_buffer_t output_token,
                                  OM_uint32 *ret_flags,
                                  OM_uint32 *time_rec,
-                                 gss_cred_id_t *delegated_cred_handle)
+                                 gssx_cred **delegated_cred_handle)
 {
     union gp_rpc_arg uarg;
     union gp_rpc_res ures;
@@ -58,7 +58,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     }
 
     if (acceptor_cred_handle) {
-        arg->cred_handle = (gssx_cred *)acceptor_cred_handle;
+        arg->cred_handle = acceptor_cred_handle;
     }
 
     ret = gp_conv_buffer_to_gssx(input_token_buffer, &arg->input_token);
@@ -141,7 +141,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
 
     if (res->delegated_cred_handle) {
         if (delegated_cred_handle) {
-            *delegated_cred_handle = (gss_cred_id_t)res->delegated_cred_handle;
+            *delegated_cred_handle = res->delegated_cred_handle;
         }
         /* we are stealing the delegated creds on success, so we do not want
         * it to be freed by xdr_free */

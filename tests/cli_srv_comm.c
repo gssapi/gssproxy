@@ -214,7 +214,7 @@ void *client_thread(void *pvt)
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_name_t name = GSS_C_NO_NAME;
     gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
-    gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
+    struct gssx_cred *cred_handle = NULL;
     int ret = 0;
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
     int conf_state;
@@ -362,10 +362,10 @@ void *server_thread(void *pvt)
     uint32_t ret_maj;
     uint32_t ret_min;
     gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
-    gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
+    struct gssx_cred *cred_handle = NULL;
     gss_name_t src_name;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
-    gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
+    struct gssx_cred *deleg_cred = NULL;
     gss_OID_set mech_set = GSS_C_NO_OID_SET;
     gss_OID_set mech_names = GSS_C_NO_OID_SET;
     gss_OID_set mech_types = GSS_C_NO_OID_SET;
