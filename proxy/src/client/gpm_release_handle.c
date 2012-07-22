@@ -26,7 +26,7 @@
 #include "gssapi_gpm.h"
 
 OM_uint32 gpm_release_cred(OM_uint32 *minor_status,
-                           gss_cred_id_t *cred_handle)
+                           gssx_cred **cred_handle)
 {
     union gp_rpc_arg uarg;
     union gp_rpc_res ures;
@@ -35,11 +35,11 @@ OM_uint32 gpm_release_cred(OM_uint32 *minor_status,
     gssx_cred *r;
     int ret;
 
-    if (cred_handle == NULL || *cred_handle == GSS_C_NO_CREDENTIAL) {
+    if (cred_handle == NULL || *cred_handle == NULL) {
         return 0;
     }
 
-    r = (gssx_cred *)(*cred_handle);
+    r = (*cred_handle);
 
     if (!r->needs_release) {
         ret = GSS_S_COMPLETE;

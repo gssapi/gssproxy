@@ -27,7 +27,7 @@
 #include "src/gp_conv.h"
 
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
-                               gss_cred_id_t claimant_cred_handle,
+                               gssx_cred *cred_handle,
                                gss_ctx_id_t *context_handle,
                                gss_name_t target_name,
                                gss_OID mech_type,
@@ -55,8 +55,8 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
     memset(&ures, 0, sizeof(union gp_rpc_res));
 
     /* prepare proxy request */
-    if (claimant_cred_handle != GSS_C_NO_CREDENTIAL) {
-        arg->cred_handle = (gssx_cred *)claimant_cred_handle;
+    if (cred_handle != NULL) {
+        arg->cred_handle = cred_handle;
     }
 
     if (*context_handle) {
