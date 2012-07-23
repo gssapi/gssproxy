@@ -78,7 +78,7 @@ done:
 }
 
 OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
-                                 gss_ctx_id_t *context_handle,
+                                 gssx_ctx **context_handle,
                                  gss_buffer_t output_token)
 {
     union gp_rpc_arg uarg;
@@ -88,11 +88,11 @@ OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
     gssx_ctx *r;
     int ret;
 
-    if (context_handle == NULL || *context_handle == GSS_C_NO_CONTEXT) {
+    if (context_handle == NULL || *context_handle == NULL) {
         return 0;
     }
 
-    r = (gssx_ctx *)(*context_handle);
+    r = (*context_handle);
 
     if (!r->needs_release) {
         ret = GSS_S_COMPLETE;

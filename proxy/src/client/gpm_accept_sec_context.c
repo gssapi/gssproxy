@@ -27,7 +27,7 @@
 #include "src/gp_conv.h"
 
 OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
-                                 gss_ctx_id_t *context_handle,
+                                 gssx_ctx **context_handle,
                                  gssx_cred *acceptor_cred_handle,
                                  gss_buffer_t input_token_buffer,
                                  gss_channel_bindings_t input_chan_bindings,
@@ -54,7 +54,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
 
     /* prepare proxy request */
     if (*context_handle) {
-        arg->context_handle = (gssx_ctx *)*context_handle;
+        arg->context_handle = *context_handle;
     }
 
     if (acceptor_cred_handle) {
@@ -121,7 +121,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
         free(*context_handle);
     }
-    *context_handle = (gss_ctx_id_t)ctx;
+    *context_handle = ctx;
     if (mech_type) {
         *mech_type = mech;
     }

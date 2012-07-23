@@ -56,7 +56,7 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
                              gss_buffer_t status_string);
 
 OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
-                                 gss_ctx_id_t *context_handle,
+                                 gssx_ctx **context_handle,
                                  gssx_cred *acceptor_cred_handle,
                                  gss_buffer_t input_token_buffer,
                                  gss_channel_bindings_t input_chan_bindings,
@@ -71,7 +71,7 @@ OM_uint32 gpm_release_cred(OM_uint32 *minor_status,
                            gssx_cred **cred_handle);
 
 OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
-                                 gss_ctx_id_t *context_handle,
+                                 gssx_ctx **context_handle,
                                  gss_buffer_t output_token);
 
 OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
@@ -165,7 +165,7 @@ OM_uint32 gpm_compare_name(OM_uint32 *minor_status,
 
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gssx_cred *cred_handle,
-                               gss_ctx_id_t *context_handle,
+                               gssx_ctx **context_handle,
                                gss_name_t target_name,
                                gss_OID mech_type,
                                OM_uint32 req_flags,
