@@ -33,6 +33,11 @@ struct gpp_cred_handle {
     gss_cred_id_t local;
 };
 
+struct gpp_context_handle {
+    gssx_ctx *remote;
+    gss_ctx_id_t local;
+};
+
 extern const gss_OID_desc gssproxy_mech_interposer;
 
 enum gpp_behavior {

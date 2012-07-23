@@ -213,7 +213,7 @@ void *client_thread(void *pvt)
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_name_t name = GSS_C_NO_NAME;
-    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    struct gssx_ctx *ctx = NULL;
     struct gssx_cred *cred_handle = NULL;
     int ret = 0;
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
@@ -282,7 +282,7 @@ void *client_thread(void *pvt)
     msg_buf.value = (void *)buffer;
     msg_buf.length = sizeof(CLI_MSG);
 
-    ret_maj = gpm_get_mic(&ret_min, (gssx_ctx *)ctx,
+    ret_maj = gpm_get_mic(&ret_min, ctx,
                           GSS_C_QOP_DEFAULT,
                           &msg_buf, &out_token);
     if (ret_maj) {
@@ -311,7 +311,7 @@ void *client_thread(void *pvt)
     in_token.length = strlen(in_token.value) + 1;
 
     ret_maj = gpm_wrap(&ret_min,
-                       (gssx_ctx *)ctx,
+                       ctx,
                        1, /* conf_req_flag */
                        GSS_C_QOP_DEFAULT, /* qop_req */
                        &in_token,
@@ -332,7 +332,7 @@ void *client_thread(void *pvt)
     }
 
     ret_maj = gpm_wrap_size_limit(&ret_min,
-                                  (gssx_ctx *)ctx,
+                                  ctx,
                                   1, /* conf_req */
                                   GSS_C_QOP_DEFAULT, /* qop_req */
                                   4096, /* size_req */
@@ -361,7 +361,7 @@ void *server_thread(void *pvt)
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     uint32_t ret_maj;
     uint32_t ret_min;
-    gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
+    struct gssx_ctx *context_handle = NULL;
     struct gssx_cred *cred_handle = NULL;
     gss_name_t src_name;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
@@ -547,7 +547,7 @@ void *server_thread(void *pvt)
     msg_token.value = &buffer[in_token.length];
     msg_token.length = buflen;
 
-    ret_maj = gpm_verify_mic(&ret_min, (gssx_ctx *)context_handle,
+    ret_maj = gpm_verify_mic(&ret_min, context_handle,
                              &in_token, &msg_token, NULL);
     if (ret_maj) {
         DEBUG("gpm_verify_mic failed: %d\n", ret_maj);
@@ -567,7 +567,7 @@ void *server_thread(void *pvt)
     input_message_buffer.length = buflen;
 
     ret_maj = gpm_unwrap(&ret_min,
-                         (gssx_ctx *)context_handle,
+                         context_handle,
                          &input_message_buffer,
                          &output_message_buffer,
                          &conf_state,
