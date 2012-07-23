@@ -142,4 +142,56 @@ OM_uint32 gssi_store_cred(OM_uint32 *minor_status,
 OM_uint32 gssi_release_cred(OM_uint32 *minor_status,
                             gss_cred_id_t *cred_handle);
 
+OM_uint32 gssi_export_sec_context(OM_uint32 *minor_status,
+                                  gss_ctx_id_t *context_handle,
+                                  gss_buffer_t interprocess_token);
+
+OM_uint32 gssi_import_sec_context(OM_uint32 *minor_status,
+                                  gss_buffer_t interprocess_token,
+                                  gss_ctx_id_t *context_handle);
+
+OM_uint32 gssi_import_sec_context_for_mech(OM_uint32 *minor_status,
+                                           gss_OID mech_type,
+                                           gss_buffer_t interprocess_token,
+                                           gss_ctx_id_t *context_handle);
+
+OM_uint32 gssi_process_context_token(OM_uint32 *minor_status,
+                                     gss_ctx_id_t context_handle,
+                                     gss_buffer_t token_buffer);
+
+OM_uint32 gssi_context_time(OM_uint32 *minor_status,
+                            gss_ctx_id_t context_handle,
+                            OM_uint32 *time_rec);
+
+OM_uint32 gssi_inquire_context(OM_uint32 *minor_status,
+                               gss_ctx_id_t context_handle,
+                               gss_name_t *src_name,
+                               gss_name_t *targ_name,
+                               OM_uint32 *lifetime_rec,
+                               gss_OID *mech_type,
+                               OM_uint32 *ctx_flags,
+                               int *locally_initiated,
+                               int *open);
+
+OM_uint32 gssi_inquire_sec_context_by_oid(OM_uint32 *minor_status,
+                                          const gss_ctx_id_t context_handle,
+                                          const gss_OID desired_object,
+                                          gss_buffer_set_t *data_set);
+
+OM_uint32 gssi_set_sec_context_option(OM_uint32 *minor_status,
+                                      gss_ctx_id_t *context_handle,
+                                      const gss_OID desired_object,
+                                      const gss_buffer_t value);
+
+OM_uint32 gssi_pseudo_random(OM_uint32 *minor_status,
+                             gss_ctx_id_t context_handle,
+                             int prf_key,
+                             const gss_buffer_t prf_in,
+                             ssize_t desired_output_len,
+                             gss_buffer_t prf_out);
+
+OM_uint32 gssi_delete_sec_context(OM_uint32 *minor_status,
+                                  gss_ctx_id_t *context_handle,
+                                  gss_buffer_t output_token);
+
 #endif /* _GSS_PLUGIN_H_ */
