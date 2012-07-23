@@ -31,7 +31,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
                                  gssx_cred *acceptor_cred_handle,
                                  gss_buffer_t input_token_buffer,
                                  gss_channel_bindings_t input_chan_bindings,
-                                 gss_name_t *src_name,
+                                 gssx_name **src_name,
                                  gss_OID *mech_type,
                                  gss_buffer_t output_token,
                                  OM_uint32 *ret_flags,
@@ -126,7 +126,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         *mech_type = mech;
     }
     if (src_name) {
-        *src_name = (gss_name_t)name;
+        *src_name = name;
     }
     if (outbuf) {
         *output_token = *outbuf;
