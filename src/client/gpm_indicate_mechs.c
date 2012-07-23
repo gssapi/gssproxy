@@ -390,13 +390,12 @@ OM_uint32 gpm_inquire_names_for_mech(OM_uint32 *minor_status,
 }
 
 OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
-                                     const gss_name_t input_name,
+                                     gssx_name *input_name,
                                      gss_OID_set *mech_types)
 {
     uint32_t ret_min;
     uint32_t ret_maj;
     uint32_t discard;
-    gssx_name *name;
     gss_OID name_type = GSS_C_NO_OID;
     int present;
     int i;
@@ -415,8 +414,7 @@ OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    name = (gssx_name *)input_name;
-    ret_min = gp_conv_gssx_to_oid_alloc(&name->name_type, &name_type);
+    ret_min = gp_conv_gssx_to_oid_alloc(&input_name->name_type, &name_type);
     if (ret_min) {
         ret_maj = GSS_S_FAILURE;
         goto done;

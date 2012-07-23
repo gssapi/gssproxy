@@ -50,8 +50,8 @@ OM_uint32 gpm_inquire_context(OM_uint32 *minor_status,
 
     if (src_name) {
         ret_maj = gpm_duplicate_name(minor_status,
-                                     (gss_name_t)&context_handle->src_name,
-                                     (gss_name_t *)src_name);
+                                     &context_handle->src_name,
+                                     src_name);
         if (ret_maj != GSS_S_COMPLETE) {
             return ret_maj;
         }
@@ -59,11 +59,11 @@ OM_uint32 gpm_inquire_context(OM_uint32 *minor_status,
 
     if (targ_name) {
         ret_maj = gpm_duplicate_name(minor_status,
-                                     (gss_name_t)&context_handle->targ_name,
-                                     (gss_name_t *)targ_name);
+                                     &context_handle->targ_name,
+                                     targ_name);
         if (ret_maj != GSS_S_COMPLETE) {
             if (src_name) {
-                (void)gpm_release_name(&tmp_min, (gss_name_t *)src_name);
+                (void)gpm_release_name(&tmp_min, src_name);
             }
             return ret_maj;
         }
@@ -77,10 +77,10 @@ OM_uint32 gpm_inquire_context(OM_uint32 *minor_status,
         ret = gp_conv_gssx_to_oid_alloc(&context_handle->mech, mech_type);
         if (ret) {
             if (src_name) {
-                (void)gpm_release_name(&tmp_min, (gss_name_t *)src_name);
+                (void)gpm_release_name(&tmp_min, src_name);
             }
             if (targ_name) {
-                (void)gpm_release_name(&tmp_min, (gss_name_t *)targ_name);
+                (void)gpm_release_name(&tmp_min, targ_name);
             }
             *minor_status = ret;
             return GSS_S_FAILURE;

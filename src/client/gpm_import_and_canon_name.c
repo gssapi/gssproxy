@@ -26,14 +26,12 @@
 #include "gssapi_gpm.h"
 
 OM_uint32 gpm_display_name(OM_uint32 *minor_status,
-                           gss_name_t input_name,
+                           gssx_name *in_name,
                            gss_buffer_t output_name_buffer,
                            gss_OID *output_name_type)
 {
     gss_buffer_desc input_name_buffer = GSS_C_EMPTY_BUFFER;
     gssx_name *output_name = NULL;
-    gss_name_t tmp;
-    gssx_name *name;
     uint32_t ret_maj;
     uint32_t ret_min;
     uint32_t discard;
@@ -44,39 +42,36 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
     }
     *minor_status = 0;
 
-    if (!input_name) {
+    if (!in_name) {
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
     if (!output_name_buffer) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
     }
 
-    name = (gssx_name *)input_name;
-
-    if (name->display_name.octet_string_len == 0) {
-        if (name->exported_name.octet_string_len == 0) {
+    if (in_name->display_name.octet_string_len == 0) {
+        if (in_name->exported_name.octet_string_len == 0) {
             return GSS_S_BAD_NAME;
         }
 
-        gp_conv_gssx_to_buffer(&name->exported_name, &input_name_buffer);
-        tmp = (gss_name_t)output_name;
+        gp_conv_gssx_to_buffer(&in_name->exported_name, &input_name_buffer);
 
         ret_maj = gpm_import_name(&ret_min, &input_name_buffer,
-                                  GSS_C_NT_EXPORT_NAME, &tmp);
+                                  GSS_C_NT_EXPORT_NAME, &output_name);
         if (ret_maj) {
             goto done;
         }
 
         /* steal display_name and name_type */
-        name->display_name = output_name->display_name;
+        in_name->display_name = output_name->display_name;
         output_name->display_name.octet_string_len = 0;
         output_name->display_name.octet_string_val = NULL;
-        name->name_type = output_name->name_type;
+        in_name->name_type = output_name->name_type;
         output_name->name_type.octet_string_len = 0;
         output_name->name_type.octet_string_val = NULL;
     }
 
-    ret = gp_copy_gssx_to_buffer(&name->display_name, output_name_buffer);
+    ret = gp_copy_gssx_to_buffer(&in_name->display_name, output_name_buffer);
     if (ret) {
         ret_min = ret;
         ret_maj = GSS_S_FAILURE;
@@ -84,7 +79,7 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
     }
 
     if (output_name_type) {
-        ret = gp_conv_gssx_to_oid_alloc(&name->name_type, output_name_type);
+        ret = gp_conv_gssx_to_oid_alloc(&in_name->name_type, output_name_type);
         if (ret) {
             gss_release_buffer(&discard, output_name_buffer);
             ret_min = ret;
@@ -108,7 +103,7 @@ done:
 OM_uint32 gpm_import_name(OM_uint32 *minor_status,
                           gss_buffer_t input_name_buffer,
                           gss_OID input_name_type,
-                          gss_name_t *output_name)
+                          gssx_name **output_name)
 {
     gssx_name *name;
     int ret;
@@ -144,15 +139,14 @@ OM_uint32 gpm_import_name(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    *output_name = (gss_name_t)name;
+    *output_name = name;
     return GSS_S_COMPLETE;
 }
 
 OM_uint32 gpm_export_name(OM_uint32 *minor_status,
-                          const gss_name_t input_name,
+                          gssx_name *input_name,
                           gss_buffer_t exported_name)
 {
-    gssx_name *name;
     int ret;
 
     if (!minor_status) {
@@ -164,13 +158,11 @@ OM_uint32 gpm_export_name(OM_uint32 *minor_status,
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
 
-    name = (gssx_name *)input_name;
-
-    if (name->exported_name.octet_string_len == 0) {
+    if (input_name->exported_name.octet_string_len == 0) {
         return GSS_S_NAME_NOT_MN;
     }
 
-    ret = gp_copy_gssx_to_buffer(&name->exported_name, exported_name);
+    ret = gp_copy_gssx_to_buffer(&input_name->exported_name, exported_name);
     if (ret) {
         *minor_status = ret;
         return GSS_S_FAILURE;
@@ -179,28 +171,23 @@ OM_uint32 gpm_export_name(OM_uint32 *minor_status,
 }
 
 OM_uint32 gpm_duplicate_name(OM_uint32 *minor_status,
-                             const gss_name_t input_name,
-                             gss_name_t *dest_name)
+                             gssx_name *input_name,
+                             gssx_name **dest_name)
 {
-    gssx_name *name;
-    gssx_name *namecopy;
     int ret;
 
-    name = (gssx_name *)input_name;
-
-    ret = gp_copy_gssx_name_alloc(name, &namecopy);
+    ret = gp_copy_gssx_name_alloc(input_name, dest_name);
     if (ret) {
         *minor_status = ret;
         return GSS_S_FAILURE;
     }
-    *dest_name = (gss_name_t)namecopy;
     return GSS_S_COMPLETE;
 }
 
 OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
-                                const gss_name_t input_name,
+                                gssx_name *input_name,
                                 const gss_OID mech_type,
-                                gss_name_t *output_name)
+                                gssx_name **output_name)
 {
     union gp_rpc_arg uarg;
     union gp_rpc_res ures;
@@ -208,7 +195,6 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
     gssx_res_import_and_canon_name *res = &ures.import_and_canon_name;
     uint32_t ret_maj;
     uint32_t ret_min;
-    gssx_name *name;
     int ret;
 
     if (!minor_status) {
@@ -223,14 +209,12 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
         return GSS_S_CALL_INACCESSIBLE_WRITE;
     }
 
-    name = (gssx_name *)input_name;
-
     memset(arg, 0, sizeof(gssx_arg_import_and_canon_name));
     memset(res, 0, sizeof(gssx_res_import_and_canon_name));
 
     /* ignore call_ctx for now */
 
-    ret = gp_copy_gssx_name(name, &arg->input_name);
+    ret = gp_copy_gssx_name(input_name, &arg->input_name);
     if (ret) {
         goto done;
     }
@@ -254,7 +238,7 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
     }
 
     /* steal output_name */
-    *output_name = (gss_name_t)res->output_name;
+    *output_name = res->output_name;
     res->output_name = NULL;
 
 done:
@@ -268,40 +252,38 @@ done:
 }
 
 OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
-                           gss_name_t name,
+                           gssx_name *name,
                            int *name_is_MN,
                            gss_OID *MN_mech,
                            gss_buffer_set_t *attrs)
 {
     gss_buffer_set_t xattrs = GSS_C_NO_BUFFER_SET;
-    gssx_name *xname;
     uint32_t i;
     int ret;
 
     *minor_status = 0;
-    xname = (gssx_name *)name;
 
-    if (xname->exported_name.octet_string_len != 0) {
+    if (name->exported_name.octet_string_len != 0) {
         if (name_is_MN != NULL) {
             *name_is_MN = 1;
         }
     }
 
     if (MN_mech != NULL) {
-        ret = gp_conv_gssx_to_oid_alloc(&xname->name_type, MN_mech);
+        ret = gp_conv_gssx_to_oid_alloc(&name->name_type, MN_mech);
         if (ret) {
             *minor_status = ret;
             return GSS_S_FAILURE;
         }
     }
 
-    if (xname->name_attributes.name_attributes_len != 0) {
+    if (name->name_attributes.name_attributes_len != 0) {
         xattrs = calloc(1, sizeof(gss_buffer_set_desc));
         if (!xattrs) {
             *minor_status = ENOMEM;
             return GSS_S_FAILURE;
         }
-        xattrs->count = xname->name_attributes.name_attributes_len;
+        xattrs->count = name->name_attributes.name_attributes_len;
         xattrs->elements = calloc(xattrs->count, sizeof(gss_buffer_desc));
         if (!xattrs->elements) {
             free(xattrs);
@@ -310,7 +292,7 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
         }
         for (i = 0; i < xattrs->count; i++) {
             ret = gp_copy_gssx_to_buffer(
-                        &xname->name_attributes.name_attributes_val[i].attr,
+                        &name->name_attributes.name_attributes_val[i].attr,
                         &xattrs->elements[i]);
             if (ret) {
                 for (--i; i >= 0; i--) {
@@ -329,14 +311,14 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
 }
 
 OM_uint32 gpm_release_name(OM_uint32 *minor_status,
-                           gss_name_t *input_name)
+                           gssx_name **input_name)
 {
     *minor_status = 0;
 
-    if (*input_name != GSS_C_NO_NAME) {
+    if (*input_name != NULL) {
         xdr_free((xdrproc_t)xdr_gssx_name, (char *)(*input_name));
         free(*input_name);
-        *input_name = GSS_C_NO_NAME;
+        *input_name = NULL;
     }
     return GSS_S_COMPLETE;
 }
@@ -356,12 +338,12 @@ OM_uint32 gpm_compare_name(OM_uint32 *minor_status,
 
     *name_equal = 0;
 
-    ret_maj = gpm_display_name(&ret_min, (gss_name_t)name1, &buf1, &type1);
+    ret_maj = gpm_display_name(&ret_min, name1, &buf1, &type1);
     if (ret_maj != GSS_S_COMPLETE) {
         goto done;
     }
 
-    ret_maj = gpm_display_name(&ret_min, (gss_name_t)name2, &buf2, &type2);
+    ret_maj = gpm_display_name(&ret_min, name2, &buf2, &type2);
     if (ret_maj != GSS_S_COMPLETE) {
         goto done;
     }

@@ -29,7 +29,7 @@
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gssx_cred *cred_handle,
                                gssx_ctx **context_handle,
-                               gss_name_t target_name,
+                               gssx_name *target_name,
                                gss_OID mech_type,
                                OM_uint32 req_flags,
                                OM_uint32 time_req,
@@ -63,9 +63,7 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
         arg->context_handle = *context_handle;
     }
 
-    if (target_name != GSS_C_NO_NAME) {
-        arg->target_name = (gssx_name *)target_name;
-    }
+    arg->target_name = target_name;
 
     ret = gp_conv_oid_to_gssx(mech_type, &arg->mech_type);
     if (ret) {

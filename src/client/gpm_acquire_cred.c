@@ -68,7 +68,7 @@ static int gpmint_cred_to_actual_mechs(gssx_cred *c, gss_OID_set *a)
 }
 
 OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
-                           const gss_name_t desired_name,
+                           gssx_name *desired_name,
                            OM_uint32 time_req,
                            const gss_OID_set desired_mechs,
                            gss_cred_usage_t cred_usage,
@@ -95,19 +95,8 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
 
     /* ignore call_ctx for now */
 
-    if (desired_name) {
-        arg->desired_name = calloc(1, sizeof(gssx_name));
-        if (!arg->desired_name) {
-            ret_maj = GSS_S_FAILURE;
-            ret_min = ENOMEM;
-            goto done;
-        }
-        ret_maj = gp_conv_name_to_gssx(&ret_min,
-                                       desired_name, arg->desired_name);
-        if (ret_maj) {
-            goto done;
-        }
-    }
+    arg->desired_name = desired_name;
+
     if (desired_mechs) {
         ret = gp_conv_oid_set_to_gssx(desired_mechs, &arg->desired_mechs);
         if (ret) {
@@ -167,6 +156,8 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     ret_min = 0;
 
 done:
+    /* desired_name is passed in, don't let gpm_free_xdrs free it */
+    arg->desired_name = NULL;
     gpm_free_xdrs(GSSX_ACQUIRE_CRED, &uarg, &ures);
     *minor_status = ret_min;
     return ret_maj;
@@ -174,7 +165,7 @@ done:
 
 OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
                        gssx_cred *input_cred_handle,
-                       const gss_name_t desired_name,
+                       gssx_name *desired_name,
                        const gss_OID desired_mech,
                        gss_cred_usage_t cred_usage,
                        OM_uint32 initiator_time_req,
@@ -204,18 +195,9 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
     if (output_cred_handle != NULL) {
         arg->add_cred_to_input_handle = true;
     }
-    if (desired_name != GSS_C_NO_NAME) {
-        arg->desired_name = calloc(1, sizeof(gssx_name));
-        if (!arg->desired_name) {
-            ret = ENOMEM;
-            goto done;
-        }
-        ret_maj = gp_conv_name_to_gssx(&ret_min,
-                                       desired_name, arg->desired_name);
-        if (ret_maj) {
-            goto done;
-        }
-    }
+
+    arg->desired_name = desired_name;
+
     if (desired_mech != GSS_C_NO_OID) {
         mechs.count = 1;
         mechs.elements = desired_mech;
@@ -404,7 +386,7 @@ done:
             *mechanisms = mechs;
         }
     } else {
-        (void)gpm_release_name(&ret_min, (gss_name_t *)&dname);
+        (void)gpm_release_name(&ret_min, &dname);
         (void)gss_release_oid_set(&ret_min, &mechs);
     }
     return ret_maj;
@@ -490,7 +472,7 @@ OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
 done:
     *minor_status = ret_min;
     if (ret_maj != GSS_S_COMPLETE) {
-        (void)gpm_release_name(&ret_min, (gss_name_t *)&dname);
+        (void)gpm_release_name(&ret_min, &dname);
     }
     return ret_maj;
 }

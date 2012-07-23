@@ -378,7 +378,69 @@ uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
 
     xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)(*remote_ctx));
     *remote_ctx = NULL;
+    return maj;
+}
 
+uint32_t gpp_name_to_local(uint32_t *minor, gssx_name *name,
+                           gss_OID mech_type, gss_name_t *mech_name)
+{
+    uint32_t maj, min;
+    gss_buffer_desc display_name_buffer = GSS_C_EMPTY_BUFFER;
+    gss_OID display_name_type = GSS_C_NO_OID;
+    gss_name_t tmpname = NULL;
+
+    maj = gpm_display_name(minor, name,
+                           &display_name_buffer,
+                           &display_name_type);
+    if (maj) {
+        return maj;
+    }
+
+    maj = gss_import_name(minor,
+                          &display_name_buffer,
+                          display_name_type,
+                          &tmpname);
+
+    (void)gss_release_buffer(&min, &display_name_buffer);
+    (void)gss_release_oid(&min, &display_name_type);
+
+    if (maj) {
+        return maj;
+    }
+
+    if (mech_type != GSS_C_NO_OID) {
+        /* name for specific mech requested */
+        maj = gss_canonicalize_name(minor,
+                                    tmpname,
+                                    gpp_special_mech(mech_type),
+                                    NULL);
+    }
+
+    *mech_name = tmpname;
+    return maj;
+}
+
+uint32_t gpp_local_to_name(uint32_t *minor,
+                           gss_name_t local_name, gssx_name **name)
+{
+    uint32_t maj, min;
+    gss_buffer_desc display_name_buffer = GSS_C_EMPTY_BUFFER;
+    gss_OID display_name_type = GSS_C_NO_OID;
+
+    maj = gss_display_name(minor, local_name,
+                           &display_name_buffer,
+                           &display_name_type);
+    if (maj) {
+        return maj;
+    }
+
+    maj = gpm_import_name(minor,
+                          &display_name_buffer,
+                          display_name_type,
+                          name);
+
+    (void)gss_release_buffer(&min, &display_name_buffer);
+    (void)gss_release_oid(&min, &display_name_type);
     return maj;
 }
 

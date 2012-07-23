@@ -212,7 +212,7 @@ void *client_thread(void *pvt)
     gss_buffer_desc target_buf;
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
-    gss_name_t name = GSS_C_NO_NAME;
+    struct gssx_name *name = NULL;
     struct gssx_ctx *ctx = NULL;
     struct gssx_cred *cred_handle = NULL;
     int ret = 0;
@@ -363,7 +363,7 @@ void *server_thread(void *pvt)
     uint32_t ret_min;
     struct gssx_ctx *context_handle = NULL;
     struct gssx_cred *cred_handle = NULL;
-    gss_name_t src_name;
+    struct gssx_name *src_name;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     struct gssx_cred *deleg_cred = NULL;
     gss_OID_set mech_set = GSS_C_NO_OID_SET;
@@ -379,8 +379,8 @@ void *server_thread(void *pvt)
     gss_buffer_desc long_desc = GSS_C_EMPTY_BUFFER;
     gss_OID_set mechs = GSS_C_NO_OID_SET;
     gss_buffer_desc target_buf;
-    gss_name_t target_name = GSS_C_NO_NAME;
-    gss_name_t canon_name = GSS_C_NO_NAME;
+    struct gssx_name *target_name = NULL;
+    struct gssx_name *canon_name = NULL;
     gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
     gss_OID out_name_type = GSS_C_NO_OID;
     gss_buffer_desc msg_token = GSS_C_EMPTY_BUFFER;
@@ -480,7 +480,7 @@ void *server_thread(void *pvt)
     }
 
     ret_maj = gpm_acquire_cred(&ret_min,
-                               GSS_C_NO_NAME,
+                               NULL,
                                GSS_C_INDEFINITE,
                                mech_set,
                                GSS_C_ACCEPT,
