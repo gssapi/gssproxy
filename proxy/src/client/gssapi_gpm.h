@@ -172,4 +172,14 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gss_buffer_t output_token,
                                OM_uint32 *ret_flags,
                                OM_uint32 *time_rec);
+
+OM_uint32 gpm_inquire_context(OM_uint32 *minor_status,
+                              gssx_ctx *context_handle,
+                              gssx_name **src_name,
+                              gssx_name **targ_name,
+                              OM_uint32 *lifetime_rec,
+                              gss_OID *mech_type,
+                              OM_uint32 *ctx_flags,
+                              int *locally_initiated,
+                              int *open);
 #endif /* _GSSAPI_GPM_H_ */
