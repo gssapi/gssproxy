@@ -524,6 +524,9 @@ typedef struct gssx_res_wrap_size_limit gssx_res_wrap_size_limit;
 #define GSSPROXY 400112
 #define GSSPROXYVERS 1
 
+#define GSSX_PROC_MIN 1
+#define GSSX_PROC_MAX 15
+
 #if defined(__STDC__) || defined(__cplusplus)
 #define GSSX_INDICATE_MECHS 1
 extern  gssx_res_indicate_mechs * gssx_indicate_mechs_1(gssx_arg_indicate_mechs *, CLIENT *);

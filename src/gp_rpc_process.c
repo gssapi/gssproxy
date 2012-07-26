@@ -28,86 +28,120 @@
 typedef int (*gp_exec_fn)(gp_exec_std_args);
 
 struct gp_rpc_fn_set {
+    uint32_t proc;
+    const char *proc_name;
     xdrproc_t arg_fn;
     xdrproc_t res_fn;
     gp_exec_fn exec_fn;
 } gp_xdr_set[] = {
-    { /* NULLPROC */
+    {
+        0,
+        "NULLPROC",
         (xdrproc_t)xdr_void,
         (xdrproc_t)xdr_void,
         NULL
     },
-    { /* GSSX_INDICATE_MECHS */
+    {
+        GSSX_INDICATE_MECHS,
+        "GSSX_INDICATE_MECHS",
         (xdrproc_t)xdr_gssx_arg_indicate_mechs,
         (xdrproc_t)xdr_gssx_res_indicate_mechs,
         gp_indicate_mechs
     },
-    { /* GSSX_GET_CALL_CONTEXT */
+    {
+        GSSX_GET_CALL_CONTEXT,
+        "GSSX_GET_CALL_CONTEXT",
         (xdrproc_t)xdr_gssx_arg_get_call_context,
         (xdrproc_t)xdr_gssx_res_get_call_context,
         gp_get_call_context
     },
-    { /* GSSX_IMPORT_AND_CANON_NAME */
+    {
+        GSSX_IMPORT_AND_CANON_NAME,
+        "GSSX_IMPORT_AND_CANON_NAME",
         (xdrproc_t)xdr_gssx_arg_import_and_canon_name,
         (xdrproc_t)xdr_gssx_res_import_and_canon_name,
         gp_import_and_canon_name
     },
-    { /* GSSX_EXPORT_CRED */
+    {
+        GSSX_EXPORT_CRED,
+        "GSSX_EXPORT_CRED",
         (xdrproc_t)xdr_gssx_arg_export_cred,
         (xdrproc_t)xdr_gssx_res_export_cred,
         gp_export_cred
     },
-    { /* GSSX_IMPORT_CRED */
+    {
+        GSSX_IMPORT_CRED,
+        "GSSX_IMPORT_CRED",
         (xdrproc_t)xdr_gssx_arg_import_cred,
         (xdrproc_t)xdr_gssx_res_import_cred,
         gp_import_cred
     },
-    { /* GSSX_ACQUIRE_CRED */
+    {
+        GSSX_ACQUIRE_CRED,
+        "GSSX_ACQUIRE_CRED",
         (xdrproc_t)xdr_gssx_arg_acquire_cred,
         (xdrproc_t)xdr_gssx_res_acquire_cred,
         gp_acquire_cred
     },
-    { /* GSSX_STORE_CRED */
+    {
+        GSSX_STORE_CRED,
+        "GSSX_STORE_CRED",
         (xdrproc_t)xdr_gssx_arg_store_cred,
         (xdrproc_t)xdr_gssx_res_store_cred,
         gp_store_cred
     },
-    { /* GSSX_INIT_SEC_CONTEXT */
+    {
+        GSSX_INIT_SEC_CONTEXT,
+        "GSSX_INIT_SEC_CONTEXT",
         (xdrproc_t)xdr_gssx_arg_init_sec_context,
         (xdrproc_t)xdr_gssx_res_init_sec_context,
         gp_init_sec_context
     },
-    { /* GSSX_ACCEPT_SEC_CONTEXT */
+    {
+        GSSX_ACCEPT_SEC_CONTEXT,
+        "GSSX_ACCEPT_SEC_CONTEXT",
         (xdrproc_t)xdr_gssx_arg_accept_sec_context,
         (xdrproc_t)xdr_gssx_res_accept_sec_context,
         gp_accept_sec_context
     },
-    { /* GSSX_RELEASE_HANDLE */
+    {
+        GSSX_RELEASE_HANDLE,
+        "GSSX_RELEASE_HANDLE",
         (xdrproc_t)xdr_gssx_arg_release_handle,
         (xdrproc_t)xdr_gssx_res_release_handle,
         gp_release_handle
     },
-    { /* GSSX_GET_MIC */
+    {
+        GSSX_GET_MIC,
+        "GSSX_GET_MIC",
         (xdrproc_t)xdr_gssx_arg_get_mic,
         (xdrproc_t)xdr_gssx_res_get_mic,
         gp_get_mic
     },
-    { /* GSSX_VERIFY */
+    {
+        GSSX_VERIFY,
+        "GSSX_VERIFY",
         (xdrproc_t)xdr_gssx_arg_verify_mic,
         (xdrproc_t)xdr_gssx_res_verify_mic,
         gp_verify_mic
     },
-    { /* GSSX_WRAP */
+    {
+        GSSX_WRAP,
+        "GSSX_WRAP",
         (xdrproc_t)xdr_gssx_arg_wrap,
         (xdrproc_t)xdr_gssx_res_wrap,
         gp_wrap
     },
-    { /* GSSX_UNWRAP */
+    {
+        GSSX_UNWRAP,
+        "GSSX_UNWRAP",
         (xdrproc_t)xdr_gssx_arg_unwrap,
         (xdrproc_t)xdr_gssx_res_unwrap,
         gp_unwrap
     },
-    { /* GSSX_WRAP_SIZE_LIMIT */
+    {
+        GSSX_WRAP_SIZE_LIMIT,
+        "GSSX_WRAP_SIZE_LIMIT",
         (xdrproc_t)xdr_gssx_arg_wrap_size_limit,
         (xdrproc_t)xdr_gssx_res_wrap_size_limit,
         gp_wrap_size_limit
@@ -157,7 +191,7 @@ static int gp_rpc_decode_call_header(XDR *xdr_call_ctx,
         ret = EINVAL;
         goto done;
     }
-    if (chdr->proc < 1 || chdr->proc > 15) {
+    if (chdr->proc < GSSX_PROC_MIN || chdr->proc > GSSX_PROC_MAX) {
         *acc = GP_RPC_PROC_UNAVAIL;
         ret = EINVAL;
         goto done;
@@ -289,10 +323,20 @@ static int gp_rpc_encode_reply(XDR *xdr_reply_ctx,
     return 0;
 }
 
+static const char *gp_rpc_procname(uint32_t proc)
+{
+    if (proc > GSSX_PROC_MAX) {
+        return NULL;
+    }
+
+    return gp_xdr_set[proc].proc_name;
+}
+
 static int gp_rpc_execute(struct gssproxy_ctx *gpctx,
                           struct gp_service *gpsvc, uint32_t proc,
                           union gp_rpc_arg *arg, union gp_rpc_res *res)
 {
+    GPDEBUG("gp_rpc_execute: executing %d (%s)\n", proc, gp_rpc_procname(proc));
     return gp_xdr_set[proc].exec_fn(gpctx, gpsvc, arg, res);
 }
 
