@@ -91,6 +91,7 @@ GP_MECHGLUE_OBJ = \
     src/client/gpm_import_and_canon_name.c \
     src/client/gpm_init_sec_context.c \
     src/client/gpm_inquire_context.c \
+    src/client/gpm_get_mic.c \
     src/client/gpm_common.c
 
 dist_noinst_HEADERS = \
