@@ -129,6 +129,7 @@ gssproxy_SOURCES = \
     src/gp_rpc_indicate_mechs.c \
     src/gp_rpc_import_and_canon_name.c \
     src/gp_rpc_init_sec_context.c \
+    src/gp_rpc_get_mic.c \
     src/gssproxy.c
 
 cli_srv_comm_SOURCES = \
