@@ -390,10 +390,6 @@ int gp_store_cred(gp_exec_std_args)
     return 0;
 }
 
-int gp_get_mic(gp_exec_std_args)
-{
-    return 0;
-}
 int gp_verify(gp_exec_std_args)
 {
     return 0;
