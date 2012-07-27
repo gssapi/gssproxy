@@ -95,7 +95,7 @@ struct gp_rpc_fn_set {
     { /* GSSX_VERIFY */
         (xdrproc_t)xdr_gssx_arg_verify_mic,
         (xdrproc_t)xdr_gssx_res_verify_mic,
-        gp_verify
+        gp_verify_mic
     },
     { /* GSSX_WRAP */
         (xdrproc_t)xdr_gssx_arg_wrap,
@@ -390,10 +390,6 @@ int gp_store_cred(gp_exec_std_args)
     return 0;
 }
 
-int gp_verify(gp_exec_std_args)
-{
-    return 0;
-}
 int gp_wrap(gp_exec_std_args)
 {
     return 0;
