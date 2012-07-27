@@ -191,5 +191,10 @@ OM_uint32 gpm_get_mic(OM_uint32 *minor_status,
                       gss_qop_t qop_req,
                       gss_buffer_t message_buffer,
                       gss_buffer_t message_token);
+OM_uint32 gpm_verify_mic(OM_uint32 *minor_status,
+                         gssx_ctx *context_handle,
+                         gss_buffer_t message_buffer,
+                         gss_buffer_t message_token,
+                         gss_qop_t *qop_state);
 
 #endif /* _GSSAPI_GPM_H_ */
