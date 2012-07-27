@@ -57,7 +57,7 @@ int gp_init_sec_context(gp_exec_std_args);
 int gp_accept_sec_context(gp_exec_std_args);
 int gp_release_handle(gp_exec_std_args);
 int gp_get_mic(gp_exec_std_args);
-int gp_verify(gp_exec_std_args);
+int gp_verify_mic(gp_exec_std_args);
 int gp_wrap(gp_exec_std_args);
 int gp_unwrap(gp_exec_std_args);
 int gp_wrap_size_limit(gp_exec_std_args);
