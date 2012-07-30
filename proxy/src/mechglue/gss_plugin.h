@@ -311,4 +311,78 @@ OM_uint32 gssi_inquire_mech_for_saslname(OM_uint32 *minor_status,
                                          const gss_buffer_t sasl_mech_name,
                                          gss_OID *mech_type);
 
+OM_uint32 gssi_wrap(OM_uint32 *minor_status,
+                    gss_ctx_id_t context_handle,
+                    int conf_req_flag,
+                    gss_qop_t qop_req,
+                    gss_buffer_t input_message_buffer,
+                    int *conf_state,
+                    gss_buffer_t output_message_buffer);
+
+OM_uint32 gssi_wrap_size_limit(OM_uint32 *minor_status,
+                               gss_ctx_id_t context_handle,
+                               int conf_req_flag,
+                               gss_qop_t qop_req,
+                               OM_uint32 req_output_size,
+                               OM_uint32 *max_input_size);
+
+OM_uint32 gssi_wrap_iov(OM_uint32 *minor_status,
+                        gss_ctx_id_t context_handle,
+                        int conf_req_flag,
+                        gss_qop_t qop_req,
+                        int *conf_state,
+                        gss_iov_buffer_desc *iov,
+                        int iov_count);
+
+OM_uint32 gssi_wrap_iov_length(OM_uint32 *minor_status,
+                               gss_ctx_id_t context_handle,
+                               int conf_req_flag,
+                               gss_qop_t qop_req,
+                               int *conf_state,
+                               gss_iov_buffer_desc *iov,
+                               int iov_count);
+
+OM_uint32 gssi_wrap_aead(OM_uint32 *minor_status,
+	                 gss_ctx_id_t context_handle,
+	                 int conf_req_flag,
+	                 gss_qop_t qop_req,
+	                 gss_buffer_t input_assoc_buffer,
+	                 gss_buffer_t input_payload_buffer,
+	                 int *conf_state,
+	                 gss_buffer_t output_message_buffer);
+
+OM_uint32 gssi_unwrap(OM_uint32 *minor_status,
+                      gss_ctx_id_t context_handle,
+                      gss_buffer_t input_message_buffer,
+                      gss_buffer_t output_message_buffer,
+                      int *conf_state,
+                      gss_qop_t *qop_state);
+
+OM_uint32 gssi_unwrap_iov(OM_uint32 *minor_status,
+                          gss_ctx_id_t context_handle,
+                          int *conf_state,
+                          gss_qop_t *qop_state,
+                          gss_iov_buffer_desc *iov,
+                          int iov_count);
+
+OM_uint32 gssi_unwrap_aead(OM_uint32 *minor_status,
+                           gss_ctx_id_t context_handle,
+                           gss_buffer_t input_message_buffer,
+                           gss_buffer_t input_assoc_buffer,
+                           gss_buffer_t output_payload_buffer,
+                           int *conf_state,
+                           gss_qop_t *qop_state);
+
+OM_uint32 gssi_get_mic(OM_uint32 *minor_status,
+                       gss_ctx_id_t context_handle,
+                       gss_qop_t qop_req,
+                       gss_buffer_t message_buffer,
+                       gss_buffer_t message_token);
+
+OM_uint32 gssi_verify_mic(OM_uint32 *minor_status,
+                          gss_ctx_id_t context_handle,
+                          gss_buffer_t message_buffer,
+                          gss_buffer_t message_token,
+                          gss_qop_t *qop_state);
+
 #endif /* _GSS_PLUGIN_H_ */
