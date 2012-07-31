@@ -83,21 +83,21 @@ endif
 
 GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c
 GP_MECHGLUE_OBJ = \
-    src/mechglue/gpm_display_status.c \
-    src/mechglue/gpm_accept_sec_context.c \
-    src/mechglue/gpm_release_handle.c \
-    src/mechglue/gpm_acquire_cred.c \
-    src/mechglue/gpm_indicate_mechs.c \
-    src/mechglue/gpm_import_and_canon_name.c \
-    src/mechglue/gpm_init_sec_context.c \
-    src/mechglue/gpm_common.c
+    src/client/gpm_display_status.c \
+    src/client/gpm_accept_sec_context.c \
+    src/client/gpm_release_handle.c \
+    src/client/gpm_acquire_cred.c \
+    src/client/gpm_indicate_mechs.c \
+    src/client/gpm_import_and_canon_name.c \
+    src/client/gpm_init_sec_context.c \
+    src/client/gpm_common.c
 
 dist_noinst_HEADERS = \
     rpcgen/gp_rpc.h \
     rpcgen/gss_proxy.h \
     src/gp_rpc_process.h \
     src/gp_proxy.h \
-    src/mechglue/gssapi_gpm.h \
+    src/client/gssapi_gpm.h \
     src/gp_common.h \
     src/gp_log.h \
     src/gp_creds.h \

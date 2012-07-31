@@ -40,7 +40,7 @@
 #include "src/gp_rpc_process.h"
 #include "src/gp_conv.h"
 #include "src/gp_debug.h"
-#include "src/mechglue/gssapi_gpm.h"
+#include "src/client/gssapi_gpm.h"
 #include "popt.h"
 
 int gp_send_buffer(int fd, char *buf, uint32_t len)
