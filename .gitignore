@@ -35,3 +35,6 @@ dict.symbols
 cli_srv_conn
 *.la
 *.lo
+.libs/
+cli_srv_comm
+gssproxy.spec
