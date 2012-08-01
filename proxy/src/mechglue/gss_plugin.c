@@ -365,3 +365,19 @@ uint32_t gpp_unmap_error(uint32_t err)
     }
     return err;
 }
+
+uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
+                                 gss_ctx_id_t *local_ctx)
+{
+    gss_buffer_desc buf;
+    uint32_t maj;
+
+    gp_conv_gssx_to_buffer(&(*remote_ctx)->exported_context_token, &buf);
+
+    maj = gss_import_sec_context(minor, &buf, local_ctx);
+
+    xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)(*remote_ctx));
+    *remote_ctx = NULL;
+
+    return maj;
+}
