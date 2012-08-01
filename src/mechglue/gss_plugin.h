@@ -30,6 +30,15 @@
 
 extern const gss_OID_desc gssproxy_mech_interposer;
 
+enum gpp_behavior {
+    GPP_UNINITIALIZED = 0,
+    GPP_LOCAL_ONLY,
+    GPP_LOCAL_FIRST,
+    GPP_REMOTE_FIRST,
+    GPP_REMOTE_ONLY,
+};
+
 gss_OID_set gss_mech_interposer(gss_OID mech_type);
+enum gpp_behavior gpp_get_behavior(void);
 
 #endif /* _GSS_PLUGIN_H_ */

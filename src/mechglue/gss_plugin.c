@@ -56,6 +56,35 @@ const gss_OID_desc gpoid_iakerb = {
     .elements = IAKERB_OID
 };
 
+enum gpp_behavior gpp_get_behavior(void)
+{
+    static enum gpp_behavior behavior = GPP_UNINITIALIZED;
+    char *envval;
+
+    if (behavior == GPP_UNINITIALIZED) {
+        envval = getenv("GSSPROXY_BEHAVIOR");
+        if (envval) {
+            if (strcmp(envval, "LOCAL_ONLY") == 0) {
+                behavior = GPP_LOCAL_ONLY;
+            } else if (strcmp(envval, "LOCAL_FIRST") == 0) {
+                behavior = GPP_LOCAL_FIRST;
+            } else if (strcmp(envval, "REMOTE_FIRST") == 0) {
+                behavior = GPP_REMOTE_FIRST;
+            } else if (strcmp(envval, "REMOTE_ONLY") == 0) {
+                behavior = GPP_REMOTE_ONLY;
+            } else {
+                /* unknwon setting, default to local first */
+                behavior = GPP_LOCAL_FIRST;
+            }
+        } else {
+            /* default to local only for now */
+            behavior = GPP_LOCAL_FIRST;
+        }
+    }
+
+    return behavior;
+}
+
 /* 2.16.840.1.113730.3.8.15.1 */
 const gss_OID_desc gssproxy_mech_interposer = {
     .length = 11,
