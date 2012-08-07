@@ -47,7 +47,7 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
     if (!input_name) {
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
-    if (!output_name_buffer || !output_name_type) {
+    if (!output_name_buffer) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
     }
 
@@ -83,12 +83,14 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
         goto done;
     }
 
-    ret = gp_conv_gssx_to_oid_alloc(&name->name_type, output_name_type);
-    if (ret) {
-        gss_release_buffer(&discard, output_name_buffer);
-        ret_min = ret;
-        ret_maj = GSS_S_FAILURE;
-        goto done;
+    if (output_name_type) {
+        ret = gp_conv_gssx_to_oid_alloc(&name->name_type, output_name_type);
+        if (ret) {
+            gss_release_buffer(&discard, output_name_buffer);
+            ret_min = ret;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
     }
 
     ret_min = 0;
