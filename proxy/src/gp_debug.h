@@ -27,7 +27,7 @@
 #define _GP_DEBUG_H_
 
 #include <gssapi/gssapi.h>
-#include "rpcgen/gss_proxy.h"
+#include <stdio.h>
 
 extern int gp_debug;
 

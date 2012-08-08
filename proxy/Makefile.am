@@ -47,7 +47,7 @@ sbin_PROGRAMS = \
     gssproxy
 
 check_PROGRAMS = \
-    cli_srv_comm
+    cli_srv_comm interposetest
 
 gssplib_LTLIBRARIES = \
     proxymech.la
@@ -176,17 +176,25 @@ cli_srv_comm_SOURCES = \
     $(GP_RPCCLI_OBJ) \
     tests/cli_srv_comm.c
 
+interposetest_SOURCES = \
+    src/gp_log.c \
+    src/gp_debug.c \
+    tests/interposetest.c
+
 gssproxy_LDADD = \
     $(GSS_PROXY_LIBS)
 
 cli_srv_comm_LDADD = \
     $(GSS_PROXY_LIBS)
 
+interposetest_LDADD = \
+    $(GSS_PROXY_LIBS)
+
 dist_noinst_DATA += \
     examples/gssproxy-example.conf \
     m4
 
-noinst_PROGRAMS = cli_srv_comm
+noinst_PROGRAMS = cli_srv_comm interposetest
 
 ################
 # TRANSLATIONS #

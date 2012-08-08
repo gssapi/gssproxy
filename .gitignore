@@ -38,3 +38,4 @@ cli_srv_conn
 .libs/
 cli_srv_comm
 gssproxy.spec
+interposetest
