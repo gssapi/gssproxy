@@ -331,6 +331,8 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
 OM_uint32 gpm_release_name(OM_uint32 *minor_status,
                            gss_name_t *input_name)
 {
+    *minor_status = 0;
+
     if (*input_name != GSS_C_NO_NAME) {
         xdr_free((xdrproc_t)xdr_gssx_name, (char *)(*input_name));
         free(*input_name);
