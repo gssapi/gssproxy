@@ -192,6 +192,8 @@ struct athread {
     char *target;
 };
 
+#define CLI_MSG "I am the buffer"
+
 void *client_thread(void *pvt)
 {
     struct athread *data;
@@ -206,6 +208,7 @@ void *client_thread(void *pvt)
     gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     int ret = 0;
+    gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
 
     data = (struct athread *)pvt;
 
@@ -266,6 +269,33 @@ void *client_thread(void *pvt)
 
     } while (ret_maj == GSS_S_CONTINUE_NEEDED);
 
+    memcpy(buffer, CLI_MSG, sizeof(CLI_MSG));
+    msg_buf.value = (void *)buffer;
+    msg_buf.length = sizeof(CLI_MSG);
+
+    ret_maj = gpm_get_mic(&ret_min, (gssx_ctx *)ctx,
+                          GSS_C_QOP_DEFAULT,
+                          &msg_buf, &out_token);
+    if (ret_maj) {
+        fprintf(stderr, "gpm_get_mic failed: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    /* send msg to server */
+    ret = gp_send_buffer(data->srv_pipe[1],
+                         msg_buf.value, msg_buf.length);
+    if (ret) {
+        goto done;
+    }
+
+    /* send signature to server */
+    ret = gp_send_buffer(data->srv_pipe[1],
+                         out_token.value, out_token.length);
+    if (ret) {
+        goto done;
+    }
+
     fprintf(stdout, "client: Success!\n");
 
 done:
@@ -306,6 +336,7 @@ void *server_thread(void *pvt)
     gss_name_t canon_name = GSS_C_NO_NAME;
     gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
     gss_OID out_name_type = GSS_C_NO_OID;
+    gss_buffer_desc msg_token = GSS_C_EMPTY_BUFFER;
     int ret;
 
     data = (struct athread *)pvt;
@@ -445,6 +476,35 @@ void *server_thread(void *pvt)
             goto done;
         }
     }
+
+    /* receive message from client */
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        fprintf(stdout, "Failed to get data from client!\n");
+        goto done;
+    }
+    in_token.value = buffer;
+    in_token.length = buflen;
+
+    /* receive signature from client */
+    ret = gp_recv_buffer(data->srv_pipe[0],
+                         &buffer[in_token.length], &buflen);
+    if (ret) {
+        fprintf(stdout, "Failed to get data from client!\n");
+        goto done;
+    }
+    msg_token.value = &buffer[in_token.length];
+    msg_token.length = buflen;
+
+    ret_maj = gpm_verify_mic(&ret_min, (gssx_ctx *)context_handle,
+                             &in_token, &msg_token, NULL);
+    if (ret_maj) {
+        fprintf(stderr, "gpm_verify_mic failed: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    fprintf(stdout, "Received valid msg from client: [%s]\n", buffer);
 
 done:
     gpm_release_name(&ret_min, &src_name);
