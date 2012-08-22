@@ -142,7 +142,7 @@ void run_client(struct aproc *data)
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
     char *message = "SECRET";
-    int ret = 0;
+    int ret = -1;
 
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
@@ -218,6 +218,29 @@ void run_client(struct aproc *data)
 
     gss_release_buffer(&ret_min, &out_token);
 
+    ret = gp_recv_buffer(data->cli_pipe[0], buffer, &buflen);
+    if (ret) {
+        goto done;
+    }
+    msg_buf.value = (void *)buffer;
+    msg_buf.length = buflen;
+    buffer[buflen] = '\0';
+
+    in_token.value = (void *)&buffer[buflen + 1];
+    ret = gp_recv_buffer(data->cli_pipe[0], in_token.value, &buflen);
+    if (ret) {
+        goto done;
+    }
+    in_token.length = buflen;
+
+    ret_maj = gss_verify_mic(&ret_min, ctx, &msg_buf, &in_token, NULL);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("Failed to verify message (%s).\n", buffer);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+    fprintf(stdout, "Client, RECV: [%s]\n", buffer);
+
     DEBUG("Success!\n");
 
 done:
@@ -225,7 +248,7 @@ done:
     gss_release_buffer(&ret_min, &out_token);
     close(data->cli_pipe[0]);
     close(data->srv_pipe[1]);
-    exit(0);
+    exit(ret);
 }
 
 void run_server(struct aproc *data)
@@ -257,7 +280,8 @@ void run_server(struct aproc *data)
     gss_name_t canon_name = GSS_C_NO_NAME;
     gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
     gss_OID out_name_type = GSS_C_NO_OID;
-    int ret;
+    const char *message = "This message is authentic!";
+    int ret = -1;
 
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
@@ -417,6 +441,31 @@ void run_server(struct aproc *data)
 
     gss_release_buffer(&ret_min, &out_token);
 
+    in_token.value = message;
+    in_token.length = strlen(message);
+
+    ret_maj = gss_get_mic(&ret_min, context_handle, 0, &in_token, &out_token);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("Failed to protect message.\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret = gp_send_buffer(data->cli_pipe[1], in_token.value, in_token.length);
+    if (ret) {
+        DEBUG("Failed to send data to client!\n");
+        goto done;
+    }
+    ret = gp_send_buffer(data->cli_pipe[1], out_token.value, out_token.length);
+    if (ret) {
+        DEBUG("Failed to send data to client!\n");
+        goto done;
+    }
+
+    gss_release_buffer(&ret_min, &out_token);
+
+    DEBUG("Success!\n");
+
 done:
     gss_release_name(&ret_min, &src_name);
     gss_release_buffer(&ret_min, &out_token);
@@ -440,7 +489,7 @@ done:
     gss_release_oid(&ret_min, &out_name_type);
     close(data->srv_pipe[0]);
     close(data->cli_pipe[1]);
-    exit(0);
+    exit(ret);
 }
 
 int main(int argc, const char *argv[])
