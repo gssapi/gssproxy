@@ -44,6 +44,15 @@
 #define MAX_RPC_SIZE 1024*1024
 #define _(STRING) gettext(STRING)
 
+static const char *actor = "<not set>";
+
+#define DEBUG(...) do { \
+    char msg[4096]; \
+    snprintf(msg, 4096, __VA_ARGS__); \
+    fprintf(stderr, "%s line %d: %s", actor, __LINE__, msg); \
+    fflush(stderr); \
+} while(0);
+
 static int gp_send_buffer(int fd, char *buf, uint32_t len)
 {
     uint32_t size;
@@ -160,8 +169,7 @@ void run_client(struct aproc *data)
                                        NULL);
         if (ret_maj != GSS_S_COMPLETE &&
             ret_maj != GSS_S_CONTINUE_NEEDED) {
-            fprintf(stdout,
-                    "gss_init_sec_context() failed with: %d\n", ret_maj);
+            DEBUG("gss_init_sec_context() failed with: %d\n", ret_maj);
             gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
             goto done;
         }
@@ -198,7 +206,7 @@ void run_client(struct aproc *data)
     msg_buf.value = (void *)message;
     ret_maj = gss_wrap(&ret_min, ctx, 1, 0, &msg_buf, NULL, &out_token);
     if (ret_maj != GSS_S_COMPLETE) {
-        fprintf(stdout, "Failed to wrap message.\n", ret_maj);
+        DEBUG("Failed to wrap message.\n");
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -210,7 +218,7 @@ void run_client(struct aproc *data)
 
     gss_release_buffer(&ret_min, &out_token);
 
-    fprintf(stdout, "client: Success!\n");
+    DEBUG("Success!\n");
 
 done:
     gss_release_name(&ret_min, &name);
@@ -258,21 +266,21 @@ void run_server(struct aproc *data)
     ret_maj = gss_import_name(&ret_min, &target_buf,
                               GSS_C_NT_HOSTBASED_SERVICE, &target_name);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
     ret_maj = gss_canonicalize_name(&ret_min, target_name,
                                     gss_mech_krb5, &canon_name);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
     ret_maj = gss_display_name(&ret_min, canon_name,
                                &out_name_buf, &out_name_type);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -281,7 +289,7 @@ void run_server(struct aproc *data)
     /* indicate mechs family functions tests */
     ret_maj = gss_indicate_mechs(&ret_min, &mech_set);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -290,7 +298,7 @@ void run_server(struct aproc *data)
                                          &mech_set->elements[0],
                                          &mech_names);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
         goto done;
     }
@@ -299,7 +307,7 @@ void run_server(struct aproc *data)
                                          &mech_attrs,
                                          &known_mech_attrs);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
         goto done;
     }
@@ -309,7 +317,7 @@ void run_server(struct aproc *data)
                                             &mech_name,
                                             &mech_description);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
         goto done;
     }
@@ -317,7 +325,7 @@ void run_server(struct aproc *data)
                                     &mech_attrs->elements[0],
                                     &name, &short_desc, &long_desc);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -327,13 +335,13 @@ void run_server(struct aproc *data)
                                           GSS_C_NO_OID_SET,
                                           &mechs);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
     ret_maj = gss_inquire_mechs_for_name(&ret_min, target_name, &mech_types);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -347,14 +355,14 @@ void run_server(struct aproc *data)
                                NULL,
                                NULL);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
 
@@ -373,7 +381,7 @@ void run_server(struct aproc *data)
                                      NULL,
                                      &deleg_cred);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -382,7 +390,7 @@ void run_server(struct aproc *data)
         ret = gp_send_buffer(data->cli_pipe[1],
                              out_token.value, out_token.length);
         if (ret) {
-            fprintf(stdout, "Failed to send data to client!\n");
+            DEBUG("Failed to send data to client!\n");
             goto done;
         }
     }
@@ -391,7 +399,7 @@ void run_server(struct aproc *data)
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
     in_token.value = buffer;
@@ -400,7 +408,7 @@ void run_server(struct aproc *data)
     ret_maj = gss_unwrap(&ret_min, context_handle,
                          &in_token, &out_token, NULL, NULL);
     if (ret_maj != GSS_S_COMPLETE) {
-        fprintf(stdout, "Failed to unwrap message.\n", ret_maj);
+        DEBUG("Failed to unwrap message.\n");
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -504,6 +512,7 @@ int main(int argc, const char *argv[])
         ret = -1;
         goto done;
     case 0:
+        actor = "SERVER";
         run_server(&server);
         exit(0);
     default:
@@ -523,6 +532,7 @@ int main(int argc, const char *argv[])
         ret = -1;
         goto done;
     case 0:
+        actor = "CLIENT";
         run_client(&client);
         exit(0);
     default:
