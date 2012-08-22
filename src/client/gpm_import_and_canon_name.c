@@ -340,3 +340,52 @@ OM_uint32 gpm_release_name(OM_uint32 *minor_status,
     }
     return GSS_S_COMPLETE;
 }
+
+OM_uint32 gpm_compare_name(OM_uint32 *minor_status,
+                           gssx_name *name1,
+                           gssx_name *name2,
+                           int *name_equal)
+{
+    gss_buffer_desc buf1 = {0};
+    gss_buffer_desc buf2 = {0};
+    gss_OID type1 = GSS_C_NO_OID;
+    gss_OID type2 = GSS_C_NO_OID;
+    uint32_t ret_maj;
+    uint32_t ret_min;
+    int c;
+
+    *name_equal = 0;
+
+    ret_maj = gpm_display_name(&ret_min, (gss_name_t)name1, &buf1, &type1);
+    if (ret_maj != GSS_S_COMPLETE) {
+        goto done;
+    }
+
+    ret_maj = gpm_display_name(&ret_min, (gss_name_t)name2, &buf2, &type2);
+    if (ret_maj != GSS_S_COMPLETE) {
+        goto done;
+    }
+
+    c = buf1.length - buf2.length;
+    if (c == 0) {
+        c = memcmp(buf1.value, buf2.value, buf1.length);
+        if (c == 0) {
+            c = gss_oid_equal(type1, type2);
+        }
+    }
+
+    if (c != 0) {
+        *name_equal = 1;
+    }
+
+    ret_min = 0;
+    ret_maj = GSS_S_COMPLETE;
+
+done:
+    *minor_status = ret_min;
+    gss_release_buffer(&ret_min, &buf1);
+    gss_release_buffer(&ret_min, &buf2);
+    gss_release_oid(&ret_min, &type1);
+    gss_release_oid(&ret_min, &type2);
+    return ret_maj;
+}

@@ -158,6 +158,10 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
                            int *name_is_NM,
                            gss_OID *NM_mech,
                            gss_buffer_set_t *attrs);
+OM_uint32 gpm_compare_name(OM_uint32 *minor_status,
+                           gssx_name *name1,
+                           gssx_name *name2,
+                           int *name_equal);
 
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gss_cred_id_t claimant_cred_handle,
