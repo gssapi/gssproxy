@@ -131,6 +131,8 @@ void run_client(struct aproc *data)
     gss_name_t name = GSS_C_NO_NAME;
     gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
+    gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
+    char *message = "SECRET";
     int ret = 0;
 
     target_buf.value = (void *)data->target;
@@ -190,6 +192,23 @@ void run_client(struct aproc *data)
         }
 
     } while (ret_maj == GSS_S_CONTINUE_NEEDED);
+
+    /* test encryption */
+    msg_buf.length = strlen(message) + 1;
+    msg_buf.value = (void *)message;
+    ret_maj = gss_wrap(&ret_min, ctx, 1, 0, &msg_buf, NULL, &out_token);
+    if (ret_maj != GSS_S_COMPLETE) {
+        fprintf(stdout, "Failed to wrap message.\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret = gp_send_buffer(data->srv_pipe[1], out_token.value, out_token.length);
+    if (ret) {
+        goto done;
+    }
+
+    gss_release_buffer(&ret_min, &out_token);
 
     fprintf(stdout, "client: Success!\n");
 
@@ -367,6 +386,28 @@ void run_server(struct aproc *data)
             goto done;
         }
     }
+
+    gss_release_buffer(&ret_min, &out_token);
+
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        fprintf(stdout, "Failed to get data from client!\n");
+        goto done;
+    }
+    in_token.value = buffer;
+    in_token.length = buflen;
+
+    ret_maj = gss_unwrap(&ret_min, context_handle,
+                         &in_token, &out_token, NULL, NULL);
+    if (ret_maj != GSS_S_COMPLETE) {
+        fprintf(stdout, "Failed to unwrap message.\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    fprintf(stdout, "Server, RECV: %s\n", (char *)out_token.value);
+
+    gss_release_buffer(&ret_min, &out_token);
 
 done:
     gss_release_name(&ret_min, &src_name);
