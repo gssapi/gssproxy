@@ -116,6 +116,56 @@ static int gp_recv_buffer(int fd, char *buf, uint32_t *len)
     return 0;
 }
 
+static int gptest_inq_context(gss_ctx_id_t ctx)
+{
+    gss_name_t targ_name = GSS_C_NO_NAME;
+    gss_name_t src_name = GSS_C_NO_NAME;
+    OM_uint32 lifetime_rec = -1;
+    OM_uint32 ctx_flags = -1;
+    gss_OID mech_type = GSS_C_NO_OID;
+    int locally_initiated = -1;
+    int open = -1;
+    gss_buffer_desc sname = {0};
+    gss_buffer_desc tname = {0};
+    gss_buffer_desc mechstr = {0};
+    OM_uint32 time_rec = -1;
+    OM_uint32 maj, min;
+
+    maj = gss_inquire_context(&min, ctx, &src_name, &targ_name,
+                              &lifetime_rec, &mech_type, &ctx_flags,
+                              &locally_initiated, &open);
+    if (maj == GSS_S_COMPLETE) {
+        gss_OID type = GSS_C_NO_OID;
+        maj = gss_display_name(&min, src_name, &sname, &type);
+        if (maj != GSS_S_COMPLETE) {
+            goto done;
+        }
+        maj = gss_display_name(&min, targ_name, &tname, &type);
+        if (maj != GSS_S_COMPLETE) {
+            goto done;
+        }
+        maj = gss_oid_to_str(&min, mech_type, &mechstr);
+        if (maj != GSS_S_COMPLETE) {
+            goto done;
+        }
+        DEBUG("Context properties: "
+              "[ s:%s, t:%s, m:%s, l:%d, f:%d, i:%d, o:%d ]\n",
+              (char *)sname.value, (char *)tname.value, (char *)mechstr.value,
+              (int)lifetime_rec, (int)ctx_flags, locally_initiated, open);
+    }
+
+    maj = gss_context_time(&min, ctx, &time_rec);
+    if (maj == GSS_S_COMPLETE) {
+        DEBUG("Context validity: %d sec.\n", time_rec);
+    }
+
+done:
+    (void)gss_release_buffer(&min, &sname);
+    (void)gss_release_buffer(&min, &tname);
+    (void)gss_release_buffer(&min, &mechstr);
+    return maj;
+}
+
 #define PROXY_LOCAL_ONLY 0
 #define PROXY_LOCAL_FIRST 1
 #define PROXY_REMOTE_FIRST 2
@@ -201,6 +251,12 @@ void run_client(struct aproc *data)
 
     } while (ret_maj == GSS_S_CONTINUE_NEEDED);
 
+    ret = gptest_inq_context(ctx);
+    if (ret) {
+        DEBUG("Failed to inquire context!\n");
+        goto done;
+    }
+
     /* test encryption */
     msg_buf.length = strlen(message) + 1;
     msg_buf.value = (void *)message;
@@ -241,6 +297,20 @@ void run_client(struct aproc *data)
     }
     fprintf(stdout, "Client, RECV: [%s]\n", buffer);
 
+    ret_maj = gss_delete_sec_context(&ret_min, &ctx, &out_token);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("Failed to delete context!\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret = gp_send_buffer(data->srv_pipe[1], out_token.value, out_token.length);
+    if (ret) {
+        goto done;
+    }
+
+    gss_release_buffer(&ret_min, &out_token);
+
     DEBUG("Success!\n");
 
 done:
@@ -275,7 +345,7 @@ void run_server(struct aproc *data)
     gss_buffer_desc short_desc = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc long_desc = GSS_C_EMPTY_BUFFER;
     gss_OID_set mechs = GSS_C_NO_OID_SET;
-    gss_buffer_desc target_buf;
+    gss_buffer_desc const_buf;
     gss_name_t target_name = GSS_C_NO_NAME;
     gss_name_t canon_name = GSS_C_NO_NAME;
     gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
@@ -283,11 +353,11 @@ void run_server(struct aproc *data)
     const char *message = "This message is authentic!";
     int ret = -1;
 
-    target_buf.value = (void *)data->target;
-    target_buf.length = strlen(data->target) + 1;
+    const_buf.value = (void *)data->target;
+    const_buf.length = strlen(data->target) + 1;
 
     /* import name family functions tests */
-    ret_maj = gss_import_name(&ret_min, &target_buf,
+    ret_maj = gss_import_name(&ret_min, &const_buf,
                               GSS_C_NT_HOSTBASED_SERVICE, &target_name);
     if (ret_maj) {
         DEBUG("gssproxy returned an error: %d\n", ret_maj);
@@ -421,6 +491,12 @@ void run_server(struct aproc *data)
 
     gss_release_buffer(&ret_min, &out_token);
 
+    ret = gptest_inq_context(context_handle);
+    if (ret) {
+        DEBUG("Failed to inquire context!\n");
+        goto done;
+    }
+
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
         DEBUG("Failed to get data from client!\n");
@@ -463,6 +539,24 @@ void run_server(struct aproc *data)
     }
 
     gss_release_buffer(&ret_min, &out_token);
+
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        goto done;
+    }
+    const_buf.value = buffer;
+    const_buf.length = buflen;
+
+    ret_maj = gss_process_context_token(&ret_min, context_handle, &const_buf);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("Failed to process context token.\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+    /* The follwing will cause the context to leak, but it is unavoidable until
+     * gss_process_context_token() is fixed to at least NULL the internal
+     * context in the union context. */
+    context_handle = GSS_C_NO_CONTEXT;
 
     DEBUG("Success!\n");
 
