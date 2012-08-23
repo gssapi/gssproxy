@@ -94,6 +94,19 @@ OM_uint32 gpm_add_cred(OM_uint32 *minor_status,
                        gss_OID_set *actual_mechs,
                        OM_uint32 *initiator_time_rec,
                        OM_uint32 *acceptor_time_rec);
+OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
+                           gssx_cred *cred,
+                           gssx_name **name,
+                           OM_uint32 *lifetime,
+                           gss_cred_usage_t *cred_usage,
+                           gss_OID_set *mechanisms);
+OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
+                                   gssx_cred *cred,
+                                   gss_OID mech_type,
+                                   gssx_name **name,
+                                   OM_uint32 *initiator_lifetime,
+                                   OM_uint32 *acceptor_lifetime,
+                                   gss_cred_usage_t *cred_usage);
 
 OM_uint32 gpm_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set);
 OM_uint32 gpm_inquire_names_for_mech(OM_uint32 *minor_status,
