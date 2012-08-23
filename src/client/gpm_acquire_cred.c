@@ -287,3 +287,211 @@ done:
     *minor_status = ret_min;
     return ret_maj;
 }
+
+OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
+                           gssx_cred *cred,
+                           gssx_name **name,
+                           OM_uint32 *lifetime,
+                           gss_cred_usage_t *cred_usage,
+                           gss_OID_set *mechanisms)
+{
+    gss_OID_set mechs = GSS_C_NO_OID_SET;
+    gssx_name *dname = NULL;
+    gssx_cred_element *e;
+    gss_OID_desc tmp_oid;
+    uint32_t ret_min;
+    uint32_t ret_maj;
+    uint32_t life;
+    int cu;
+    int i;
+
+    if (!cred) {
+        *minor_status = 0;
+        return GSS_S_CALL_INACCESSIBLE_READ;
+    }
+    if (cred->elements.elements_len == 0) {
+        *minor_status = 0;
+        return GSS_S_FAILURE;
+    }
+
+    if (name) {
+        ret_min = gp_copy_gssx_name_alloc(&cred->desired_name, &dname);
+        if (ret_min != 0) {
+            return GSS_S_FAILURE;
+        }
+    }
+
+    if (mechanisms) {
+        ret_maj = gss_create_empty_oid_set(&ret_min, &mechs);
+        if (ret_maj) {
+            goto done;
+        }
+    }
+
+    life = GSS_C_INDEFINITE;
+    cu = -1;
+
+    for (i = 0; i < cred->elements.elements_len; i++) {
+
+        e = &cred->elements.elements_val[i];
+
+        switch (e->cred_usage) {
+        case GSSX_C_INITIATE:
+            if (e->initiator_time_rec != 0 &&
+                e->initiator_time_rec < life) {
+                life = e->initiator_time_rec;
+            }
+            switch (cu) {
+            case GSS_C_BOTH:
+                break;
+            case GSS_C_ACCEPT:
+                cu = GSS_C_BOTH;
+            default:
+                cu = GSS_C_INITIATE;
+            }
+            break;
+        case GSSX_C_ACCEPT:
+            if (e->acceptor_time_rec != 0 &&
+                e->acceptor_time_rec < life) {
+                life = e->acceptor_time_rec;
+            }
+            switch (cu) {
+            case GSS_C_BOTH:
+                break;
+            case GSS_C_INITIATE:
+                cu = GSS_C_BOTH;
+            default:
+                cu = GSS_C_ACCEPT;
+            }
+            break;
+        case GSSX_C_BOTH:
+            if (e->initiator_time_rec != 0 &&
+                e->initiator_time_rec < life) {
+                life = e->initiator_time_rec;
+            }
+            if (e->acceptor_time_rec != 0 &&
+                e->acceptor_time_rec < life) {
+                life = e->acceptor_time_rec;
+            }
+            cu = GSS_C_BOTH;
+            break;
+        }
+
+        if (mechanisms) {
+            gp_conv_gssx_to_oid(&e->mech, &tmp_oid);
+            ret_maj = gss_add_oid_set_member(&ret_min, &tmp_oid, &mechs);
+            if (ret_maj) {
+                goto done;
+            }
+        }
+    }
+
+    if (lifetime) {
+        *lifetime = life;
+    }
+
+    if (cred_usage) {
+        *cred_usage = cu;
+    }
+
+done:
+    *minor_status = ret_min;
+    if (ret_maj == GSS_S_COMPLETE) {
+        if (name) {
+            *name = dname;
+        }
+        if (mechanisms) {
+            *mechanisms = mechs;
+        }
+    } else {
+        (void)gpm_release_name(&ret_min, (gss_name_t *)&dname);
+        (void)gss_release_oid_set(&ret_min, &mechs);
+    }
+    return ret_maj;
+}
+
+OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
+                                   gssx_cred *cred,
+                                   gss_OID mech_type,
+                                   gssx_name **name,
+                                   OM_uint32 *initiator_lifetime,
+                                   OM_uint32 *acceptor_lifetime,
+                                   gss_cred_usage_t *cred_usage)
+{
+    gssx_name *dname = NULL;
+    gssx_cred_element *e;
+    gss_OID_desc tmp_oid;
+    uint32_t ret_min;
+    uint32_t ret_maj;
+    int i;
+
+    if (!cred) {
+        *minor_status = 0;
+        return GSS_S_CALL_INACCESSIBLE_READ;
+    }
+    if (cred->elements.elements_len == 0) {
+        *minor_status = 0;
+        return GSS_S_FAILURE;
+    }
+
+    for (i = 0; i < cred->elements.elements_len; i++) {
+
+        e = &cred->elements.elements_val[i];
+        gp_conv_gssx_to_oid(&e->mech, &tmp_oid);
+        if (!gss_oid_equal(&tmp_oid, mech_type)) {
+            continue;
+        }
+
+        switch (e->cred_usage) {
+        case GSSX_C_INITIATE:
+            if (initiator_lifetime) {
+                *initiator_lifetime = e->initiator_time_rec;
+            }
+            if (cred_usage) {
+                *cred_usage = GSS_C_INITIATE;
+            }
+            break;
+        case GSSX_C_ACCEPT:
+            if (acceptor_lifetime) {
+                *acceptor_lifetime = e->acceptor_time_rec;
+            }
+            if (cred_usage) {
+                *cred_usage = GSS_C_ACCEPT;
+            }
+            break;
+        case GSSX_C_BOTH:
+            if (initiator_lifetime) {
+                *initiator_lifetime = e->initiator_time_rec;
+            }
+            if (acceptor_lifetime) {
+                *acceptor_lifetime = e->acceptor_time_rec;
+            }
+            if (cred_usage) {
+                *cred_usage = GSS_C_BOTH;
+            }
+            break;
+        }
+        if (name) {
+            ret_min = gp_copy_gssx_name_alloc(&e->MN, &dname);
+            if (ret_min != 0) {
+                ret_maj = GSS_S_FAILURE;
+                goto done;
+            }
+            *name = dname;
+        }
+        goto done;
+    }
+
+    if (i >= cred->elements.elements_len) {
+        *minor_status = 0;
+        return GSS_S_FAILURE;
+    }
+
+done:
+    *minor_status = ret_min;
+    if (ret_maj != GSS_S_COMPLETE) {
+        (void)gpm_release_name(&ret_min, (gss_name_t *)&dname);
+    }
+    return ret_maj;
+}
+
