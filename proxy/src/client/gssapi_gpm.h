@@ -196,5 +196,11 @@ OM_uint32 gpm_verify_mic(OM_uint32 *minor_status,
                          gss_buffer_t message_buffer,
                          gss_buffer_t message_token,
                          gss_qop_t *qop_state);
-
+OM_uint32 gpm_wrap(OM_uint32 *minor_status,
+                   gssx_ctx *context_handle,
+                   int conf_req_flag,
+                   gss_qop_t qop_req,
+                   const gss_buffer_t input_message_buffer,
+                   int *conf_state,
+                   gss_buffer_t output_message_buffer);
 #endif /* _GSSAPI_GPM_H_ */
