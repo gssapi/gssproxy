@@ -209,6 +209,7 @@ void *client_thread(void *pvt)
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     int ret = 0;
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
+    int conf_state;
 
     data = (struct athread *)pvt;
 
@@ -292,6 +293,32 @@ void *client_thread(void *pvt)
     /* send signature to server */
     ret = gp_send_buffer(data->srv_pipe[1],
                          out_token.value, out_token.length);
+    if (ret) {
+        goto done;
+    }
+
+    gss_release_buffer(&ret_min, &out_token);
+
+    in_token.value = CLI_MSG;
+    in_token.length = strlen(in_token.value) + 1;
+
+    ret_maj = gpm_wrap(&ret_min,
+                       (gssx_ctx *)ctx,
+                       1, /* conf_req_flag */
+                       GSS_C_QOP_DEFAULT, /* qop_req */
+                       &in_token,
+                       &conf_state,
+                       &out_token);
+    if (ret_maj) {
+        fprintf(stderr, "gpm_wrap failed: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    /* send to server */
+    ret = gp_send_buffer(data->srv_pipe[1],
+                         out_token.value,
+                         out_token.length);
     if (ret) {
         goto done;
     }
