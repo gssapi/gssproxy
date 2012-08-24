@@ -203,4 +203,10 @@ OM_uint32 gpm_wrap(OM_uint32 *minor_status,
                    const gss_buffer_t input_message_buffer,
                    int *conf_state,
                    gss_buffer_t output_message_buffer);
+OM_uint32 gpm_unwrap(OM_uint32 *minor_status,
+                     gssx_ctx *context_handle,
+                     const gss_buffer_t input_message_buffer,
+                     gss_buffer_t output_message_buffer,
+                     int *conf_state,
+                     gss_qop_t *qop_state);
 #endif /* _GSSAPI_GPM_H_ */
