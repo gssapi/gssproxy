@@ -133,6 +133,7 @@ gssproxy_SOURCES = \
     src/gp_rpc_get_mic.c \
     src/gp_rpc_verify_mic.c \
     src/gp_rpc_wrap.c \
+    src/gp_rpc_unwrap.c \
     src/gssproxy.c
 
 cli_srv_comm_SOURCES = \
