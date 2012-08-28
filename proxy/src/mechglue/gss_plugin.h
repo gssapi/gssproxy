@@ -385,4 +385,37 @@ OM_uint32 gssi_verify_mic(OM_uint32 *minor_status,
                           gss_buffer_t message_token,
                           gss_qop_t *qop_state);
 
+OM_uint32 gssi_mech_invoke(OM_uint32 *minor_status,
+                           const gss_OID desired_mech,
+                           const gss_OID desired_object,
+                           gss_buffer_t value);
+
+#if 0
+OM_uint32 gssi_set_neg_mechs(OM_uint32 *minor_status,
+                             gss_cred_id_t cred_handle,
+                             const gss_OID_set mech_set);
+#endif
+#if 0
+OM_uint32 gssi_complete_auth_token(OM_uint32 *minor_status,
+                                   const gss_ctx_id_t context_handle,
+                                   gss_buffer_t input_message_buffer);
+#endif
+
+OM_uint32 gssi_localname(OM_uint32 *minor_status, const gss_name_t name,
+                         gss_OID mech_type, gss_buffer_t localname);
+
+OM_uint32 gssi_authorize_localname(OM_uint32 *minor_status,
+                                   const gss_name_t name,
+                                   gss_buffer_t local_user,
+                                   gss_OID local_nametype);
+
+OM_uint32 gssi_map_name_to_any(OM_uint32 *minor_status, gss_name_t name,
+                               int authenticated, gss_buffer_t type_id,
+                               gss_any_t *output);
+
+OM_uint32 gssi_release_any_name_mapping(OM_uint32 *minor_status,
+                                        gss_name_t name,
+                                        gss_buffer_t type_id,
+                                        gss_any_t *input);
+
 #endif /* _GSS_PLUGIN_H_ */
