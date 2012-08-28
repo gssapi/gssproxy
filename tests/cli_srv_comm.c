@@ -365,6 +365,10 @@ void *server_thread(void *pvt)
     gss_OID out_name_type = GSS_C_NO_OID;
     gss_buffer_desc msg_token = GSS_C_EMPTY_BUFFER;
     int ret;
+    gss_buffer_desc input_message_buffer = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc output_message_buffer = GSS_C_EMPTY_BUFFER;
+    gss_qop_t qop_state;
+    int conf_state;
 
     data = (struct athread *)pvt;
 
@@ -533,9 +537,34 @@ void *server_thread(void *pvt)
 
     fprintf(stdout, "Received valid msg from client: [%s]\n", buffer);
 
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        fprintf(stdout, "Failed to get data from client!\n");
+        goto done;
+    }
+
+    input_message_buffer.value = buffer;
+    input_message_buffer.length = buflen;
+
+    ret_maj = gpm_unwrap(&ret_min,
+                         (gssx_ctx *)context_handle,
+                         &input_message_buffer,
+                         &output_message_buffer,
+                         &conf_state,
+                         &qop_state);
+    if (ret_maj) {
+        fprintf(stderr, "gpm_unwrap failed: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    fprintf(stdout, "Received valid msg from client: [%s]\n",
+        (char *)output_message_buffer.value);
+
 done:
     gpm_release_name(&ret_min, &src_name);
     gpm_release_buffer(&ret_min, &out_token);
+    gpm_release_buffer(&ret_min, &output_message_buffer);
     gpm_release_cred(&ret_min, &deleg_cred);
     gpm_delete_sec_context(&ret_min, &context_handle, GSS_C_NO_BUFFER);
     gss_release_oid_set(&ret_min, &mech_set);
