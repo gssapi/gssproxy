@@ -95,6 +95,7 @@ GP_MECHGLUE_OBJ = \
     src/client/gpm_verify_mic.c \
     src/client/gpm_wrap.c \
     src/client/gpm_unwrap.c \
+    src/client/gpm_wrap_size_limit.c \
     src/client/gpm_common.c
 
 dist_noinst_HEADERS = \

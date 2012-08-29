@@ -209,4 +209,10 @@ OM_uint32 gpm_unwrap(OM_uint32 *minor_status,
                      gss_buffer_t output_message_buffer,
                      int *conf_state,
                      gss_qop_t *qop_state);
+OM_uint32 gpm_wrap_size_limit(OM_uint32 *minor_status,
+                              gssx_ctx *context_handle,
+                              int conf_req,
+                              gss_qop_t qop_req,
+                              OM_uint32 size_req,
+                              OM_uint32 *max_size);
 #endif /* _GSSAPI_GPM_H_ */
