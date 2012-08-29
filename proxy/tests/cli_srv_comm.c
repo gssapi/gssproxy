@@ -210,6 +210,7 @@ void *client_thread(void *pvt)
     int ret = 0;
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
     int conf_state;
+    uint32_t max_size;
 
     data = (struct athread *)pvt;
 
@@ -320,6 +321,18 @@ void *client_thread(void *pvt)
                          out_token.value,
                          out_token.length);
     if (ret) {
+        goto done;
+    }
+
+    ret_maj = gpm_wrap_size_limit(&ret_min,
+                                  (gssx_ctx *)ctx,
+                                  1, /* conf_req */
+                                  GSS_C_QOP_DEFAULT, /* qop_req */
+                                  4096, /* size_req */
+                                  &max_size);
+    if (ret_maj) {
+        fprintf(stderr, "gpm_wrap_size_limit failed: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
