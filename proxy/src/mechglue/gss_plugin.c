@@ -342,6 +342,32 @@ done:
     return amechs;
 }
 
+OM_uint32 gssi_internal_release_oid(OM_uint32 *minor_status, gss_OID *oid)
+{
+    struct gpp_special_oid_list *item = NULL;
+
+    *minor_status = 0;
+
+    if (&gssproxy_mech_interposer == *oid) {
+        *oid = GSS_C_NO_OID;
+        return GSS_S_COMPLETE;
+    }
+
+    item = gpp_get_special_oids();
+
+    while (item) {
+        if (&item->oid == *oid) {
+            *oid = GSS_C_NO_OID;
+            return GSS_S_COMPLETE;
+        }
+        item = gpp_next_special_oids(item);
+    }
+
+    /* none matched, it's not ours */
+    return GSS_S_CONTINUE_NEEDED;
+}
+
+
 #define MAP_ERROR_BASE 0x04200000
 
 uint32_t gpp_map_error(uint32_t err)

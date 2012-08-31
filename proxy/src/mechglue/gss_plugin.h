@@ -68,6 +68,7 @@ uint32_t gpp_name_to_local(uint32_t *minor, gssx_name *name,
                            gss_OID mech_type, gss_name_t *mech_name);
 uint32_t gpp_local_to_name(uint32_t *minor,
                            gss_name_t local_name, gssx_name **name);
+OM_uint32 gssi_internal_release_oid(OM_uint32 *minor_status, gss_OID *oid);
 
 OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
                             const gss_name_t desired_name,
