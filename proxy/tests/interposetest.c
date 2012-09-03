@@ -350,6 +350,7 @@ void run_server(struct aproc *data)
     gss_name_t canon_name = GSS_C_NO_NAME;
     gss_buffer_desc out_name_buf = GSS_C_EMPTY_BUFFER;
     gss_OID out_name_type = GSS_C_NO_OID;
+    gss_buffer_desc exported_name = GSS_C_EMPTY_BUFFER;
     const char *message = "This message is authentic!";
     int ret = -1;
 
@@ -368,6 +369,14 @@ void run_server(struct aproc *data)
                                     gss_mech_krb5, &canon_name);
     if (ret_maj) {
         DEBUG("gssproxy returned an error: %d\n", ret_maj);
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret_maj = gss_export_name(&ret_min, canon_name,
+                              &exported_name);
+    if (ret_maj) {
+        DEBUG("gss_export_name() failed with: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -581,6 +590,7 @@ done:
     gss_release_name(&ret_min, &canon_name);
     gss_release_buffer(&ret_min, &out_name_buf);
     gss_release_oid(&ret_min, &out_name_type);
+    gss_release_buffer(&ret_min, &exported_name);
     close(data->srv_pipe[0]);
     close(data->cli_pipe[1]);
     exit(ret);
