@@ -27,6 +27,7 @@
 #define _GSS_CONV_H_
 
 #include <gssapi/gssapi.h>
+#include <gssapi/gssapi_ext.h>
 #include "rpcgen/gss_proxy.h"
 
 void *gp_memdup(void *in, size_t len);
