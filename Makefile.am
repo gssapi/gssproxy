@@ -125,7 +125,8 @@ dist_noinst_HEADERS = \
     src/gp_conv.h \
     src/gp_ring_buffer.h \
     src/gp_debug.h \
-    src/gp_rpc_creds.h
+    src/gp_rpc_creds.h \
+    src/mechglue/gss_plugin.h
 
 
 ####################
