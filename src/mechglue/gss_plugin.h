@@ -47,5 +47,6 @@ uint32_t gpp_map_error(uint32_t err);
 uint32_t gpp_unmap_error(uint32_t err);
 uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
                                  gss_ctx_id_t *local_ctx);
+uint32_t gpp_copy_oid(uint32_t *minor, gss_OID in, gss_OID *out);
 
 #endif /* _GSS_PLUGIN_H_ */
