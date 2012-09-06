@@ -381,3 +381,27 @@ uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
 
     return maj;
 }
+
+uint32_t gpp_copy_oid(uint32_t *minor, gss_OID in, gss_OID *out)
+{
+    gss_OID c;
+
+    c = calloc(1, sizeof(gss_OID_desc));
+    if (!c) {
+        *minor = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+
+    c->length = in->length;
+    c->elements = malloc(in->length);
+    if (!c->elements) {
+        free(c);
+        *minor = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+    memcpy(c->elements, in->elements, in->length);
+
+    *out = c;
+    *minor = 0;
+    return GSS_S_COMPLETE;
+}
