@@ -193,6 +193,8 @@ void run_client(struct aproc *data)
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
     char *message = "SECRET";
     int ret = -1;
+    gss_iov_buffer_desc iov[2];
+    int sealed;
 
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
@@ -297,6 +299,68 @@ void run_client(struct aproc *data)
     }
     fprintf(stdout, "Client, RECV: [%s]\n", buffer);
 
+    /* test gss_wrap_iov_length */
+
+    iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
+    iov[0].buffer.value = NULL;
+    iov[0].buffer.length = 0;
+
+    iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[1].buffer.value = NULL;
+    iov[1].buffer.length = msg_buf.length;
+
+    ret_maj = gss_wrap_iov_length(&ret_min,
+                                  ctx,
+                                  1, /* seal */
+                                  GSS_C_QOP_DEFAULT,
+                                  &sealed,
+                                  iov,
+                                  2);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("gss_wrap_iov_length failed\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    buflen = iov[0].buffer.length;
+
+    /* test gss_wrap_iov */
+
+    iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
+    iov[0].buffer.length = buflen;
+    iov[0].buffer.value = malloc(iov[0].buffer.length);
+    if (!iov[0].buffer.value) {
+        DEBUG("Out of memory\n");
+        goto done;
+    }
+
+    iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[1].buffer.value = msg_buf.value;
+    iov[1].buffer.length = msg_buf.length;
+
+    ret_maj = gss_wrap_iov(&ret_min,
+                           ctx,
+                           1, /* seal */
+                           GSS_C_QOP_DEFAULT,
+                           &sealed,
+                           iov,
+                           2);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("gss_wrap_iov failed.\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
+    ret = gp_send_buffer(data->srv_pipe[1], iov[0].buffer.value, iov[0].buffer.length);
+    if (ret) {
+        goto done;
+    }
+
+    ret = gp_send_buffer(data->srv_pipe[1], iov[1].buffer.value, iov[1].buffer.length);
+    if (ret) {
+        goto done;
+    }
+
     ret_maj = gss_delete_sec_context(&ret_min, &ctx, &out_token);
     if (ret_maj != GSS_S_COMPLETE) {
         DEBUG("Failed to delete context!\n");
@@ -314,6 +378,7 @@ void run_client(struct aproc *data)
     DEBUG("Success!\n");
 
 done:
+    free(iov[0].buffer.value);
     gss_release_name(&ret_min, &name);
     gss_release_buffer(&ret_min, &out_token);
     close(data->cli_pipe[0]);
@@ -353,6 +418,8 @@ void run_server(struct aproc *data)
     gss_buffer_desc exported_name = GSS_C_EMPTY_BUFFER;
     const char *message = "This message is authentic!";
     int ret = -1;
+    gss_iov_buffer_desc iov[2];
+    int sealed;
 
     const_buf.value = (void *)data->target;
     const_buf.length = strlen(data->target) + 1;
@@ -548,6 +615,38 @@ void run_server(struct aproc *data)
     }
 
     gss_release_buffer(&ret_min, &out_token);
+
+    /* test gss_unwrap_iov */
+
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
+    if (ret) {
+        goto done;
+    }
+
+    iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
+    iov[0].buffer.value = buffer;
+    iov[0].buffer.length = buflen;
+
+    ret = gp_recv_buffer(data->srv_pipe[0], buffer+buflen, &buflen);
+    if (ret) {
+        goto done;
+    }
+
+    iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[1].buffer.value = buffer+iov[0].buffer.length;
+    iov[1].buffer.length = buflen;
+
+    ret_maj = gss_unwrap_iov(&ret_min,
+                             context_handle,
+                             &sealed,
+                             NULL, /* qop_state */
+                             iov,
+                             2);
+    if (ret_maj != GSS_S_COMPLETE) {
+        DEBUG("gss_unwrap_iov failed\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
