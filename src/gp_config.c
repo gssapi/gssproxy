@@ -30,10 +30,8 @@
 #include <errno.h>
 #include "gp_proxy.h"
 #include "iniparser.h"
-#include "gp_ring_buffer.h"
 
 #define GP_SOCKET_NAME "gssproxy.socket"
-#define GP_RING_BUFFER_SIZE 4096
 
 static void gp_service_free(struct gp_service *svc)
 {
@@ -43,6 +41,7 @@ static void gp_service_free(struct gp_service *svc)
         free(svc->krb5.keytab);
         free(svc->krb5.ccache);
     }
+    gp_free_creds_handle(&svc->creds_handle);
     memset(svc, 0, sizeof(struct gp_service));
 }
 
@@ -126,38 +125,14 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     return 0;
 }
 
-static int setup_service_ring_buffer(struct gp_config *cfg,
-                                     struct gp_service *svc,
-                                     int buffer_size)
+static int setup_service_creds_handle(struct gp_service *svc)
 {
     uint32_t ret_maj, ret_min;
-    struct gp_ring_buffer **newrb;
-    uint32_t num;
 
-    if (buffer_size == -1) {
-        /* a reasonable default ? */
-        buffer_size = GP_RING_BUFFER_SIZE;
-    }
-
-    num = cfg->num_ring_buffers;
-    newrb = realloc(cfg->ring_buffers,
-                    sizeof(struct gp_ring_buffer *) * (num + 1));
-    if (!newrb) {
-        return ENOMEM;
-    }
-    cfg->ring_buffers = newrb;
-
-    ret_maj = gp_init_ring_buffer(&ret_min,
-                                  svc->name,
-                                  buffer_size,
-                                  &cfg->ring_buffers[num]);
+    ret_maj = gp_init_creds_handle(&ret_min, &svc->creds_handle);
     if (ret_maj) {
         return ret_min;
     }
-
-    cfg->num_ring_buffers++;
-
-    svc->ring_buffer = cfg->ring_buffers[num];
 
     return 0;
 }
@@ -219,21 +194,9 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 }
             }
 
-            if (cfg->svcs[n]->trusted) {
-                /* buffer 0 is trusted */
-                cfg->svcs[n]->ring_buffer = cfg->ring_buffers[0];
-            } else {
-                /* buffer 1 is untrusted */
-                cfg->svcs[n]->ring_buffer = cfg->ring_buffers[1];
-            }
-
-            value = get_char_value(dict, secname, "dedicated_ring_buffer");
-            if (value && option_is_set(value)) {
-                valnum = get_int_value(dict, secname, "ring_buffer_size");
-                ret = setup_service_ring_buffer(cfg, cfg->svcs[n], valnum);
-                if (ret) {
-                    goto done;
-                }
+            ret = setup_service_creds_handle(cfg->svcs[n]);
+            if (ret) {
+                goto done;
             }
 
             value = get_char_value(dict, secname, "mechs");
@@ -322,34 +285,6 @@ int load_config(struct gp_config *cfg)
 
     cfg->num_workers = iniparser_getint(d, "gssproxy:worker threads", 0);
 
-    /* The two main ring_buffers need to be initialized before any dedicated
-     * ring_buffers (from services) are appended - gd */
-
-    cfg->num_ring_buffers = 2;
-    cfg->ring_buffers = calloc(cfg->num_ring_buffers, sizeof(struct gp_ring_buffer *));
-    if (!cfg->ring_buffers) {
-        ret = ENOMEM;
-        goto done;
-    }
-
-    ret_maj = gp_init_ring_buffer(&ret_min,
-                                  "default_trusted",
-                                  GP_RING_BUFFER_SIZE,
-                                  &cfg->ring_buffers[0]);
-    if (ret_maj) {
-        ret = ret_min;
-        goto done;
-    }
-
-    ret_maj = gp_init_ring_buffer(&ret_min,
-                                  "default_untrusted",
-                                  GP_RING_BUFFER_SIZE,
-                                  &cfg->ring_buffers[1]);
-    if (ret_maj) {
-        ret = ret_min;
-        goto done;
-    }
-
     ret = load_services(cfg, d);
 
 done:
@@ -400,9 +335,9 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
     return cfg;
 }
 
-struct gp_ring_buffer *gp_service_get_ring_buffer(struct gp_service *svc)
+struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc)
 {
-    return svc->ring_buffer;
+    return svc->creds_handle;
 }
 
 void free_config(struct gp_config *config)
@@ -421,10 +356,4 @@ void free_config(struct gp_config *config)
     }
 
     free(config->svcs);
-
-    for (i=0; i < config->num_ring_buffers; i++) {
-        gp_free_ring_buffer(config->ring_buffers[i]);
-    }
-
-    free(config->ring_buffers);
 }

@@ -37,122 +37,56 @@
 #include <grp.h>
 #include <pthread.h>
 
-#define GP_RING_BUFFER_KEY_ENCTYPE ENCTYPE_AES256_CTS_HMAC_SHA1_96
+#define GP_CREDS_HANDLE_KEY_ENCTYPE ENCTYPE_AES256_CTS_HMAC_SHA1_96
 
-struct gp_ring_buffer_cred {
-    uint64_t count;
-    gss_cred_id_t cred;
-};
-
-struct gp_ring_buffer {
-    char *name;
-    uint32_t end;
-    uint64_t count;
-    pthread_mutex_t lock;
-    struct gp_ring_buffer_cred **creds;
-    uint32_t num_creds;
+struct gp_creds_handle {
     krb5_keyblock key;
     krb5_context context;
 };
 
-struct gp_credential_handle {
-    uint32_t index;
-    uint64_t count;
-};
-
-static void gp_free_ring_buffer_cred(struct gp_ring_buffer_cred *cred)
+void gp_free_creds_handle(struct gp_creds_handle **in)
 {
-    uint32_t ret_min;
+    struct gp_creds_handle *handle = *in;
 
-    if (!cred) {
+    if (!handle) {
         return;
     }
 
-    gss_release_cred(&ret_min, &cred->cred);
+    if (handle->context) {
+        krb5_free_keyblock_contents(handle->context, &handle->key);
+        krb5_free_context(handle->context);
+    }
 
-    free(cred);
+    free(handle);
+    *in = NULL;
+    return;
 }
 
-void gp_free_ring_buffer(struct gp_ring_buffer *buffer)
+uint32_t gp_init_creds_handle(uint32_t *min, struct gp_creds_handle **out)
 {
-    uint32_t i;
-
-    if (!buffer) {
-        return;
-    }
-
-    free(buffer->name);
-
-    for (i=0; i < buffer->num_creds; i++) {
-        gp_free_ring_buffer_cred(buffer->creds[i]);
-    }
-
-    free(buffer->creds);
-
-    if (buffer->context) {
-        krb5_free_keyblock_contents(buffer->context, &buffer->key);
-        krb5_free_context(buffer->context);
-    }
-
-    pthread_mutex_destroy(&buffer->lock);
-
-    free(buffer);
-}
-
-uint32_t gp_init_ring_buffer(uint32_t *min,
-                             const char *name,
-                             uint32_t ring_size,
-                             struct gp_ring_buffer **buffer_out)
-{
-    struct gp_ring_buffer *buffer;
+    struct gp_creds_handle *handle;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     int ret;
 
-    GPDEBUG("gp_init_ring_buffer %s (size: %d)\n", name, ring_size);
-
-    buffer = calloc(1, sizeof(struct gp_ring_buffer));
-    if (!buffer) {
+    handle = calloc(1, sizeof(struct gp_creds_handle));
+    if (!handle) {
         ret_min = ENOMEM;
-        ret_maj = GSS_S_FAILURE;
-        goto done;
-    }
-
-    buffer->name = strdup(name);
-    if (!buffer->name) {
-        ret_min = ENOMEM;
-        ret_maj = GSS_S_FAILURE;
-        goto done;
-    }
-
-    buffer->num_creds = ring_size;
-
-    buffer->creds = calloc(sizeof(struct gp_ring_buffer_cred *), buffer->num_creds);
-    if (!buffer->creds) {
-        ret_min = ENOMEM;
-        ret_maj = GSS_S_FAILURE;
-        goto done;
-    }
-
-    ret = pthread_mutex_init(&buffer->lock, NULL);
-    if (ret) {
-        ret_min = ret;
         ret_maj = GSS_S_FAILURE;
         goto done;
     }
 
     /* initialize key */
-
-    ret = krb5_init_context(&buffer->context);
+    ret = krb5_init_context(&handle->context);
     if (ret) {
         ret_min = ret;
         ret_maj = GSS_S_FAILURE;
         goto done;
     }
 
-    ret = krb5_c_make_random_key(buffer->context,
-                                 GP_RING_BUFFER_KEY_ENCTYPE,
-                                 &buffer->key);
+    ret = krb5_c_make_random_key(handle->context,
+                                 GP_CREDS_HANDLE_KEY_ENCTYPE,
+                                 &handle->key);
     if (ret) {
         ret_min = ret;
         ret_maj = GSS_S_FAILURE;
@@ -165,101 +99,12 @@ uint32_t gp_init_ring_buffer(uint32_t *min,
 done:
     *min = ret_min;
     if (ret_maj) {
-        gp_free_ring_buffer(buffer);
+        gp_free_creds_handle(&handle);
     }
-    *buffer_out = buffer;
+    *out = handle;
 
     return ret_maj;
 }
-
-static uint32_t gp_write_gss_cred_to_ring_buffer(uint32_t *min,
-                                                 struct gp_ring_buffer *buffer,
-                                                 gss_cred_id_t *cred,
-                                                 struct gp_credential_handle *handle)
-{
-    struct gp_ring_buffer_cred *bcred = NULL;
-
-    if (!buffer || !cred) {
-        *min = EINVAL;
-        return GSS_S_FAILURE;
-    }
-
-    bcred = calloc(1, sizeof(struct gp_ring_buffer_cred));
-    if (!bcred) {
-        *min = ENOMEM;
-        return GSS_S_FAILURE;
-    }
-
-    /* ======> LOCK */
-    pthread_mutex_lock(&buffer->lock);
-
-    /* setup ring buffer credential */
-    bcred->count = buffer->count;
-    bcred->cred = *cred;
-
-    /* setup credential handle */
-    handle->count = buffer->count;
-    handle->index = buffer->end;
-
-    /* store ring buffer credential */
-    gp_free_ring_buffer_cred(buffer->creds[buffer->end]);
-
-    buffer->creds[buffer->end] = bcred;
-    buffer->end = (buffer->end + 1) % buffer->num_creds;
-
-    buffer->count++;
-
-    /* <====== LOCK */
-    pthread_mutex_unlock(&buffer->lock);
-
-    *min = 0;
-
-    return GSS_S_COMPLETE;
-}
-
-static uint32_t gp_read_gss_creds_from_ring_buffer(uint32_t *min,
-                                                   struct gp_ring_buffer *buffer,
-                                                   struct gp_credential_handle *handle,
-                                                   gss_cred_id_t *cred)
-{
-    struct gp_ring_buffer_cred *bcred;
-
-    if (!buffer || !cred || !handle) {
-        *min = EINVAL;
-        return GSS_S_FAILURE;
-    }
-
-    /* some basic sanity checks */
-    if (handle->index > buffer->num_creds) {
-         *min = EINVAL;
-        return GSS_S_FAILURE;
-    }
-
-    /* ======> LOCK */
-    pthread_mutex_lock(&buffer->lock);
-
-    /* pick ring buffer credential */
-    bcred = buffer->creds[handle->index];
-    if (bcred &&
-        (bcred->count == handle->count)) {
-        *cred = bcred->cred;
-    } else {
-        *cred = NULL;
-    }
-
-    /* <====== LOCK */
-    pthread_mutex_unlock(&buffer->lock);
-
-    if (*cred == NULL) {
-        *min = GSS_S_CRED_UNAVAIL;
-        return GSS_S_FAILURE;
-    }
-
-    *min = 0;
-
-    return GSS_S_COMPLETE;
-}
-
 
 static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
                              size_t len, void *buf, octet_string *out)
@@ -274,7 +119,7 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
     ret = krb5_c_encrypt_length(context,
-                                GP_RING_BUFFER_KEY_ENCTYPE,
+                                GP_CREDS_HANDLE_KEY_ENCTYPE,
                                 data_in.length,
                                 (size_t *)&enc_handle.ciphertext.length);
     if (ret) {
@@ -311,7 +156,7 @@ done:
 }
 
 static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
-                             octet_string *in, size_t len, void *buf)
+                             octet_string *in, size_t *len, void *buf)
 {
     int ret;
     krb5_data data_out;
@@ -319,11 +164,11 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
 
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
-    enc_handle.enctype = GP_RING_BUFFER_KEY_ENCTYPE;
+    enc_handle.enctype = GP_CREDS_HANDLE_KEY_ENCTYPE;
     enc_handle.ciphertext.data = in->octet_string_val;
     enc_handle.ciphertext.length = in->octet_string_len;
 
-    data_out.length = len;
+    data_out.length = *len;
     data_out.data = buf;
 
     ret = krb5_c_decrypt(context,
@@ -336,11 +181,12 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
         return EINVAL;
     }
 
+    *len = data_out.length;
+
     return 0;
 }
 
-uint32_t gp_export_gssx_cred(uint32_t *min,
-                             struct gp_service *svc,
+uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_service *svc,
                              gss_cred_id_t *in, gssx_cred *out)
 {
     uint32_t ret_maj;
@@ -354,8 +200,8 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
     struct gssx_cred_element *el;
     int ret;
     int i, j;
-    struct gp_ring_buffer *ring_buffer = NULL;
-    struct gp_credential_handle handle;
+    struct gp_creds_handle *handle = NULL;
+    gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
 
     ret_maj = gss_inquire_cred(&ret_min, *in,
                                &name, &lifetime, &cred_usage, &mechanisms);
@@ -421,37 +267,32 @@ uint32_t gp_export_gssx_cred(uint32_t *min,
         el->acceptor_time_rec = acceptor_lifetime;
     }
 
-    ring_buffer = gp_service_get_ring_buffer(svc);
-    if (!ring_buffer) {
+    handle = gp_service_get_creds_handle(svc);
+    if (!handle) {
         ret_maj = GSS_S_FAILURE;
         ret_min = EINVAL;
         goto done;
     }
 
-    ret = gp_write_gss_cred_to_ring_buffer(&ret_min,
-                                           ring_buffer,
-                                           in,
-                                           &handle);
-    if (ret) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ret;
+    ret_maj = gss_export_cred(&ret_min, *in, &token);
+    if (ret_maj) {
         goto done;
     }
 
-    ret = gp_encrypt_buffer(ring_buffer->context, &ring_buffer->key,
-                            sizeof(handle), &handle,
+    ret = gp_encrypt_buffer(handle->context, &handle->key,
+                            token.length, token.value,
                             &out->cred_handle_reference);
     if (ret) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ret;
         goto done;
     }
-    out->needs_release = true;
+    out->needs_release = false;
+    /* now we have serialized creds in the hands of the client.
+     * we can safey free them here so that we can remain sateless and
+     * not leak memory */
+    gss_release_cred(&ret_min, in);
 
-    /* we take over control of the credentials from here on */
-    /* when we will have gss_export_cred() we will actually free
-     * them immediately instead */
-    *in = NULL;
     ret_maj = GSS_S_COMPLETE;
     ret_min = 0;
 
@@ -462,74 +303,45 @@ done:
     return ret_maj;
 }
 
-static int gp_import_gssx_cred(struct gp_ring_buffer *ring_buffer,
-                               struct gp_credential_handle *in,
-                               gss_cred_id_t *out)
+uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_service *svc,
+                             gssx_cred *cred, gss_cred_id_t *out)
 {
-    uint32_t ret = 0;
-    uint32_t ret_min = 0;
-
-    ret = gp_read_gss_creds_from_ring_buffer(&ret_min,
-                                             ring_buffer,
-                                             in,
-                                             out);
-    if (ret) {
-        return ret_min;
-    }
-
-    return 0;
-}
-
-
-
-int gp_find_cred_int(struct gp_ring_buffer *ring_buffer, gssx_cred *cred,
-                     gss_cred_id_t *out, struct gp_credential_handle *handle)
-{
+    gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
+    struct gp_creds_handle *handle = NULL;
+    uint32_t ret_maj;
+    uint32_t ret_min;
     int ret;
 
-    ret = gp_decrypt_buffer(ring_buffer->context, &ring_buffer->key,
+    handle = gp_service_get_creds_handle(svc);
+    if (!handle) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = EINVAL;
+        goto done;
+    }
+
+    token.length = cred->cred_handle_reference.octet_string_len;
+    token.value = malloc(token.length);
+    if (!token.value) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOMEM;
+        goto done;
+    }
+
+    ret = gp_decrypt_buffer(handle->context, &handle->key,
                             &cred->cred_handle_reference,
-                            sizeof(*handle), handle);
+                            &token.length, token.value);
     if (ret) {
-        return ENOENT;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ENOENT;
+        goto done;
     }
 
-    return gp_import_gssx_cred(ring_buffer, handle, out);
-}
+    ret_maj = gss_import_cred(&ret_min, &token, out);
 
-int gp_find_cred(struct gp_service *svc, gssx_cred *cred, gss_cred_id_t *out)
-{
-    struct gp_ring_buffer *ring_buffer;
-    struct gp_credential_handle handle;
-
-    ring_buffer = gp_service_get_ring_buffer(svc);
-    if (!ring_buffer) {
-        return EINVAL;
-    }
-
-    return gp_find_cred_int(ring_buffer, cred, out, &handle);
-}
-
-int gp_find_and_free_cred(struct gp_service *svc, gssx_cred *cred)
-{
-    struct gp_ring_buffer *ring_buffer;
-    struct gp_credential_handle handle;
-    gss_cred_id_t gss_cred;
-    int ret;
-
-    ring_buffer = gp_service_get_ring_buffer(svc);
-    if (!ring_buffer) {
-        return EINVAL;
-    }
-
-    ret = gp_find_cred_int(ring_buffer, cred, &gss_cred, &handle);
-    if (ret) {
-        return ret;
-    }
-
-    gp_free_ring_buffer_cred(ring_buffer->creds[handle.index]);
-
-    return 0;
+done:
+    *min = ret_min;
+    free(token.value);
+    return ret_maj;
 }
 
 /* Exported Contexts */
