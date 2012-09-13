@@ -47,11 +47,9 @@ int gp_release_handle(struct gssproxy_ctx *gpctx,
         ret_min = 0;
         break;
     case GSSX_C_HANDLE_CRED:
-        ret = gp_find_and_free_cred(gpsvc, &rha->cred_handle.gssx_handle_u.cred_info);
-        if (ret) {
-            ret_maj = GSS_S_UNAVAILABLE;
-            ret_min = 0;
-        }
+        /* We do not need release for any creds now */
+        ret_maj = GSS_S_UNAVAILABLE;
+        ret_min = 0;
         break;
     default:
         ret_maj = GSS_S_CALL_BAD_STRUCTURE;

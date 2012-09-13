@@ -50,10 +50,9 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     acr = &res->acquire_cred;
 
     if (aca->input_cred_handle) {
-        ret = gp_find_cred(gpsvc, aca->input_cred_handle, &in_cred);
-        if (ret) {
-            ret_maj = GSS_S_NO_CRED;
-            ret_min = ret;
+        ret_maj = gp_import_gssx_cred(&ret_min, gpsvc,
+                                      aca->input_cred_handle, &in_cred);
+        if (ret_maj) {
             goto done;
         }
     }

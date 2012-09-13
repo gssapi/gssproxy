@@ -42,7 +42,7 @@ struct gp_cred_krb5 {
     char *ccache;
 };
 
-struct gp_ring_buffer;
+struct gp_creds_handle;
 
 struct gp_service {
     char *name;
@@ -52,10 +52,8 @@ struct gp_service {
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
 
-    struct gp_ring_buffer *ring_buffer;
+    struct gp_creds_handle *creds_handle;
 };
-
-struct gp_ring_buffer;
 
 struct gp_config {
     char *config_file;      /* gssproxy configuration file */
@@ -65,9 +63,6 @@ struct gp_config {
 
     struct gp_service **svcs;
     int num_svcs;
-
-    struct gp_ring_buffer **ring_buffers;
-    int num_ring_buffers;
 };
 
 struct gp_workers;
@@ -82,7 +77,7 @@ struct gp_conn;
 
 /* from gp_config.c */
 struct gp_config *read_config(char *config_file, int opt_daemonize);
-struct gp_ring_buffer *gp_service_get_ring_buffer(struct gp_service *svc);
+struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
 void free_config(struct gp_config *config);
 
 /* from gp_init.c */
@@ -113,5 +108,9 @@ int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
 /* from gp_creds.c */
 struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
                                        struct gp_conn *conn);
+
+/* from gp_export.c */
+uint32_t gp_init_creds_handle(uint32_t *min, struct gp_creds_handle **out);
+void gp_free_creds_handle(struct gp_creds_handle **in);
 
 #endif /* _GP_PROXY_H_ */
