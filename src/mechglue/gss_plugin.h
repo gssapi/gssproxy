@@ -257,6 +257,10 @@ OM_uint32 gssi_export_name(OM_uint32 *minor_status,
                            const gss_name_t input_name,
                            gss_buffer_t exported_name);
 
+OM_uint32 gssi_export_name_composite(OM_uint32 *minor_status,
+                                     const gss_name_t input_name,
+                                     gss_buffer_t exported_composite_name);
+
 OM_uint32 gssi_duplicate_name(OM_uint32 *minor_status,
                               const gss_name_t input_name,
                               gss_name_t *dest_name);
