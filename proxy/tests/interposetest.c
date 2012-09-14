@@ -195,6 +195,7 @@ void run_client(struct aproc *data)
     int ret = -1;
     gss_iov_buffer_desc iov[2];
     int sealed;
+    uint32_t max_size = 0;
 
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
@@ -258,6 +259,21 @@ void run_client(struct aproc *data)
         DEBUG("Failed to inquire context!\n");
         goto done;
     }
+
+    /* test gss_wrap_size_limit */
+
+    ret_maj = gss_wrap_size_limit(&ret_min,
+                                  ctx,
+                                  1, /* conf_req */
+                                  GSS_C_QOP_DEFAULT, /* qop_req */
+                                  4096, /* size_req */
+                                  &max_size);
+    if (ret_maj) {
+        DEBUG("gss_wrap_size_limit failed.\n");
+        gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+        goto done;
+    }
+
 
     /* test encryption */
     msg_buf.length = strlen(message) + 1;
