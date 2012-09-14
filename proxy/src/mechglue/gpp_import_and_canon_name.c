@@ -159,6 +159,30 @@ OM_uint32 gssi_export_name(OM_uint32 *minor_status,
     return maj;
 }
 
+OM_uint32 gssi_export_name_composite(OM_uint32 *minor_status,
+                                     const gss_name_t input_name,
+                                     gss_buffer_t exported_composite_name)
+{
+    struct gpp_name_handle *name;
+    OM_uint32 maj, min = 0;
+
+    name = (struct gpp_name_handle *)input_name;
+    if (!name->local && !name->remote) {
+        return GSS_S_BAD_NAME;
+    }
+
+    if (name->local) {
+        maj = gss_export_name_composite(&min, name->local,
+                                        exported_composite_name);
+    } else {
+        maj = gpm_export_name_composite(&min, name->remote,
+                                        exported_composite_name);
+    }
+
+    *minor_status = gpp_map_error(min);
+    return maj;
+}
+
 OM_uint32 gssi_duplicate_name(OM_uint32 *minor_status,
                               const gss_name_t input_name,
                               gss_name_t *dest_name)
