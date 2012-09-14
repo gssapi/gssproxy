@@ -170,6 +170,34 @@ OM_uint32 gpm_export_name(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+OM_uint32 gpm_export_name_composite(OM_uint32 *minor_status,
+                                    gssx_name *input_name,
+                                    gss_buffer_t exported_composite_name)
+{
+    int ret;
+
+    if (!minor_status) {
+        return GSS_S_CALL_INACCESSIBLE_WRITE;
+    }
+    *minor_status = 0;
+
+    if (!input_name) {
+        return GSS_S_CALL_INACCESSIBLE_READ;
+    }
+
+    if (input_name->exported_composite_name.octet_string_len == 0) {
+        return GSS_S_NAME_NOT_MN;
+    }
+
+    ret = gp_copy_gssx_to_buffer(&input_name->exported_composite_name,
+                                 exported_composite_name);
+    if (ret) {
+        *minor_status = ret;
+        return GSS_S_FAILURE;
+    }
+    return GSS_S_COMPLETE;
+}
+
 OM_uint32 gpm_duplicate_name(OM_uint32 *minor_status,
                              gssx_name *input_name,
                              gssx_name **dest_name)

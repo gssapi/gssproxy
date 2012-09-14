@@ -146,6 +146,9 @@ OM_uint32 gpm_import_name(OM_uint32 *minor_status,
 OM_uint32 gpm_export_name(OM_uint32 *minor_status,
                           gssx_name *input_name,
                           gss_buffer_t exported_name);
+OM_uint32 gpm_export_name_composite(OM_uint32 *minor_status,
+                                    gssx_name *input_name,
+                                    gss_buffer_t exported_composite_name);
 OM_uint32 gpm_duplicate_name(OM_uint32 *minor_status,
                              gssx_name *input_name,
                              gssx_name **dest_name);
