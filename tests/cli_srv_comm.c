@@ -43,6 +43,14 @@
 #include "src/client/gssapi_gpm.h"
 #include "popt.h"
 
+#define DEBUG(...) do { \
+    char msg[4096]; \
+    snprintf(msg, 4096, __VA_ARGS__); \
+    fprintf(stderr, "%s:%d: %s", __FUNCTION__, __LINE__, msg); \
+    fflush(stderr); \
+} while(0);
+
+
 int gp_send_buffer(int fd, char *buf, uint32_t len)
 {
     uint32_t size;
@@ -239,8 +247,7 @@ void *client_thread(void *pvt)
                                        NULL);
         if (ret_maj != GSS_S_COMPLETE &&
             ret_maj != GSS_S_CONTINUE_NEEDED) {
-            fprintf(stdout,
-                    "gss_init_sec_context() failed with: %d\n", ret_maj);
+            DEBUG("gss_init_sec_context() failed with: %d\n", ret_maj);
             goto done;
         }
         if (out_token.length != 0) {
@@ -279,7 +286,7 @@ void *client_thread(void *pvt)
                           GSS_C_QOP_DEFAULT,
                           &msg_buf, &out_token);
     if (ret_maj) {
-        fprintf(stderr, "gpm_get_mic failed: %d\n", ret_maj);
+        DEBUG("gpm_get_mic failed: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -311,7 +318,7 @@ void *client_thread(void *pvt)
                        &conf_state,
                        &out_token);
     if (ret_maj) {
-        fprintf(stderr, "gpm_wrap failed: %d\n", ret_maj);
+        DEBUG("gpm_wrap failed: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -331,12 +338,12 @@ void *client_thread(void *pvt)
                                   4096, /* size_req */
                                   &max_size);
     if (ret_maj) {
-        fprintf(stderr, "gpm_wrap_size_limit failed: %d\n", ret_maj);
+        DEBUG("gpm_wrap_size_limit failed: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
-    fprintf(stdout, "client: Success!\n");
+    DEBUG("client: Success!\n");
 
 done:
     gpm_release_name(&ret_min, &name);
@@ -392,30 +399,30 @@ void *server_thread(void *pvt)
     ret_maj = gpm_import_name(&ret_min, &target_buf,
                               GSS_C_NT_HOSTBASED_SERVICE, &target_name);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
     ret_maj = gpm_canonicalize_name(&ret_min, target_name,
                                     gss_mech_krb5, &canon_name);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
     ret_maj = gpm_display_name(&ret_min, canon_name,
                                &out_name_buf, &out_name_type);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
-    fprintf(stdout, "Acquiring for: %s\n", (char *)out_name_buf.value);
+    DEBUG("Acquiring for: %s\n", (char *)out_name_buf.value);
 
     /* indicate mechs family functions tests */
     ret_maj = gpm_indicate_mechs(&ret_min, &mech_set);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -424,7 +431,7 @@ void *server_thread(void *pvt)
                                          &mech_set->elements[0],
                                          &mech_names);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
         goto done;
     }
@@ -433,7 +440,7 @@ void *server_thread(void *pvt)
                                          &mech_attrs,
                                          &known_mech_attrs);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
         goto done;
     }
@@ -443,7 +450,7 @@ void *server_thread(void *pvt)
                                             &mech_name,
                                             &mech_description);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(&mech_set->elements[0], ret_maj, ret_min);
         goto done;
     }
@@ -451,7 +458,7 @@ void *server_thread(void *pvt)
                                     &mech_attrs->elements[0],
                                     &name, &short_desc, &long_desc);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -461,13 +468,13 @@ void *server_thread(void *pvt)
                                           GSS_C_NO_OID_SET,
                                           &mechs);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
     ret_maj = gpm_inquire_mechs_for_name(&ret_min, target_name, &mech_types);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -481,14 +488,14 @@ void *server_thread(void *pvt)
                                NULL,
                                NULL);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
 
@@ -507,7 +514,7 @@ void *server_thread(void *pvt)
                                      NULL,
                                      &deleg_cred);
     if (ret_maj) {
-        fprintf(stdout, "gssproxy returned an error: %d\n", ret_maj);
+        DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
@@ -516,7 +523,7 @@ void *server_thread(void *pvt)
         ret = gp_send_buffer(data->cli_pipe[1],
                              out_token.value, out_token.length);
         if (ret) {
-            fprintf(stdout, "Failed to send data to client!\n");
+            DEBUG("Failed to send data to client!\n");
             goto done;
         }
     }
@@ -524,7 +531,7 @@ void *server_thread(void *pvt)
     /* receive message from client */
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
     in_token.value = buffer;
@@ -534,7 +541,7 @@ void *server_thread(void *pvt)
     ret = gp_recv_buffer(data->srv_pipe[0],
                          &buffer[in_token.length], &buflen);
     if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
     msg_token.value = &buffer[in_token.length];
@@ -543,16 +550,16 @@ void *server_thread(void *pvt)
     ret_maj = gpm_verify_mic(&ret_min, (gssx_ctx *)context_handle,
                              &in_token, &msg_token, NULL);
     if (ret_maj) {
-        fprintf(stderr, "gpm_verify_mic failed: %d\n", ret_maj);
+        DEBUG("gpm_verify_mic failed: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
-    fprintf(stdout, "Received valid msg from client: [%s]\n", buffer);
+    DEBUG("Received valid msg from client: [%s]\n", buffer);
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
-        fprintf(stdout, "Failed to get data from client!\n");
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
 
@@ -566,12 +573,12 @@ void *server_thread(void *pvt)
                          &conf_state,
                          &qop_state);
     if (ret_maj) {
-        fprintf(stderr, "gpm_unwrap failed: %d\n", ret_maj);
+        DEBUG("gpm_unwrap failed: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
 
-    fprintf(stdout, "Received valid msg from client: [%s]\n",
+    DEBUG("Received valid msg from client: [%s]\n",
         (char *)output_message_buffer.value);
 
 done:
