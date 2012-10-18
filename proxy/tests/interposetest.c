@@ -203,6 +203,7 @@ void run_client(struct aproc *data)
     ret_maj = gss_import_name(&ret_min, &target_buf,
                               GSS_C_NT_HOSTBASED_SERVICE, &name);
     if (ret_maj) {
+        DEBUG("gss_import_name failed\n");
         goto done;
     }
 
@@ -231,6 +232,7 @@ void run_client(struct aproc *data)
             ret = gp_send_buffer(data->srv_pipe[1],
                                  out_token.value, out_token.length);
             if (ret) {
+                DEBUG("Failed to send data to server!\n");
                 goto done;
             }
 
@@ -238,6 +240,7 @@ void run_client(struct aproc *data)
         }
 
         if (!ctx) {
+            DEBUG("No context!\n");
             goto done;
         }
 
@@ -245,6 +248,7 @@ void run_client(struct aproc *data)
             /* and wait for reply */
             ret = gp_recv_buffer(data->cli_pipe[0], buffer, &buflen);
             if (ret) {
+                DEBUG("Failed to receive data from server!\n");
                 goto done;
             }
 
@@ -287,6 +291,7 @@ void run_client(struct aproc *data)
 
     ret = gp_send_buffer(data->srv_pipe[1], out_token.value, out_token.length);
     if (ret) {
+        DEBUG("Failed to send data to server!\n");
         goto done;
     }
 
@@ -294,6 +299,7 @@ void run_client(struct aproc *data)
 
     ret = gp_recv_buffer(data->cli_pipe[0], buffer, &buflen);
     if (ret) {
+        DEBUG("Failed to receive data from server!\n");
         goto done;
     }
     msg_buf.value = (void *)buffer;
@@ -303,6 +309,7 @@ void run_client(struct aproc *data)
     in_token.value = (void *)&buffer[buflen + 1];
     ret = gp_recv_buffer(data->cli_pipe[0], in_token.value, &buflen);
     if (ret) {
+        DEBUG("Failed to receive data from server!\n");
         goto done;
     }
     in_token.length = buflen;
@@ -369,11 +376,13 @@ void run_client(struct aproc *data)
 
     ret = gp_send_buffer(data->srv_pipe[1], iov[0].buffer.value, iov[0].buffer.length);
     if (ret) {
+        DEBUG("Failed to send data to server!\n");
         goto done;
     }
 
     ret = gp_send_buffer(data->srv_pipe[1], iov[1].buffer.value, iov[1].buffer.length);
     if (ret) {
+        DEBUG("Failed to send data to server!\n");
         goto done;
     }
 
@@ -386,6 +395,7 @@ void run_client(struct aproc *data)
 
     ret = gp_send_buffer(data->srv_pipe[1], out_token.value, out_token.length);
     if (ret) {
+        DEBUG("Failed to send data to server!\n");
         goto done;
     }
 
@@ -647,6 +657,7 @@ void run_server(struct aproc *data)
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
 
@@ -656,6 +667,7 @@ void run_server(struct aproc *data)
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer+buflen, &buflen);
     if (ret) {
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
 
@@ -677,6 +689,7 @@ void run_server(struct aproc *data)
 
     ret = gp_recv_buffer(data->srv_pipe[0], buffer, &buflen);
     if (ret) {
+        DEBUG("Failed to get data from client!\n");
         goto done;
     }
     const_buf.value = buffer;
