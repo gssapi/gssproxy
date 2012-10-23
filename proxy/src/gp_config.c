@@ -29,7 +29,7 @@
 #include <string.h>
 #include <errno.h>
 #include "gp_proxy.h"
-#include "iniparser.h"
+#include "gp_config.h"
 
 static void gp_service_free(struct gp_service *svc)
 {
@@ -41,41 +41,6 @@ static void gp_service_free(struct gp_service *svc)
     }
     gp_free_creds_handle(&svc->creds_handle);
     memset(svc, 0, sizeof(struct gp_service));
-}
-
-static char *get_char_value(dictionary *dict,
-                            const char *secname,
-                            const char *key)
-{
-    char *skey;
-    char *value;
-    int ret;
-
-    ret = asprintf(&skey, "%s:%s", secname, key);
-    if (ret == -1) {
-        return NULL;
-    }
-
-    value = iniparser_getstring(dict, skey, NULL);
-    free(skey);
-    return value;
-}
-
-static int get_int_value(dictionary *dict,
-                         const char *secname,
-                         const char *key)
-{
-    char *skey;
-    int ret;
-
-    ret = asprintf(&skey, "%s:%s", secname, key);
-    if (ret == -1) {
-        return -1;
-    }
-
-    ret = iniparser_getint(dict, skey, -1);
-    free(skey);
-    return ret;
 }
 
 static bool option_is_set(const char *s)
@@ -91,12 +56,12 @@ static bool option_is_set(const char *s)
 }
 
 static int get_krb5_mech_cfg(struct gp_service *svc,
-                             dictionary *dict,
+                             struct gp_ini_context *ctx,
                              const char *secname)
 {
     const char *value;
 
-    value = get_char_value(dict, secname, "krb5_principal");
+    value = gp_config_get_string(ctx, secname, "krb5_principal");
     if (value) {
         svc->krb5.principal = strdup(value);
         if (!svc->krb5.principal) {
@@ -104,7 +69,7 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         }
     }
 
-    value = get_char_value(dict, secname, "krb5_keytab");
+    value = gp_config_get_string(ctx, secname, "krb5_keytab");
     if (value) {
         svc->krb5.keytab = strdup(value);
         if (!svc->krb5.keytab) {
@@ -112,7 +77,7 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         }
     }
 
-    value = get_char_value(dict, secname, "krb5_ccache");
+    value = gp_config_get_string(ctx, secname, "krb5_ccache");
     if (value) {
         svc->krb5.ccache = strdup(value);
         if (!svc->krb5.ccache) {
@@ -135,10 +100,10 @@ static int setup_service_creds_handle(struct gp_service *svc)
     return 0;
 }
 
-static int load_services(struct gp_config *cfg, dictionary *dict)
+static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
 {
     int num_sec;
-    char *secname;
+    char *secname = NULL;
     char *value;
     char *token;
     char *handle;
@@ -146,7 +111,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
     int ret;
     int i, n;
 
-    num_sec = iniparser_getnsec(dict);
+    num_sec = gp_config_get_nsec(ctx);
 
     /* allocate enough space for num_sec services,
      * we won't waste too much space by overallocating */
@@ -157,7 +122,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
     }
 
     for (i = 0; i < num_sec; i++) {
-        secname = iniparser_getsecname(dict, i);
+        secname = gp_config_get_secname(ctx, i);
 
         ret = strncmp(secname, "service/", 8);
         if (ret == 0) {
@@ -175,24 +140,25 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 goto done;
             }
 
-            valnum = get_int_value(dict, secname, "euid");
+            valnum = gp_config_get_int(ctx, secname, "euid");
             if (valnum == -1) {
                 /* malformed section, mech is missing */
                 GPDEBUG("Euid missing from [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
+                free(secname);
                 continue;
             }
             cfg->svcs[n]->euid = valnum;
 
-            value = get_char_value(dict, secname, "trusted");
+            value = gp_config_get_string(ctx, secname, "trusted");
             if (value != NULL) {
                 if (option_is_set(value)) {
                     cfg->svcs[n]->trusted = true;
                 }
             }
 
-            value = get_char_value(dict, secname, "kernel_nfsd");
+            value = gp_config_get_string(ctx, secname, "kernel_nfsd");
             if (value != NULL) {
                 if (option_is_set(value)) {
                     cfg->svcs[n]->kernel_nfsd = true;
@@ -204,12 +170,13 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 goto done;
             }
 
-            value = get_char_value(dict, secname, "mechs");
+            value = gp_config_get_string(ctx, secname, "mechs");
             if (value == NULL) {
                 /* malformed section, mech is missing */
                 GPDEBUG("Mechs missing from [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
+                free(secname);
                 continue;
             }
 
@@ -218,7 +185,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
 
                 ret = strcmp(value, "krb5");
                 if (ret == 0) {
-                    ret = get_krb5_mech_cfg(cfg->svcs[n], dict, secname);
+                    ret = get_krb5_mech_cfg(cfg->svcs[n], ctx, secname);
                     if (ret == 0) {
                         cfg->svcs[n]->mechs |= GP_CRED_KRB5;
                     } else {
@@ -237,8 +204,11 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 GPDEBUG("No mechs found for [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
+                free(secname);
                 continue;
             }
+            free(secname);
+            secname = NULL;
         }
     }
 
@@ -250,32 +220,58 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
     ret = 0;
 
 done:
+    free(secname);
     return ret;
+}
+
+static int gp_init_ini_context(const char *config_file,
+                               struct gp_ini_context **ctxp)
+{
+    struct gp_ini_context *ctx;
+    int ret;
+
+    if (!ctxp) {
+        return EINVAL;
+    }
+
+    ctx = calloc(1, sizeof(struct gp_ini_context));
+    if (!ctx) {
+        return ENOENT;
+    }
+
+    ret = gp_config_init(config_file, ctx);
+    if (ret) {
+        return ret;
+    }
+
+    *ctxp = ctx;
+
+    return 0;
 }
 
 int load_config(struct gp_config *cfg)
 {
-    dictionary *d;
+    struct gp_ini_context *ctx;
     char *tmpstr;
     int ret;
 
-    d = iniparser_load(cfg->config_file);
-    if (!d) {
-        return ENOENT;
+    ret = gp_init_ini_context(cfg->config_file, &ctx);
+    if (ret) {
+        return ret;
     }
 
-    tmpstr = iniparser_getstring(d, "gssproxy:debug", NULL);
+    tmpstr = gp_config_get_string(ctx, "gssproxy", "debug");
     if (tmpstr) {
         if (option_is_set(tmpstr)) {
             gp_debug_enable();
         }
     }
 
-    cfg->num_workers = iniparser_getint(d, "gssproxy:worker threads", 0);
+    cfg->num_workers = gp_config_get_int(ctx, "gssproxy", "worker threads");
 
-    ret = load_services(cfg, d);
+    ret = load_services(cfg, ctx);
 
-    iniparser_freedict(d);
+    gp_config_close(ctx);
     return ret;
 }
 
@@ -358,3 +354,48 @@ void free_config(struct gp_config **cfg)
     free(config);
     *cfg = NULL;
 }
+
+#ifdef HAVE_INIPARSER
+#define WITH_INIPARSER 1
+#endif
+
+#ifdef WITH_INIPARSER
+#include "gp_config_iniparser.h"
+
+int gp_config_init(const char *config_file,
+                   struct gp_ini_context *ctx)
+{
+    return gp_iniparser_init(config_file, ctx);
+}
+
+char *gp_config_get_string(struct gp_ini_context *ctx,
+                           const char *secname,
+                           const char *keyname)
+{
+    return gp_iniparser_get_string(ctx, secname, keyname);
+}
+
+int gp_config_get_int(struct gp_ini_context *ctx,
+                      const char *secname,
+                      const char *keyname)
+{
+    return gp_iniparser_get_int(ctx, secname, keyname);
+}
+
+int gp_config_get_nsec(struct gp_ini_context *ctx)
+{
+    return gp_iniparser_get_nsec(ctx);
+}
+
+char *gp_config_get_secname(struct gp_ini_context *ctx,
+                            int i)
+{
+    return gp_iniparser_get_secname(ctx, i);
+}
+
+int gp_config_close(struct gp_ini_context *ctx)
+{
+    return gp_iniparser_close(ctx);
+}
+
+#endif /* WITH_INIPARSER */

@@ -84,7 +84,8 @@ fi
 
 #Check for iniparser
 AC_CHECK_HEADERS([iniparser.h],
-    [AC_CHECK_LIB(iniparser, iniparser_set, [ INI_LIBS="-liniparser" ],
+    [AC_CHECK_LIB(iniparser, iniparser_set,
+        [ INI_LIBS="-liniparser"; AC_DEFINE([HAVE_INIPARSER], [1], [Iniparser library available.]) ],
     [AC_MSG_ERROR([Iniparser library must support iniparser_set])])],
     [AC_MSG_ERROR([Iniparser development package is not installed])]
 )
