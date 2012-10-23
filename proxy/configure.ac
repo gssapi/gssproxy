@@ -90,7 +90,22 @@ AC_CHECK_HEADERS([iniparser.h],
     [AC_MSG_ERROR([Iniparser development package is not installed])]
 )
 
+#Check for libini_config
+PKG_CHECK_MODULES([LIBINI_CONFIG], [ini_config >= 1.0.0], [have_libini_config=1], [have_libini_config=])
+if test x$have_libini_config = x; then
+    AC_MSG_WARN([Could not find LIBINI_CONFIG headers])
+else
+    INI_CONFIG_CFLAGS="`$PKG_CONFIG --cflags ini_config`"
+    INI_CONFIG_LIBS="`$PKG_CONFIG --libs ini_config`"
+    AC_CHECK_LIB(ini_config, ini_config_file_open,
+                 [INI_LIBS="$INI_LIBS $INI_CONFIG_LIBS"; INI_CFLAGS="$INI_CONFIG_CFLAGS";
+                  AC_DEFINE([HAVE_DINGLIBS], [1], [Dinglibs library available.])],
+                 [AC_MSG_WARN([ini_config library must support ini_config_file_open])],
+                 [$INI_CONFIG_LIBS])
+fi
+
 AC_SUBST(INI_LIBS)
+AC_SUBST(INI_CFLAGS)
 
 AX_PTHREAD(,[AC_MSG_ERROR([Could not find Pthreads support])])
 
