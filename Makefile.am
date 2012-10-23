@@ -70,6 +70,7 @@ AM_CPPFLAGS = \
     -I. \
     $(POPT_CFLAGS) \
     $(GSSAPI_CFLAGS) \
+    $(INI_CFLAGS) \
     -DLIBDIR=\"$(libdir)\" \
     -DVARDIR=\"$(localstatedir)\" \
     -DSHLIBEXT=\"$(SHLIBEXT)\" \
@@ -127,6 +128,7 @@ dist_noinst_HEADERS = \
     src/gp_conv.h \
     src/gp_config.h \
     src/gp_config_iniparser.h \
+    src/gp_config_dinglibs.h \
     src/gp_debug.h \
     src/gp_rpc_creds.h \
     src/mechglue/gss_plugin.h
@@ -139,6 +141,7 @@ dist_noinst_HEADERS = \
 gssproxy_SOURCES = \
     src/gp_config.c \
     src/gp_config_iniparser.c \
+    src/gp_config_dinglibs.c \
     src/gp_init.c \
     src/gp_socket.c \
     src/gp_workers.c \

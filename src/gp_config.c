@@ -399,3 +399,44 @@ int gp_config_close(struct gp_ini_context *ctx)
 }
 
 #endif /* WITH_INIPARSER */
+
+#ifdef WITH_DINGLIBS
+#include "gp_config_dinglibs.h"
+
+int gp_config_init(const char *config_file,
+                   struct gp_ini_context *ctx)
+{
+    return gp_dinglibs_init(config_file, ctx);
+}
+
+char *gp_config_get_string(struct gp_ini_context *ctx,
+                           const char *secname,
+                           const char *keyname)
+{
+    return gp_dinglibs_get_string(ctx, secname, keyname);
+}
+
+int gp_config_get_int(struct gp_ini_context *ctx,
+                     const char *secname,
+                      const char *keyname)
+{
+    return gp_dinglibs_get_int(ctx, secname, keyname);
+}
+
+int gp_config_get_nsec(struct gp_ini_context *ctx)
+{
+    return gp_dinglibs_get_nsec(ctx);
+}
+
+char *gp_config_get_secname(struct gp_ini_context *ctx,
+                            int i)
+{
+    return gp_dinglibs_get_secname(ctx, i);
+}
+
+int gp_config_close(struct gp_ini_context *ctx)
+{
+    return gp_dinglibs_close(ctx);
+}
+
+#endif /* WITH_DINGLIBS */
