@@ -106,6 +106,12 @@ else
     GSSAPI_CFLAGS="`$KRB5_CONFIG --cflags gssapi`"
     GSSAPI_LIBS="`$KRB5_CONFIG --libs gssapi`"
 fi
+AC_CHECK_LIB(gssapi_krb5, gss_import_cred,,
+	     [AC_MSG_ERROR([GSSAPI library does not support gss_import_cred])],
+	     [$GSSAPI_LIBS])
+AC_CHECK_LIB(gssapi_krb5, gss_export_cred,,
+	     [AC_MSG_ERROR([GSSAPI library does not support gss_export_cred])],
+	     [$GSSAPI_LIBS])
 
 AC_SUBST([GSSAPI_CFLAGS])
 AC_SUBST([GSSAPI_LIBS])
