@@ -100,8 +100,11 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
 
     /* avoid looping in the gssproxy daemon by avoiding to interpose
      * any mechanism */
-    envval = getenv("_GSSPROXY_LOOPS");
-    if (envval && strcmp(envval, "NO") == 0) {
+    envval = getenv("GSS_USE_PROXY");
+    if (!envval) {
+        return NULL;
+    }
+    if ((strcmp(envval, "YES") != 0) && (strcmp(envval, "1") != 0)) {
         return NULL;
     }
 
