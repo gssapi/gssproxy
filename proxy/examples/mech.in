@@ -1,0 +1,4 @@
+# GSS-API mechanism plugins
+#
+# Mechanism Name	Object Identifier		Shared Library Path			Other Options
+gssproxy_v1		2.16.840.1.113730.3.8.15.1	@libdir@/gssproxy/proxymech.so		<interposer>

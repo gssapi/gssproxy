@@ -17,6 +17,7 @@ endif
 
 gssplibdir = $(libdir)/gssproxy
 gsspconfdir = $(sysconfdir)/gssproxy
+gssconfdir = $(sysconfdir)/gss
 localedir = @localedir@
 
 pidpath = @pidpath@
@@ -223,6 +224,7 @@ installgsspdirs::
     $(DESTDIR)$(sbindir) \
     $(DESTDIR)$(mandir) \
     $(DESTDIR)$(gsspconfdir) \
+    $(DESTDIR)$(gssconfdir) \
     $(DESTDIR)$(pidpath) \
     $(DESTDIR)$(pipepath) \
     $(DESTDIR)$(logpath) \
