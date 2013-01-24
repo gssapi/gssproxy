@@ -33,7 +33,7 @@
 #include "gp_config.h"
 #include "gp_config_iniparser.h"
 
-#ifdef HAVE_INIPARSER
+#ifdef WITH_INIPARSER
 
 #include <iniparser.h>
 
@@ -133,4 +133,4 @@ char *gp_iniparser_get_secname(struct gp_ini_context *ctx,
     return strdup(value);
 }
 
-#endif /* HAVE_INIPARSER */
+#endif /* WITH_INIPARSER */

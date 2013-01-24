@@ -33,7 +33,7 @@
 #include "gp_config.h"
 #include "gp_config_dinglibs.h"
 
-#ifdef HAVE_DINGLIBS
+#ifdef WITH_DINGLIBS
 
 #include <ini_configobj.h>
 
@@ -202,4 +202,4 @@ char *gp_dinglibs_get_secname(struct gp_ini_context *ctx,
     return secname;
 }
 
-#endif /* HAVE_DINGLIBS */
+#endif /* WITH_DINGLIBS */
