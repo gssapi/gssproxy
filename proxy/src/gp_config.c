@@ -355,10 +355,6 @@ void free_config(struct gp_config **cfg)
     *cfg = NULL;
 }
 
-#ifdef HAVE_INIPARSER
-#define WITH_INIPARSER 1
-#endif
-
 #ifdef WITH_INIPARSER
 #include "gp_config_iniparser.h"
 

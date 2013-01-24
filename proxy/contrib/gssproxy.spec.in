@@ -37,7 +37,7 @@ BuildRequires: pkgconfig
 BuildRequires: krb5-devel
 BuildRequires: libselinux-devel
 BuildRequires: keyutils-libs-devel
-BuildRequires: iniparser-devel
+BuildRequires: libini_config-devel >= 1.0.0.1
 BuildRequires: libverto-devel
 BuildRequires: popt-devel
 BuildRequires: findutils

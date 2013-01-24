@@ -83,11 +83,11 @@ if test x$have_libverto = x; then
 fi
 
 #Check for iniparser
+have_iniparser=
 AC_CHECK_HEADERS([iniparser.h],
-    [AC_CHECK_LIB(iniparser, iniparser_set,
-        [ INI_LIBS="-liniparser"; AC_DEFINE([HAVE_INIPARSER], [1], [Iniparser library available.]) ],
+    [AC_CHECK_LIB(iniparser, iniparser_set, [ have_iniparser=1 ],
     [AC_MSG_ERROR([Iniparser library must support iniparser_set])])],
-    [AC_MSG_ERROR([Iniparser development package is not installed])]
+    [AC_MSG_WARN([Could not find Iniparser headers])]
 )
 
 #Check for libini_config
@@ -97,11 +97,20 @@ if test x$have_libini_config = x; then
 else
     INI_CONFIG_CFLAGS="`$PKG_CONFIG --cflags ini_config`"
     INI_CONFIG_LIBS="`$PKG_CONFIG --libs ini_config`"
-    AC_CHECK_LIB(ini_config, ini_config_file_open,
-                 [INI_LIBS="$INI_LIBS $INI_CONFIG_LIBS"; INI_CFLAGS="$INI_CONFIG_CFLAGS";
-                  AC_DEFINE([HAVE_DINGLIBS], [1], [Dinglibs library available.])],
+    AC_CHECK_LIB(ini_config, ini_config_file_open, [],
                  [AC_MSG_WARN([ini_config library must support ini_config_file_open])],
                  [$INI_CONFIG_LIBS])
+fi
+
+if test x$have_libini_config = x1; then
+    AC_DEFINE([WITH_DINGLIBS], [1], [Using ini_config])
+    INI_CFLAGS="$INI_CONFIG_CFLAGS"
+    INI_LIBS="$INI_CONFIG_LIBS"
+elif test x$have_iniparser = x1; then
+    AC_DEFINE([WITH_INIPARSER], [1], [Using iniparser])
+    INI_LIBS="-liniparser"
+else
+    AC_MSG_ERROR([Neither iniparser nor ini_config development packages available])
 fi
 
 AC_SUBST(INI_LIBS)
