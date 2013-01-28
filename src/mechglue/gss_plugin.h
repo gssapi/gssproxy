@@ -152,10 +152,10 @@ OM_uint32 gssi_import_sec_context(OM_uint32 *minor_status,
                                   gss_buffer_t interprocess_token,
                                   gss_ctx_id_t *context_handle);
 
-OM_uint32 gssi_import_sec_context_for_mech(OM_uint32 *minor_status,
-                                           gss_OID mech_type,
-                                           gss_buffer_t interprocess_token,
-                                           gss_ctx_id_t *context_handle);
+OM_uint32 gssi_import_sec_context_by_mech(OM_uint32 *minor_status,
+                                          gss_OID mech_type,
+                                          gss_buffer_t interprocess_token,
+                                          gss_ctx_id_t *context_handle);
 
 OM_uint32 gssi_process_context_token(OM_uint32 *minor_status,
                                      gss_ctx_id_t context_handle,
