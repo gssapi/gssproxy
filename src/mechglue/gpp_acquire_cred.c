@@ -246,7 +246,7 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
 {
     enum gpp_behavior behavior;
     struct gpp_name_handle *name;
-    struct gpp_cred_handle *out_cred_handle;
+    struct gpp_cred_handle *out_cred_handle = NULL;
     gss_OID_set special_mechs;
     OM_uint32 maj, min;
 
