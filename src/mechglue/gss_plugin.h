@@ -128,7 +128,7 @@ OM_uint32 gssi_inquire_cred_by_oid(OM_uint32 *minor_status,
 	                           gss_buffer_set_t *data_set);
 
 OM_uint32 gssi_set_cred_option(OM_uint32 *minor_status,
-                               gss_cred_id_t cred_handle,
+                               gss_cred_id_t *cred_handle,
                                const gss_OID desired_object,
                                const gss_buffer_t value);
 
