@@ -259,7 +259,7 @@ OM_uint32 gssi_inquire_cred_by_oid(OM_uint32 *minor_status,
 }
 
 OM_uint32 gssi_set_cred_option(OM_uint32 *minor_status,
-                               gss_cred_id_t cred_handle,
+                               gss_cred_id_t *cred_handle,
                                const gss_OID desired_object,
                                const gss_buffer_t value)
 {
@@ -267,10 +267,10 @@ OM_uint32 gssi_set_cred_option(OM_uint32 *minor_status,
     OM_uint32 maj, min;
 
     *minor_status = 0;
-    if (cred_handle == GSS_C_NO_CREDENTIAL) {
+    if (*cred_handle == GSS_C_NO_CREDENTIAL) {
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
-    cred = (struct gpp_cred_handle *)cred_handle;
+    cred = (struct gpp_cred_handle *)*cred_handle;
 
     /* NOTE: For now we can do this only for local credentials */
     if (!cred->local) {
