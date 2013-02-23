@@ -155,9 +155,12 @@ static int gptest_inq_context(gss_ctx_id_t ctx)
     }
 
     maj = gss_context_time(&min, ctx, &time_rec);
-    if (maj == GSS_S_COMPLETE) {
-        DEBUG("Context validity: %d sec.\n", time_rec);
+    if (maj) {
+        DEBUG("gss_context_time failed\n");
+        gp_log_failure(GSS_C_NO_OID, maj, min);
+        goto done;
     }
+    DEBUG("Context validity: %d sec.\n", time_rec);
 
 done:
     (void)gss_release_buffer(&min, &sname);
