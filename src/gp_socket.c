@@ -36,6 +36,13 @@
 #include "gp_proxy.h"
 #include "gp_creds.h"
 
+#ifdef HAVE_SELINUX
+#include <selinux/selinux.h>
+#define SEC_CTX security_context_t
+#else
+#define SEC_CTX void *
+#endif /* HAVE_SELINUX */
+
 #define FRAGMENT_BIT (1 << 31)
 
 struct unix_sock_conn {
@@ -51,6 +58,7 @@ struct gp_conn {
     struct gssproxy_ctx *gpctx;
     struct unix_sock_conn us;
     struct gp_creds creds;
+    SEC_CTX secctx;
 };
 
 struct gp_buffer {
@@ -172,8 +180,6 @@ done:
     return fd;
 }
 
-/* TODO: use getpeercon for SeLinux context */
-
 static int get_peercred(int fd, struct gp_conn *conn)
 {
     socklen_t len;
@@ -192,6 +198,19 @@ static int get_peercred(int fd, struct gp_conn *conn)
     }
 
     conn->creds.type |= CRED_TYPE_UNIX;
+
+#ifdef HAVE_SELINUX
+    ret = getpeercon(fd, &conn->secctx);
+    if (ret == 0) {
+        conn->creds.type |= CRED_TYPE_SELINUX;
+    } else {
+        ret = errno;
+        GPDEBUG("Failed to get peer's SELinux context (%d:%s)\n",
+                ret, strerror(ret));
+        /* consider thisnot fatal, selinux may be disabled */
+    }
+#endif /* HAVE_SELINUX */
+
     return 0;
 }
 
