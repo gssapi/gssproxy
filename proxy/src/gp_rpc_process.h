@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <string.h>
 #include <gssapi/gssapi.h>
 #include "gp_common.h"
 #include "gp_conv.h"
