@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <string.h>
 #include "gp_conv.h"
 #include "gp_export.h"
 #include "gp_debug.h"

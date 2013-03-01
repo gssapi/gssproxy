@@ -25,6 +25,7 @@
 
 #include "gssapi_gpm.h"
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>

@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <string.h>
 #include <pwd.h>
 #include <krb5/krb5.h>
 #include <gssapi/gssapi_krb5.h>
