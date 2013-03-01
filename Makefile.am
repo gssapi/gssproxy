@@ -84,7 +84,7 @@ if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
 endif
 
-GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c
+GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c rpcgen/gp_xdr.c
 GP_RPCCLI_OBJ = \
     src/client/gpm_display_status.c \
     src/client/gpm_accept_sec_context.c \
@@ -115,6 +115,7 @@ GP_MECHGLUE_OBJ = \
 
 dist_noinst_HEADERS = \
     rpcgen/gp_rpc.h \
+    rpcgen/gp_xdr.h \
     rpcgen/gss_proxy.h \
     src/gp_rpc_process.h \
     src/gp_proxy.h \

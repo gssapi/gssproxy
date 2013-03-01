@@ -3,6 +3,7 @@
  * It was generated using rpcgen.
  */
 
+#include "rpcgen/gp_xdr.h"
 #include "rpcgen/gss_proxy.h"
 
 bool_t
