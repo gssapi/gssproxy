@@ -33,6 +33,8 @@ OM_uint32 gssi_mech_invoke(OM_uint32 *minor_status,
     enum gpp_behavior behavior;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     /* FIXME: implement remote invoke mech, only local for now */
     behavior = gpp_get_behavior();
     if (behavior == GPP_REMOTE_ONLY) {
@@ -67,6 +69,8 @@ OM_uint32 gssi_localname(OM_uint32 *minor_status, const gss_name_t name,
     struct gpp_name_handle *gpname;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     *minor_status = 0;
     if (name == GSS_C_NO_NAME) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -99,6 +103,8 @@ OM_uint32 gssi_authorize_localname(OM_uint32 *minor_status,
     struct gpp_name_handle *gpname;
     gss_name_t username = GSS_C_NO_NAME;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     *minor_status = 0;
     if (name == GSS_C_NO_NAME) {
@@ -135,6 +141,8 @@ OM_uint32 gssi_map_name_to_any(OM_uint32 *minor_status, gss_name_t name,
     struct gpp_name_handle *gpname;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     *minor_status = 0;
     if (name == GSS_C_NO_NAME) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -165,6 +173,8 @@ OM_uint32 gssi_release_any_name_mapping(OM_uint32 *minor_status,
 {
     struct gpp_name_handle *gpname;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     *minor_status = 0;
     if (name == GSS_C_NO_NAME) {

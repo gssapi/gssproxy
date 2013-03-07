@@ -83,6 +83,8 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
     OM_uint32 maj, min;
     OM_uint32 tmaj, tmin;
 
+    GSSI_TRACE();
+
     if (!output_cred_handle) {
         *minor_status = gpp_map_error(EINVAL);
         return GSS_S_FAILURE;
@@ -175,6 +177,8 @@ OM_uint32 gssi_add_cred(OM_uint32 *minor_status,
     OM_uint32 time_req, time_rec;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     if (!output_cred_handle) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
     }
@@ -249,6 +253,8 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
     struct gpp_cred_handle *out_cred_handle = NULL;
     gss_OID_set special_mechs;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     name = (struct gpp_name_handle *)desired_name;
 

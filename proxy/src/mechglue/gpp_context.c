@@ -35,6 +35,8 @@ OM_uint32 gssi_export_sec_context(OM_uint32 *minor_status,
     gss_buffer_desc output_token;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx = (struct gpp_context_handle *)context_handle;
     if (!ctx) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -64,6 +66,7 @@ OM_uint32 gssi_import_sec_context(OM_uint32 *minor_status,
                                   gss_buffer_t interprocess_token,
                                   gss_ctx_id_t *context_handle)
 {
+    GSSI_TRACE();
     return GSS_S_UNAVAILABLE;
 }
 
@@ -77,6 +80,8 @@ OM_uint32 gssi_import_sec_context_by_mech(OM_uint32 *minor_status,
     gss_OID spmech;
     OM_uint32 maj, min = 0;
     uint32_t len;
+
+    GSSI_TRACE();
 
     ctx = calloc(1, sizeof(struct gpp_context_handle));
     if (!ctx) {
@@ -128,6 +133,8 @@ OM_uint32 gssi_process_context_token(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx = (struct gpp_context_handle *)context_handle;
     if (!ctx) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -152,6 +159,8 @@ OM_uint32 gssi_context_time(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     *minor_status = 0;
 
@@ -200,6 +209,8 @@ OM_uint32 gssi_inquire_context(OM_uint32 *minor_status,
     struct gpp_name_handle *t_name = NULL;
     gss_OID mech_oid;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     if (!context_handle) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -291,6 +302,8 @@ OM_uint32 gssi_inquire_sec_context_by_oid(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx = (struct gpp_context_handle *)context_handle;
     if (!ctx) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -317,6 +330,8 @@ OM_uint32 gssi_set_sec_context_option(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     if (context_handle) {
         ctx = (struct gpp_context_handle *)context_handle;
@@ -354,6 +369,8 @@ OM_uint32 gssi_delete_sec_context(OM_uint32 *minor_status,
     OM_uint32 maj, min;
     OM_uint32 rmaj = GSS_S_COMPLETE;
 
+    GSSI_TRACE();
+
     ctx = (struct gpp_context_handle *)*context_handle;
 
     *context_handle = GSS_C_NO_CONTEXT;
@@ -386,6 +403,8 @@ OM_uint32 gssi_pseudo_random(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     ctx = (struct gpp_context_handle *)context_handle;
     if (!ctx) {
