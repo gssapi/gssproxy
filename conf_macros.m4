@@ -219,3 +219,17 @@ AC_DEFUN([WITH_CC_PATH],
     AC_DEFINE_UNQUOTED(CCACHE_PATH, "$config_ccpath", [Where to store ccache files for gssproxy])
   ])
 
+AC_DEFUN([WITH_GSSIDEBUG],
+  [ AC_ARG_WITH([gssidebug],
+                [AC_HELP_STRING([--with-gssidebug],
+                                [Whether to build with interposer debugging support [no]]
+                               )
+                ],
+		[],
+                with_gssidebug=no
+               )
+    if test x"$with_gssidebug" = xyes; then
+        AC_DEFINE_UNQUOTED(GSSI_DEBUGGING, 1, [Build with interposer debugging support])
+    fi
+  ])
+

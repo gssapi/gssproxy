@@ -36,6 +36,8 @@ OM_uint32 gssi_wrap(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -67,6 +69,8 @@ OM_uint32 gssi_wrap_size_limit(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
@@ -100,6 +104,8 @@ OM_uint32 gssi_wrap_iov(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -131,6 +137,8 @@ OM_uint32 gssi_wrap_iov_length(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
@@ -165,6 +173,8 @@ OM_uint32 gssi_wrap_aead(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -197,6 +207,8 @@ OM_uint32 gssi_unwrap(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -227,6 +239,8 @@ OM_uint32 gssi_unwrap_iov(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
@@ -259,6 +273,8 @@ OM_uint32 gssi_unwrap_aead(OM_uint32 *minor_status,
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -289,6 +305,8 @@ OM_uint32 gssi_get_mic(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {
@@ -321,6 +339,8 @@ OM_uint32 gssi_verify_mic(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx_handle;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     ctx_handle = (struct gpp_context_handle *)context_handle;
     if (!ctx_handle) {

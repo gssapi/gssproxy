@@ -54,6 +54,26 @@ enum gpp_behavior {
     GPP_REMOTE_ONLY,
 };
 
+#ifdef GSSI_DEBUGGING
+
+#define GSSI_DEBUG(...) \
+do { \
+    fprintf(stderr, "GSSI %s:%d ", __FUNCTION__, __LINE__); \
+    fprintf(stderr, __VA_ARGS__); \
+    fflush(stderr); \
+} while(0);
+
+#define GSSI_TRACE(...) \
+do { \
+    fprintf(stderr, "GSSI %s:%d called\n", __FUNCTION__, __LINE__); \
+    fflush(stderr); \
+} while(0);
+
+#else
+#define GSSI_DEBUG(...)
+#define GSSI_TRACE(...)
+#endif /* GSSI_DEBUGGING */
+
 gss_OID_set gss_mech_interposer(gss_OID mech_type);
 enum gpp_behavior gpp_get_behavior(void);
 bool gpp_is_special_oid(const gss_OID mech_type);

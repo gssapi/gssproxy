@@ -126,6 +126,8 @@ OM_uint32 gssi_inquire_cred(OM_uint32 *minor_status,
     struct gpp_name_handle *gpname = NULL;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
         maj = gppint_get_def_creds(&min, gpp_get_behavior(), NULL,
                                    GSS_C_INITIATE, &cred);
@@ -183,6 +185,8 @@ OM_uint32 gssi_inquire_cred_by_mech(OM_uint32 *minor_status,
     struct gpp_name_handle *gpname = NULL;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
         maj = gppint_get_def_creds(&min, gpp_get_behavior(), NULL,
                                    GSS_C_INITIATE, &cred);
@@ -239,6 +243,8 @@ OM_uint32 gssi_inquire_cred_by_oid(OM_uint32 *minor_status,
     struct gpp_cred_handle *cred = NULL;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     *minor_status = 0;
     if (cred_handle == GSS_C_NO_CREDENTIAL) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -265,6 +271,8 @@ OM_uint32 gssi_set_cred_option(OM_uint32 *minor_status,
 {
     struct gpp_cred_handle *cred = NULL;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     *minor_status = 0;
     if (*cred_handle == GSS_C_NO_CREDENTIAL) {
@@ -295,6 +303,8 @@ OM_uint32 gssi_store_cred(OM_uint32 *minor_status,
     struct gpp_cred_handle *cred = NULL;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     *minor_status = 0;
     if (input_cred_handle == GSS_C_NO_CREDENTIAL) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -321,6 +331,8 @@ OM_uint32 gssi_release_cred(OM_uint32 *minor_status,
     struct gpp_cred_handle *cred;
     OM_uint32 maj, min;
     OM_uint32 rmaj = GSS_S_COMPLETE;
+
+    GSSI_TRACE();
 
     if (*cred_handle == GSS_C_NO_CREDENTIAL) {
         *minor_status = 0;
@@ -355,6 +367,8 @@ OM_uint32 gssi_export_cred(OM_uint32 *minor_status,
 {
     struct gpp_cred_handle *cred;
 
+    GSSI_TRACE();
+
     cred = (struct gpp_cred_handle *)cred_handle;
     if (!cred) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -373,6 +387,7 @@ OM_uint32 gssi_import_cred(OM_uint32 *minor_status,
                            gss_buffer_t token,
                            gss_cred_id_t *cred_handle)
 {
+    GSSI_TRACE();
     return GSS_S_UNAVAILABLE;
 }
 
@@ -386,6 +401,8 @@ OM_uint32 gssi_import_cred_by_mech(OM_uint32 *minor_status,
     gss_OID spmech;
     OM_uint32 maj, min = 0;
     uint32_t len;
+
+    GSSI_TRACE();
 
     cred = calloc(1, sizeof(struct gpp_cred_handle));
     if (!cred) {

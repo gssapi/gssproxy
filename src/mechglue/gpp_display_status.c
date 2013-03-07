@@ -34,6 +34,8 @@ OM_uint32 gssi_display_status(OM_uint32 *minor_status,
 {
     OM_uint32 maj, min, val;
 
+    GSSI_TRACE();
+
     /* This function is only ever called for minor status values */
     if (status_type != GSS_C_MECH_CODE) {
         return GSS_S_BAD_STATUS;

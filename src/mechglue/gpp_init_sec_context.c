@@ -89,6 +89,8 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
     OM_uint32 tmaj, tmin;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     if (target_name == GSS_C_NO_NAME) {
         return GSS_S_CALL_INACCESSIBLE_READ;
     }

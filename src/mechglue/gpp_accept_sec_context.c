@@ -44,6 +44,8 @@ OM_uint32 gssi_accept_sec_context(OM_uint32 *minor_status,
     struct gpp_name_handle *name = NULL;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     behavior = gpp_get_behavior();
 
     if (*context_handle) {

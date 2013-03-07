@@ -65,6 +65,7 @@ WITH_TEST_DIR
 WITH_MANPAGES
 WITH_XML_CATALOG
 WITH_SELINUX
+WITH_GSSIDEBUG
 
 m4_include([external/pkg.m4])
 m4_include([external/libpopt.m4])

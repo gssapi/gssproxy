@@ -33,6 +33,8 @@ OM_uint32 gssi_display_name(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -62,6 +64,8 @@ OM_uint32 gssi_display_name_ext(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -86,6 +90,7 @@ OM_uint32 gssi_import_name(OM_uint32 *minor_status,
                            gss_OID input_name_type,
                            gss_name_t *output_name)
 {
+    GSSI_TRACE();
     return GSS_S_UNAVAILABLE;
 }
 
@@ -97,6 +102,8 @@ OM_uint32 gssi_import_name_by_mech(OM_uint32 *minor_status,
 {
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
+
+    GSSI_TRACE();
 
     if (mech_type == GSS_C_NO_OID) {
         return GSS_S_CALL_INACCESSIBLE_READ;
@@ -144,6 +151,8 @@ OM_uint32 gssi_export_name(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -165,6 +174,8 @@ OM_uint32 gssi_export_name_composite(OM_uint32 *minor_status,
 {
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
+
+    GSSI_TRACE();
 
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
@@ -190,6 +201,8 @@ OM_uint32 gssi_duplicate_name(OM_uint32 *minor_status,
     struct gpp_name_handle *in_name;
     struct gpp_name_handle *out_name;
     OM_uint32 maj, min = 0;
+
+    GSSI_TRACE();
 
     in_name = (struct gpp_name_handle *)input_name;
     if (!in_name->local && !in_name->remote) {
@@ -239,6 +252,8 @@ OM_uint32 gssi_inquire_name(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -268,6 +283,8 @@ OM_uint32 gssi_release_name(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)*input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -294,6 +311,8 @@ OM_uint32 gssi_compare_name(OM_uint32 *minor_status,
     struct gpp_name_handle *gpname1;
     struct gpp_name_handle *gpname2;
     OM_uint32 maj, min = 0;
+
+    GSSI_TRACE();
 
     gpname1 = (struct gpp_name_handle *)name1;
     gpname2 = (struct gpp_name_handle *)name2;
@@ -349,6 +368,8 @@ OM_uint32 gssi_get_name_attribute(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -376,6 +397,8 @@ OM_uint32 gssi_set_name_attribute(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    GSSI_TRACE();
+
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {
         return GSS_S_BAD_NAME;
@@ -399,6 +422,8 @@ OM_uint32 gssi_delete_name_attribute(OM_uint32 *minor_status,
 {
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
+
+    GSSI_TRACE();
 
     name = (struct gpp_name_handle *)input_name;
     if (!name->local && !name->remote) {

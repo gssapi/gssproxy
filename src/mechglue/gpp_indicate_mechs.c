@@ -28,6 +28,7 @@
 /* This will never be called, added only for completeness */
 OM_uint32 gssi_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
 {
+    GSSI_TRACE();
     *minor_status = 0;
     return GSS_S_FAILURE;
 }
@@ -39,6 +40,8 @@ OM_uint32 gssi_inquire_names_for_mech(OM_uint32 *minor_status,
     enum gpp_behavior behavior;
     OM_uint32 tmaj, tmin;
     OM_uint32 maj, min;
+
+    GSSI_TRACE();
 
     behavior = gpp_get_behavior();
     tmaj = GSS_S_COMPLETE;
@@ -91,6 +94,8 @@ OM_uint32 gssi_inquire_attrs_for_mech(OM_uint32 *minor_status,
     OM_uint32 tmaj, tmin;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     behavior = gpp_get_behavior();
     tmaj = GSS_S_COMPLETE;
     tmin = 0;
@@ -142,6 +147,8 @@ OM_uint32 gssi_inquire_saslname_for_mech(OM_uint32 *minor_status,
     OM_uint32 tmaj, tmin;
     OM_uint32 maj, min;
 
+    GSSI_TRACE();
+
     behavior = gpp_get_behavior();
     tmaj = GSS_S_COMPLETE;
     tmin = 0;
@@ -191,6 +198,7 @@ OM_uint32 gssi_inquire_mech_for_saslname(OM_uint32 *minor_status,
                                          const gss_buffer_t sasl_mech_name,
                                          gss_OID *mech_type)
 {
+    GSSI_TRACE();
     /* FIXME: How to call into mechglue ? */
     return GSS_S_UNAVAILABLE;
 }
