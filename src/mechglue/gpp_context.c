@@ -173,18 +173,17 @@ OM_uint32 gssi_context_time(OM_uint32 *minor_status,
      * mechanisms for which we can export/import the context */
     if (ctx->remote) {
         OM_uint32 lifetime;
-        long int t;
         maj = gpm_inquire_context(&min, ctx->remote, NULL, NULL,
                                   &lifetime, NULL, NULL, NULL, NULL);
         if (maj != GSS_S_COMPLETE) {
             *minor_status = gpp_map_error(min);
             return maj;
         }
-        t = lifetime - time(NULL);
-        if (t > 0) {
-            *time_rec = t;
+        if (lifetime > 0) {
+            *time_rec = lifetime;
             return GSS_S_COMPLETE;
         } else {
+            *time_rec = 0;
             return GSS_S_CONTEXT_EXPIRED;
         }
     } else if (ctx->local) {
