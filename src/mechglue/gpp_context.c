@@ -106,7 +106,7 @@ OM_uint32 gssi_import_sec_context_by_mech(OM_uint32 *minor_status,
         goto done;
     }
 
-    len = htobe32(wrap_token.length);
+    len = htobe32(spmech->length);
     memcpy(wrap_token.value, &len, sizeof(uint32_t));
     memcpy(wrap_token.value + sizeof(uint32_t),
            spmech->elements, spmech->length);
