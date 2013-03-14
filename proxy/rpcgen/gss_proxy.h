@@ -6,7 +6,7 @@
 #ifndef _GSS_PROXY_H_RPCGEN
 #define _GSS_PROXY_H_RPCGEN
 
-#include <rpc/rpc.h>
+#include <rpcgen/gp_xdr.h>
 
 
 #ifdef __cplusplus
