@@ -96,8 +96,6 @@ LIBS="$PTHREAD_LIBS $LIBS"
 LIBS="$PTHREAD_CFLAGS $CFLAGS"
 CC="$PTHREAD_CC"
 
-AC_CHECK_HEADERS([rpc/rpc.h],,[AC_MSG_ERROR([Could not find rpc headers])])
-
 AC_CHECK_HEADERS([gssapi/gssapi.h],,[AC_MSG_ERROR([Could not find GSSAPI headers])])
 AC_PATH_PROG(KRB5_CONFIG, krb5-config, failed)
 if test x$KRB5_CONFIG = xfailed; then
@@ -115,6 +113,13 @@ AC_CHECK_LIB(gssapi_krb5, gss_export_cred,,
 
 AC_SUBST([GSSAPI_CFLAGS])
 AC_SUBST([GSSAPI_LIBS])
+
+AC_CHECK_HEADERS([gssrpc/rpc.h],,[AC_MSG_ERROR([Could not find GSSRPC headers])])
+GSSRPC_LIBS="-lgssrpc"
+AC_CHECK_LIB(gssrpc, gssrpc_xdrmem_create,,
+	     [AC_MSG_ERROR([Failed to find GSSRPC symbols])],
+	     [$GSSRPC_LIBS])
+AC_SUBST([GSSRPC_LIBS])
 
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
