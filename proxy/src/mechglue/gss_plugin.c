@@ -427,13 +427,48 @@ uint32_t gpp_wrap_sec_ctx_token(uint32_t *minor, gss_OID mech_type,
 uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
                                  gss_ctx_id_t *local_ctx)
 {
-    gss_buffer_desc buf;
-    uint32_t maj;
+    gss_buffer_desc wrap_token = {0};
+    gss_buffer_desc token;
+    gss_OID_desc mech;
+    uint32_t hlen, len;
+    uint32_t maj, min;
 
-    gp_conv_gssx_to_buffer(&(*remote_ctx)->exported_context_token, &buf);
+    gp_conv_gssx_to_buffer(&(*remote_ctx)->exported_context_token, &token);
 
-    maj = gss_import_sec_context(minor, &buf, local_ctx);
+    /* To get a local context we need to call import_sec_context with a token
+     * wrapping that uses the special mech oid. Otherwise the mechglue will
+     * give us back an interposed context. */
 
+    if (token.length <= sizeof(uint32_t)) {
+        return GSS_S_FAILURE;
+    }
+
+    memcpy(&len, token.value, sizeof(uint32_t));
+    mech.length = be32toh(len);
+
+    hlen = sizeof(uint32_t) + mech.length;
+    if (token.length <= hlen) {
+        return GSS_S_FAILURE;
+    }
+    mech.elements = malloc(mech.length);
+    if (!mech.elements) {
+        return GSS_S_FAILURE;
+    }
+    memcpy(mech.elements, token.value + sizeof(uint32_t), mech.length);
+
+    token.length -= hlen;
+    token.value += hlen;
+
+    maj = gpp_wrap_sec_ctx_token(&min, &mech, &token, &wrap_token);
+    if (maj != GSS_S_COMPLETE) {
+        free(mech.elements);
+        return maj;
+    }
+
+    maj = gss_import_sec_context(minor, &wrap_token, local_ctx);
+
+    free(mech.elements);
+    (void)gss_release_buffer(&min, &wrap_token);
     xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)(*remote_ctx));
     *remote_ctx = NULL;
     return maj;
