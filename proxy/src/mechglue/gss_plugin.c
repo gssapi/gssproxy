@@ -25,6 +25,7 @@
 
 #include "gss_plugin.h"
 #include <signal.h>
+#include <endian.h>
 #include <gssapi/gssapi_krb5.h>
 
 #define KRB5_OID_LEN 9
@@ -393,6 +394,34 @@ uint32_t gpp_unmap_error(uint32_t err)
         err -= MAP_ERROR_BASE;
     }
     return err;
+}
+
+uint32_t gpp_wrap_sec_ctx_token(uint32_t *minor, gss_OID mech_type,
+                                gss_buffer_t token, gss_buffer_t wrap_token)
+{
+    gss_OID spmech;
+    uint32_t len;
+
+    spmech = gpp_special_mech(mech_type);
+    if (spmech == GSS_C_NO_OID) {
+        return GSS_S_FAILURE;
+    }
+
+    wrap_token->length = sizeof(uint32_t) + spmech->length + token->length;
+    wrap_token->value = malloc(wrap_token->length);
+    if (!wrap_token->value) {
+        wrap_token->length = 0;
+        return GSS_S_FAILURE;
+    }
+
+    len = htobe32(spmech->length);
+    memcpy(wrap_token->value, &len, sizeof(uint32_t));
+    memcpy(wrap_token->value + sizeof(uint32_t),
+           spmech->elements, spmech->length);
+    memcpy(wrap_token->value + sizeof(uint32_t) + spmech->length,
+           token->value, token->length);
+
+    return GSS_S_COMPLETE;
 }
 
 uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
