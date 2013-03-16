@@ -81,6 +81,8 @@ const gss_OID gpp_special_mech(const gss_OID mech_type);
 gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs);
 uint32_t gpp_map_error(uint32_t err);
 uint32_t gpp_unmap_error(uint32_t err);
+uint32_t gpp_wrap_sec_ctx_token(uint32_t *minor, gss_OID mech_type,
+                                gss_buffer_t token, gss_buffer_t wrap_token);
 uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
                                  gss_ctx_id_t *local_ctx);
 uint32_t gpp_copy_oid(uint32_t *minor, gss_OID in, gss_OID *out);

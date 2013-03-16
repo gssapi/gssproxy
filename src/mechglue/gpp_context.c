@@ -24,7 +24,6 @@
 */
 
 #include "gss_plugin.h"
-#include <endian.h>
 #include <time.h>
 
 OM_uint32 gssi_export_sec_context(OM_uint32 *minor_status,
@@ -91,27 +90,11 @@ OM_uint32 gssi_import_sec_context_by_mech(OM_uint32 *minor_status,
 
     /* NOTE: it makes no sense to import a context remotely atm,
      * so we only handle the local case for now. */
-    spmech = gpp_special_mech(mech_type);
-    if (spmech == GSS_C_NO_OID) {
-        maj = GSS_S_FAILURE;
+    maj = gpp_wrap_sec_ctx_token(&min, mech_type,
+                                 interprocess_token, &wrap_token);
+    if (maj != GSS_S_COMPLETE) {
         goto done;
     }
-
-    wrap_token.length = sizeof(uint32_t) + spmech->length +
-                        interprocess_token->length;
-    wrap_token.value = malloc(wrap_token.length);
-    if (!wrap_token.value) {
-        wrap_token.length = 0;
-        maj = GSS_S_FAILURE;
-        goto done;
-    }
-
-    len = htobe32(spmech->length);
-    memcpy(wrap_token.value, &len, sizeof(uint32_t));
-    memcpy(wrap_token.value + sizeof(uint32_t),
-           spmech->elements, spmech->length);
-    memcpy(wrap_token.value + sizeof(uint32_t) + spmech->length,
-           interprocess_token->value, interprocess_token->length);
 
     maj = gss_import_sec_context(&min, &wrap_token, &ctx->local);
 
