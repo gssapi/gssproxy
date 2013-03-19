@@ -103,6 +103,9 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
+    /* special call to tell the Linux kernel gss-proxy is available */
+    init_proc_nfsd(gpctx->config);
+
     vctx = init_event_loop();
     if (!vctx) {
         return 1;
