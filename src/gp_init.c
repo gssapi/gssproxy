@@ -28,6 +28,9 @@
 #include <sys/stat.h>
 #include <locale.h>
 #include <signal.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 #include "gp_proxy.h"
 
 void init_server(bool daemonize)
@@ -130,3 +133,46 @@ verto_ctx *init_event_loop(void)
     return vctx;
 }
 
+void init_proc_nfsd(struct gp_config *cfg)
+{
+    char buf[] = "1";
+    bool enabled = false;
+    int fd, i, ret;
+
+    /* check first if any service enabled kernel support */
+    for (i = 0; i < cfg->num_svcs; i++) {
+        if (cfg->svcs[i]->kernel_nfsd == true) {
+            enabled = true;
+            break;
+        }
+    }
+
+    if (!enabled) {
+        return;
+    }
+
+    fd = open(LINUX_PROC_USE_GSS_PROXY_FILE, O_RDWR);
+    if (fd == -1) {
+        ret = errno;
+        GPDEBUG("Failed to open %s: %d (%s)\n",
+                LINUX_PROC_USE_GSS_PROXY_FILE,
+                ret, strerror(ret));
+        return;
+    }
+
+    ret = write(fd, buf, 1);
+    if (ret != 1) {
+        GPDEBUG("Failed to write to %s: %d (%s)\n",
+                LINUX_PROC_USE_GSS_PROXY_FILE,
+                ret, strerror(ret));
+        return;
+    }
+
+    ret = close(fd);
+    if (ret == -1) {
+        GPDEBUG("Failed to close %s: %d (%s)\n",
+                LINUX_PROC_USE_GSS_PROXY_FILE,
+                ret, strerror(ret));
+        return;
+    }
+}

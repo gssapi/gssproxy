@@ -34,6 +34,8 @@
 
 #define _(STRING) gettext(STRING)
 
+#define LINUX_PROC_USE_GSS_PROXY_FILE "/proc/net/rpc/use-gss-proxy"
+
 #define GP_CRED_KRB5    0x01
 
 struct gp_cred_krb5 {
@@ -48,6 +50,7 @@ struct gp_service {
     char *name;
     uid_t euid;
     bool trusted;
+    bool kernel_nfsd;
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
@@ -84,6 +87,7 @@ void free_config(struct gp_config *config);
 void init_server(bool daemonize);
 void fini_server(void);
 verto_ctx *init_event_loop(void);
+void init_proc_nfsd(struct gp_config *cfg);
 
 /* from gp_socket.c */
 int init_unix_socket(const char *file_name);

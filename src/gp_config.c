@@ -194,6 +194,13 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                 }
             }
 
+            value = get_char_value(dict, secname, "kernel_nfsd");
+            if (value != NULL) {
+                if (option_is_set(value)) {
+                    cfg->svcs[n]->kernel_nfsd = true;
+                }
+            }
+
             ret = setup_service_creds_handle(cfg->svcs[n]);
             if (ret) {
                 goto done;
