@@ -60,21 +60,21 @@ AC_DEFUN([WITH_PUBCONF_PATH],
     AC_DEFINE_UNQUOTED(PUBCONF_PATH, "$config_pubconfpath", [Where to store pubconf files for gssproxy])
   ])
 
-AC_DEFUN([WITH_PIPE_PATH],
-  [ AC_ARG_WITH([pipe-path],
-                [AC_HELP_STRING([--with-pipe-path=PATH],
-                                [Where to store pipe files for gssproxy interconnects [/var/lib/gssproxy/pipes]]
+AC_DEFUN([WITH_SOCKET_NAME],
+  [ AC_ARG_WITH([socket-name],
+                [AC_HELP_STRING([--with-socket-name=PATH],
+                                [Name of the GSS Proxy socket file [/var/run/gssproxy.sock]]
                                )
                 ]
                )
-    config_pipepath="\"VARDIR\"/lib/gssproxy/pipes"
-    pipepath="${localstatedir}/lib/gssproxy/pipes"
-    if test x"$with_pipe_path" != x; then
-        config_pipepath=$with_pipe_path
-        pipepath=$with_pipe_path
+    gp_socket_name="\"VARDIR\"/run/gssproxy.sock"
+    socketname="${localstatedir}/run/gssproxy.sock"
+    if test x"$with_socket_name" != x; then
+        gp_socket_name=$with_socket_name
+        socketname=$with_socket_name
     fi
-    AC_SUBST(pipepath)
-    AC_DEFINE_UNQUOTED(PIPE_PATH, "$config_pipepath", [Where to store pipe files for gssproxy interconnects])
+    AC_SUBST(socketname)
+    AC_DEFINE_UNQUOTED(GP_SOCKET_NAME, "$gp_socket_name", [The name of the GSS Proxy socket file])
   ])
 
 AC_DEFUN([WITH_INITSCRIPT],

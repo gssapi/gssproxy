@@ -31,8 +31,6 @@
 #include "gp_proxy.h"
 #include "iniparser.h"
 
-#define GP_SOCKET_NAME "gssproxy.socket"
-
 static void gp_service_free(struct gp_service *svc)
 {
     free(svc->name);
@@ -274,22 +272,6 @@ int load_config(struct gp_config *cfg)
         }
     }
 
-    tmpstr = iniparser_getstring(d, "gssproxy:socket", NULL);
-    if (tmpstr) {
-        cfg->socket_name = strdup(tmpstr);
-        if (!cfg->socket_name) {
-            ret = ENOMEM;
-            goto done;
-        }
-    } else {
-        ret = asprintf(&cfg->socket_name, "%s/%s",
-                        PIPE_PATH, GP_SOCKET_NAME);
-        if (ret == -1) {
-            ret = ENOMEM;
-            goto done;
-        }
-    }
-
     cfg->num_workers = iniparser_getint(d, "gssproxy:worker threads", 0);
 
     ret = load_services(cfg, d);
@@ -323,6 +305,12 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
         }
     }
 
+    cfg->socket_name = strdup(GP_SOCKET_NAME);
+    if (cfg->socket_name == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
     switch (opt_daemonize) {
     case 0:
         /* daemonize by default */
@@ -337,6 +325,12 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
     ret = load_config(cfg);
     if (ret) {
         GPDEBUG("Config file not found! Proceeding with defaults.");
+    }
+
+done:
+    if (ret) {
+        free_config(cfg);
+        cfg = NULL;
     }
 
     return cfg;

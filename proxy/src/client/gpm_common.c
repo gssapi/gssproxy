@@ -63,15 +63,11 @@ static void gpm_init_once(void)
     pthread_mutexattr_destroy(&attr);
 }
 
-#define GP_SOCKET_NAME "gssproxy.socket"
-
 static int get_pipe_name(struct gpm_ctx *gpmctx, char *name)
 {
     int ret;
 
-    /* TODO: get socket name from config file */
-
-    ret = snprintf(name, PATH_MAX, "%s/%s", PIPE_PATH, GP_SOCKET_NAME);
+    ret = snprintf(name, PATH_MAX, "%s", GP_SOCKET_NAME);
     if (ret < 0 || ret >= PATH_MAX) {
         return ENAMETOOLONG;
     }
