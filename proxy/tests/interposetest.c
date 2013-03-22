@@ -198,12 +198,16 @@ static int setup_gssproxy_behavior(int proxy_mode)
 {
     const char *env;
 
+    if (getenv(GSSPROXY_BEHAVIOR_ENV)) {
+        return 0;
+    }
+
     env = lookup_gssproxy_behavior(proxy_mode);
     if (env == NULL) {
         return -1;
     }
 
-    return setenv("GSSPROXY_BEHAVIOR", env, 0);
+    return setenv(GSSPROXY_BEHAVIOR_ENV, env, 0);
 }
 
 struct aproc {
@@ -893,6 +897,7 @@ int main(int argc, const char *argv[])
     int opt;
     poptContext pc;
     int opt_version = 0;
+    int opt_all = 0;
     char *opt_target = NULL;
     int ret, i, k;
 
@@ -902,6 +907,8 @@ int main(int argc, const char *argv[])
          _("Specify the target name used for the tests"), NULL}, \
         {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
          _("Print version number and exit"), NULL }, \
+        {"all", '\0', POPT_ARG_NONE, &opt_all, 0, \
+         _("Test all gssproxy modes"), NULL }, \
         POPT_TABLEEND
     };
 
@@ -925,6 +932,12 @@ int main(int argc, const char *argv[])
         fprintf(stderr, "Missing target!\n");
         poptPrintUsage(pc, stderr, 0);
         return 1;
+    }
+
+    if (!opt_all) {
+            return run_cli_srv_test(PROXY_LOCAL_ONLY,
+                                    PROXY_LOCAL_ONLY,
+                                    opt_target);
     }
 
     for (i=0; i<4; i++) {
