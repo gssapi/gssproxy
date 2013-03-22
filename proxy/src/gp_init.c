@@ -31,6 +31,8 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdio.h>
 #include "gp_proxy.h"
 
 void init_server(bool daemonize)
@@ -173,6 +175,37 @@ void init_proc_nfsd(struct gp_config *cfg)
         GPDEBUG("Failed to close %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
                 ret, strerror(ret));
+        return;
+    }
+}
+
+void write_pid(void)
+{
+    pid_t pid;
+    FILE *f;
+    int ret;
+
+    pid = getpid();
+
+    f = fopen(GP_PID_FILE, "w");
+    if (!f) {
+        ret = errno;
+        GPDEBUG("Failed to open %s: %d (%s)\n",
+                GP_PID_FILE, ret, strerror(ret));
+        return;
+    }
+
+    ret = fprintf(f, "%d\n", pid);
+    if (ret < 0) {
+        GPDEBUG("Failed to write pid to %s\n", GP_PID_FILE);
+        fclose(f);
+        return;
+    }
+
+    ret = fclose(f);
+    if (ret != 0) {
+        GPDEBUG("Failed to close %s: %d (%s)\n"
+                GP_PID_FILE, ret, strerror(ret));
         return;
     }
 }

@@ -9,23 +9,6 @@ AC_DEFUN([WITH_DISTRO_VERSION],
                            [Distro version number])
   ])
 
-AC_DEFUN([WITH_PID_PATH],
-  [ AC_ARG_WITH([pid-path],
-                [AC_HELP_STRING([--with-pid-path=PATH],
-                                [Where to store pid files for gssproxy [/var/run]]
-                               )
-                ]
-               )
-    config_pidpath="\"VARDIR\"/run"
-    pidpath="${localstatedir}/run"
-    if test x"$with_pid_path" != x; then
-        config_pidpath=$with_pid_path
-        pidpath=$with_pid_path
-    fi
-    AC_SUBST(pidpath)
-    AC_DEFINE_UNQUOTED(PID_PATH, "$config_pidpath", [Where to store pid files for gssproxy])
-  ])
-
 AC_DEFUN([WITH_LOG_PATH],
   [ AC_ARG_WITH([log-path],
                 [AC_HELP_STRING([--with-log-path=PATH],
@@ -75,6 +58,23 @@ AC_DEFUN([WITH_SOCKET_NAME],
     fi
     AC_SUBST(socketname)
     AC_DEFINE_UNQUOTED(GP_SOCKET_NAME, "$gp_socket_name", [The name of the GSS Proxy socket file])
+  ])
+
+AC_DEFUN([WITH_PID_FILE],
+  [ AC_ARG_WITH([pid-file],
+                [AC_HELP_STRING([--with-id-file=PATH],
+                                [Name of the GSS Proxy pid file [/var/run/gssproxy.pid]]
+                               )
+                ]
+               )
+    gp_pid_file="\"VARDIR\"/run/gssproxy.pid"
+    pidfile="${localstatedir}/run/gssproxy.pid"
+    if test x"$with_pid_file" != x; then
+        gp_pid_file=$with_pid_file
+        pidfile=$with_pid_file
+    fi
+    AC_SUBST(pidfile)
+    AC_DEFINE_UNQUOTED(GP_PID_FILE, "$gp_pid_file", [The name of the GSS Proxy pid file])
   ])
 
 AC_DEFUN([WITH_INITSCRIPT],
