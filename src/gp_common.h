@@ -26,6 +26,7 @@
 #ifndef _GP_COMMON_H_
 #define _GP_COMMON_H_
 
+#include "config.h"
 #include "gp_debug.h"
 #include "gp_log.h"
 

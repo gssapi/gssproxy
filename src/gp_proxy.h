@@ -88,6 +88,7 @@ void init_server(bool daemonize);
 void fini_server(void);
 verto_ctx *init_event_loop(void);
 void init_proc_nfsd(struct gp_config *cfg);
+void write_pid(void);
 
 /* from gp_socket.c */
 int init_unix_socket(const char *file_name);
