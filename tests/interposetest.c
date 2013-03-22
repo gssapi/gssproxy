@@ -174,6 +174,38 @@ done:
 #define PROXY_REMOTE_FIRST 2
 #define PROXY_REMOTE_ONLY 3
 
+#define GSSPROXY_BEHAVIOR_ENV "GSSPROXY_BEHAVIOR"
+
+static const char *lookup_gssproxy_behavior(int proxy_mode)
+{
+    switch(proxy_mode) {
+    case PROXY_LOCAL_ONLY:
+        return "LOCAL_ONLY";
+    case PROXY_LOCAL_FIRST:
+        return "LOCAL_FIRST";
+    case PROXY_REMOTE_FIRST:
+        return "REMOTE_FIRST";
+    case PROXY_REMOTE_ONLY:
+        return "REMOTE_ONLY";
+    default:
+        break;
+    }
+
+    return NULL;
+}
+
+static int setup_gssproxy_behavior(int proxy_mode)
+{
+    const char *env;
+
+    env = lookup_gssproxy_behavior(proxy_mode);
+    if (env == NULL) {
+        return -1;
+    }
+
+    return setenv("GSSPROXY_BEHAVIOR", env, 0);
+}
+
 struct aproc {
     int proxy_type;
     int *cli_pipe;
@@ -199,6 +231,13 @@ void run_client(struct aproc *data)
     gss_iov_buffer_desc iov[2];
     int sealed;
     uint32_t max_size = 0;
+
+    ret = setup_gssproxy_behavior(data->proxy_type);
+    if (ret) {
+        goto done;
+    }
+
+    DEBUG("%s behavior: %s\n", actor, getenv(GSSPROXY_BEHAVIOR_ENV));
 
     target_buf.value = (void *)data->target;
     target_buf.length = strlen(data->target) + 1;
@@ -449,6 +488,13 @@ void run_server(struct aproc *data)
     int ret = -1;
     gss_iov_buffer_desc iov[2];
     int sealed;
+
+    ret = setup_gssproxy_behavior(data->proxy_type);
+    if (ret) {
+        goto done;
+    }
+
+    DEBUG("%s behavior: %s\n", actor, getenv(GSSPROXY_BEHAVIOR_ENV));
 
     const_buf.value = (void *)data->target;
     const_buf.length = strlen(data->target) + 1;
@@ -738,12 +784,10 @@ done:
     exit(ret);
 }
 
-int main(int argc, const char *argv[])
+static int run_cli_srv_test(int server_proxy_type,
+                            int client_proxy_type,
+                            char *target)
 {
-    int opt;
-    poptContext pc;
-    int opt_version = 0;
-    char *opt_target = NULL;
     int srv_pipe[2];
     int cli_pipe[2];
     struct aproc client, server;
@@ -752,37 +796,6 @@ int main(int argc, const char *argv[])
     int options;
     int status;
     int ret;
-
-    struct poptOption long_options[] = {
-        POPT_AUTOHELP
-        {"target", 't', POPT_ARG_STRING, &opt_target, 0, \
-         _("Specify the target name used for the tests"), NULL}, \
-        {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
-         _("Print version number and exit"), NULL }, \
-        POPT_TABLEEND
-    };
-
-    pc = poptGetContext(argv[0], argc, argv, long_options, 0);
-    while((opt = poptGetNextOpt(pc)) != -1) {
-        switch(opt) {
-        default:
-            fprintf(stderr, "\nInvalid option %s: %s\n\n",
-                    poptBadOption(pc, 0), poptStrerror(opt));
-            poptPrintUsage(pc, stderr, 0);
-            return 1;
-        }
-    }
-
-    if (opt_version) {
-        puts(VERSION""DISTRO_VERSION""PRERELEASE_VERSION);
-        return 0;
-    }
-
-    if (opt_target == NULL) {
-        fprintf(stderr, "Missing target!\n");
-        poptPrintUsage(pc, stderr, 0);
-        return 1;
-    }
 
     ret = pipe(srv_pipe);
     if (ret) {
@@ -796,10 +809,10 @@ int main(int argc, const char *argv[])
     srv = -1;
     cli = -1;
 
-    server.proxy_type = PROXY_LOCAL_ONLY;
+    server.proxy_type = server_proxy_type;
     server.srv_pipe = srv_pipe;
     server.cli_pipe = cli_pipe;
-    server.target = opt_target;
+    server.target = target;
 
     srv = fork();
     switch (srv) {
@@ -816,10 +829,10 @@ int main(int argc, const char *argv[])
         break;
     }
 
-    client.proxy_type = PROXY_LOCAL_ONLY;
+    client.proxy_type = client_proxy_type;
     client.srv_pipe = srv_pipe;
     client.cli_pipe = cli_pipe;
-    client.target = opt_target;
+    client.target = target;
 
     cli = fork();
     switch (cli) {
@@ -876,3 +889,45 @@ done:
     return ret;
 }
 
+int main(int argc, const char *argv[])
+{
+    int opt;
+    poptContext pc;
+    int opt_version = 0;
+    char *opt_target = NULL;
+
+    struct poptOption long_options[] = {
+        POPT_AUTOHELP
+        {"target", 't', POPT_ARG_STRING, &opt_target, 0, \
+         _("Specify the target name used for the tests"), NULL}, \
+        {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
+         _("Print version number and exit"), NULL }, \
+        POPT_TABLEEND
+    };
+
+    pc = poptGetContext(argv[0], argc, argv, long_options, 0);
+    while((opt = poptGetNextOpt(pc)) != -1) {
+        switch(opt) {
+        default:
+            fprintf(stderr, "\nInvalid option %s: %s\n\n",
+                    poptBadOption(pc, 0), poptStrerror(opt));
+            poptPrintUsage(pc, stderr, 0);
+            return 1;
+        }
+    }
+
+    if (opt_version) {
+        puts(VERSION""DISTRO_VERSION""PRERELEASE_VERSION);
+        return 0;
+    }
+
+    if (opt_target == NULL) {
+        fprintf(stderr, "Missing target!\n");
+        poptPrintUsage(pc, stderr, 0);
+        return 1;
+    }
+
+    return run_cli_srv_test(PROXY_LOCAL_ONLY,
+                            PROXY_LOCAL_ONLY,
+                            opt_target);
+}
