@@ -895,6 +895,7 @@ int main(int argc, const char *argv[])
     poptContext pc;
     int opt_version = 0;
     char *opt_target = NULL;
+    int ret, i, k;
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
@@ -927,7 +928,19 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    return run_cli_srv_test(PROXY_LOCAL_ONLY,
-                            PROXY_LOCAL_ONLY,
-                            opt_target);
+    for (i=0; i<4; i++) {
+        for (k=0; k<4; k++) {
+            ret = run_cli_srv_test(i, k, opt_target);
+            fprintf(stderr, "Running test with server proxy mode %s "
+                    "and client proxy mode %s %s\n",
+                    lookup_gssproxy_behavior(i),
+                    lookup_gssproxy_behavior(k),
+                    ret ? "failed" : "succeeded");
+            if (ret) {
+                return ret;
+            }
+        }
+    }
+
+    return ret;
 }
