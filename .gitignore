@@ -39,3 +39,4 @@ cli_srv_conn
 cli_srv_comm
 gssproxy.spec
 interposetest
+gssproxy.service
