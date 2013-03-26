@@ -115,6 +115,7 @@ static char *gp_get_ccache_name(struct gp_service *svc,
     char *ccache;
     char *tmp;
     char *p;
+    int len, left, right;
     int ret;
 
     if (svc->krb5.ccache == NULL) {
@@ -125,7 +126,8 @@ static char *gp_get_ccache_name(struct gp_service *svc,
 
         ret = asprintf(&ccache, "%s/krb5cc_%s", CCACHE_PATH, pwd.pw_name);
         if (ret == -1) {
-            return NULL;
+            ccache = NULL;
+            goto done;
         }
 
         return ccache;
@@ -133,40 +135,61 @@ static char *gp_get_ccache_name(struct gp_service *svc,
 
     ccache = strdup(svc->krb5.ccache);
     if (!ccache) {
-        return NULL;
+        goto done;
     }
+    len = strlen(ccache);
 
     p = ccache;
     while ((p = strchr(p, '%')) != NULL) {
         p++;
         switch (*p) {
         case '%':
-            p++;
+            left = p - ccache;
+            memmove(p, p + 1, left - 1);
+            len--;
             continue;
+        case 'U':
+            p++;
+            left = p - ccache;
+            right = len - left;
+            len = asprintf(&tmp, "%.*s%d%s", left - 2, ccache, svc->euid, p);
+            safefree(ccache);
+            if (len == -1) {
+                goto done;
+            }
+            ccache = tmp;
+            p = ccache + (len - right);
+            break;
         case 'u':
             if (!res) {
                 ret = getpwuid_r(svc->euid, &pwd, buffer, 2048, &res);
                 if (ret || !res) {
-                    free(ccache);
-                    return NULL;
+                    safefree(ccache);
+                    goto done;
                 }
             }
-            ret = asprintf(&tmp, "%.*s%s%s",
-                            (int)(p - ccache - 1), ccache, pwd.pw_name,  p + 1);
-            if (ret == -1) {
-                free(ccache);
-                return NULL;
+            p++;
+            left = p - ccache;
+            right = len - left;
+            len = asprintf(&tmp, "%.*s%s%s", left - 2, ccache, pwd.pw_name, p);
+            safefree(ccache);
+            if (len == -1) {
+                goto done;
             }
-            p = p - ccache + tmp;
-            free(ccache);
             ccache = tmp;
+            p = ccache + (len - right);
             break;
         default:
-            p++;
-            continue;
+            GPDEBUG("Invalid format code '%%%c'\n", *p);
+            safefree(ccache);
+            goto done;
         }
     }
 
+done:
+    if (!ccache) {
+        GPDEBUG("Failed to construct ccache string.\n");
+    }
     return ccache;
 }
 
