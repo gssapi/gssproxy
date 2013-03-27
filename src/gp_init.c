@@ -204,7 +204,7 @@ void write_pid(void)
 
     ret = fclose(f);
     if (ret != 0) {
-        GPDEBUG("Failed to close %s: %d (%s)\n"
+        GPDEBUG("Failed to close %s: %d (%s)\n",
                 GP_PID_FILE, ret, strerror(ret));
         return;
     }
