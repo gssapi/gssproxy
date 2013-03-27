@@ -304,6 +304,42 @@ done:
     return ret_maj;
 }
 
+#define KRB5_SET_ALLOWED_ENCTYPE "krb5_set_allowed_enctype_values"
+
+static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
+{
+    struct gssx_cred_element *ce;
+    struct gssx_option *op;
+    uint32_t num_ktypes = 0;
+    krb5_enctype *ktypes;
+    uint32_t maj, min;
+    int i, j;
+
+    for (i = 0; i < cred->elements.elements_len; i++) {
+        ce = &cred->elements.elements_val[i];
+        for (j = 0; j < ce->options.options_len; j++) {
+            op = &ce->options.options_val[j];
+            if ((op->option.octet_string_len ==
+                    sizeof(KRB5_SET_ALLOWED_ENCTYPE)) &&
+                (strncmp(KRB5_SET_ALLOWED_ENCTYPE,
+                         op->option.octet_string_val,
+                         op->option.octet_string_len) == 0)) {
+                num_ktypes = op->value.octet_string_len / sizeof(krb5_enctype);
+                ktypes = (krb5_enctype *)op->value.octet_string_val;
+                break;
+            }
+        }
+    }
+
+    if (num_ktypes) {
+        maj = gss_krb5_set_allowable_enctypes(&min, gss_cred,
+                                              num_ktypes, ktypes);
+        if (maj != GSS_S_COMPLETE) {
+            GPDEBUG("Failed to set allowable enctypes\n");
+        }
+    }
+}
+
 uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_service *svc,
                              gssx_cred *cred, gss_cred_id_t *out)
 {
@@ -338,6 +374,9 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_service *svc,
     }
 
     ret_maj = gss_import_cred(&ret_min, &token, out);
+
+    /* check if there is any client option we need to set on credentials */
+    gp_set_cred_options(cred, *out);
 
 done:
     *min = ret_min;
