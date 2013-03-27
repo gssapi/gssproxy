@@ -86,6 +86,7 @@ uint32_t gpp_wrap_sec_ctx_token(uint32_t *minor, gss_OID mech_type,
 uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
                                  gss_ctx_id_t *local_ctx);
 uint32_t gpp_copy_oid(uint32_t *minor, gss_OID in, gss_OID *out);
+bool gpp_is_krb5_oid(const gss_OID mech);
 uint32_t gpp_name_to_local(uint32_t *minor, gssx_name *name,
                            gss_OID mech_type, gss_name_t *mech_name);
 uint32_t gpp_local_to_name(uint32_t *minor,
