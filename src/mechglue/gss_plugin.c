@@ -560,3 +560,17 @@ uint32_t gpp_copy_oid(uint32_t *minor, gss_OID in, gss_OID *out)
     *minor = 0;
     return GSS_S_COMPLETE;
 }
+
+bool gpp_is_krb5_oid(const gss_OID mech)
+{
+    if (gss_oid_equal(&gpoid_krb5, mech)) {
+        return true;
+    } else if (gss_oid_equal(&gpoid_krb5_old, mech)) {
+        return true;
+    } else if (gss_oid_equal(&gpoid_krb5_wrong, mech)) {
+        return true;
+    } else if (gss_oid_equal(&gpoid_iakerb, mech)) {
+        return true;
+    }
+    return false;
+}
