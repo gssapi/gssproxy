@@ -24,6 +24,7 @@
 */
 
 #include "gss_plugin.h"
+#include <gssapi/gssapi_krb5.h>
 
 static OM_uint32 get_local_def_creds(OM_uint32 *minor_status,
                                      struct gpp_name_handle *name,
@@ -264,6 +265,91 @@ OM_uint32 gssi_inquire_cred_by_oid(OM_uint32 *minor_status,
     return maj;
 }
 
+#define GSS_KRB5_SET_ALLOWABLE_ENCTYPES_OID_LENGTH 11
+#define GSS_KRB5_SET_ALLOWABLE_ENCTYPES_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x04"
+
+const gss_OID_desc gpp_allowed_enctypes_oid = {
+    .length = GSS_KRB5_SET_ALLOWABLE_ENCTYPES_OID_LENGTH,
+    .elements = GSS_KRB5_SET_ALLOWABLE_ENCTYPES_OID
+};
+
+struct gpp_allowable_enctypes {
+    uint32_t num_ktypes;
+    krb5_enctype *ktypes;
+};
+
+#define KRB5_SET_ALLOWED_ENCTYPE "krb5_set_allowed_enctype_values"
+
+static uint32_t gpp_set_opt_allowable_entypes(uint32_t *min, gssx_cred *cred,
+                                              const gss_buffer_t value)
+{
+    struct gpp_allowable_enctypes *ae;
+    struct gssx_cred_element *ce = NULL;
+    gss_OID_desc mech;
+    gssx_option *to;
+    gssx_buffer *tb;
+    int i;
+
+    /* Find the first element that matches one of the krb related OIDs */
+    for (i = 0; i < cred->elements.elements_len; i++) {
+        gp_conv_gssx_to_oid(&cred->elements.elements_val[i].mech, &mech);
+        if (gpp_is_krb5_oid(&mech)) {
+            ce = &cred->elements.elements_val[i];
+            break;
+        }
+    }
+
+    if (!ce) {
+        *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    to = realloc(ce->options.options_val,
+                 sizeof(gssx_option) * (ce->options.options_len + 1));
+    if (!to) {
+        *min = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+    ce->options.options_val = to;
+    i = ce->options.options_len;
+
+    tb = &ce->options.options_val[i].option;
+    tb->octet_string_len = sizeof(KRB5_SET_ALLOWED_ENCTYPE);
+    tb->octet_string_val = strdup(KRB5_SET_ALLOWED_ENCTYPE);
+    if (!tb->octet_string_val) {
+        *min = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+
+    ae = (struct gpp_allowable_enctypes *)value->value;
+    tb = &ce->options.options_val[i].value;
+    tb->octet_string_len = sizeof(krb5_enctype) * ae->num_ktypes;
+    tb->octet_string_val = malloc(tb->octet_string_len);
+    if (!tb->octet_string_val) {
+        *min = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+    memcpy(tb->octet_string_val, ae->ktypes, tb->octet_string_len);
+
+    ce->options.options_len++;
+
+    *min = 0;
+    return GSS_S_COMPLETE;
+}
+
+static uint32_t gpp_remote_options(uint32_t *min, gssx_cred *cred,
+                                   const gss_OID desired_object,
+                                   const gss_buffer_t value)
+{
+    uint32_t maj  = GSS_S_UNAVAILABLE;
+
+    if (gss_oid_equal(&gpp_allowed_enctypes_oid, desired_object)) {
+        maj = gpp_set_opt_allowable_entypes(min, cred, value);
+    }
+
+    return maj;
+}
+
 OM_uint32 gssi_set_cred_option(OM_uint32 *minor_status,
                                gss_cred_id_t *cred_handle,
                                const gss_OID desired_object,
@@ -280,7 +366,12 @@ OM_uint32 gssi_set_cred_option(OM_uint32 *minor_status,
     }
     cred = (struct gpp_cred_handle *)*cred_handle;
 
-    /* NOTE: For now we can do this only for local credentials */
+    /* NOTE: For now we can do this only for known objects
+     * or local credentials */
+    if (cred->remote) {
+        return gpp_remote_options(minor_status, cred->remote,
+                                  desired_object, value);
+    }
     if (!cred->local) {
         return GSS_S_UNAVAILABLE;
     }
