@@ -36,7 +36,6 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     uint32_t ret_maj;
     uint32_t ret_min;
     gss_cred_id_t in_cred = GSS_C_NO_CREDENTIAL;
-    gss_name_t desired_name = GSS_C_NO_NAME;
     gss_OID_set desired_mechs = GSS_C_NO_OID_SET;
     gss_OID_set use_mechs = GSS_C_NO_OID_SET;
     gss_OID desired_mech = GSS_C_NO_OID;
@@ -61,14 +60,6 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
         add_out_cred = &in_cred;
     } else {
         add_out_cred = &out_cred;
-    }
-
-    if (aca->desired_name) {
-        ret_maj = gp_conv_gssx_to_name(&ret_min,
-                                       aca->desired_name, &desired_name);
-        if (ret_maj) {
-            goto done;
-        }
     }
 
     ret = gp_conv_gssx_to_oid_set(&aca->desired_mechs, &desired_mechs);
@@ -125,7 +116,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
             ret_maj = gp_add_krb5_creds(&ret_min,
                                         gpsvc,
                                         in_cred,
-                                        desired_name,
+                                        aca->desired_name,
                                         cred_usage,
                                         aca->initiator_time_req,
                                         aca->acceptor_time_req,
@@ -137,20 +128,9 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
                 goto done;
             }
         } else {
-            ret_maj = gss_add_cred(&ret_min,
-                                   in_cred,
-                                   desired_name,
-                                   desired_mech,
-                                   cred_usage,
-                                   aca->initiator_time_req,
-                                   aca->acceptor_time_req,
-                                   add_out_cred,
-                                   NULL,
-                                   NULL,
-                                   NULL);
-            if (ret_maj) {
-                goto done;
-            }
+            /* we support only the krb5 mech for now */
+            ret_maj = GSS_S_BAD_MECH;
+            goto done;
         }
     }
 
