@@ -120,23 +120,25 @@ OM_uint32 gssi_import_name_by_mech(OM_uint32 *minor_status,
         goto done;
     }
 
-    /* by default import as local name, will convert to remote if necessary */
-    maj = gss_import_name(&min,
+    /* Alays use remote name by default, otherwise canonicalization
+     * will loose information about the original name, for example
+     * it will convert names of the special type GSS_C_NT_STRING_UID_NAME
+     * or GSS_NT_MACHINE_UID_NAME in a non reversible way and the proxy
+     * will not be a le to use them as intended (for impersonation by
+     * trusted services) */
+    maj = gpm_import_name(&min,
                           input_name_buffer,
                           input_name_type,
-                          &name->local);
+                          &name->remote);
     if (maj != GSS_S_COMPLETE) {
         goto done;
     }
-
-    maj = gss_canonicalize_name(&min, name->local,
-                                gpp_special_mech(name->mech_type), NULL);
 
 done:
     *minor_status = gpp_map_error(min);
     if (maj != GSS_S_COMPLETE) {
         (void)gss_release_oid(&min, &name->mech_type);
-        (void)gss_release_name(&min, &name->local);
+        (void)gpm_release_name(&min, &name->remote);
         free(name);
     } else {
         *output_name = (gss_name_t)name;
@@ -222,14 +224,14 @@ OM_uint32 gssi_duplicate_name(OM_uint32 *minor_status,
         }
     }
 
-    if (in_name->local) {
-        maj = gss_duplicate_name(&min,
-                                 in_name->local,
-                                 &out_name->local);
-    } else {
+    if (in_name->remote) {
         maj = gpm_duplicate_name(&min,
                                  in_name->remote,
                                  &out_name->remote);
+    } else {
+        maj = gss_duplicate_name(&min,
+                                 in_name->local,
+                                 &out_name->local);
     }
 
 done:
@@ -281,6 +283,7 @@ OM_uint32 gssi_release_name(OM_uint32 *minor_status,
                             gss_name_t *input_name)
 {
     struct gpp_name_handle *name;
+    uint32_t rmaj, rmin = 0;
     OM_uint32 maj, min = 0;
 
     GSSI_TRACE();
@@ -290,15 +293,19 @@ OM_uint32 gssi_release_name(OM_uint32 *minor_status,
         return GSS_S_BAD_NAME;
     }
 
+    rmaj = gpm_release_name(&rmin, &name->remote);
+
     if (name->local) {
         maj = gss_release_name(&min, &name->local);
-    } else {
-        maj = gpm_release_name(&min, &name->remote);
     }
 
     free(name);
     *input_name = GSS_C_NO_NAME;
 
+    if (rmaj && !maj) {
+        maj = rmaj;
+        min = rmin;
+    }
     *minor_status = gpp_map_error(min);
     return maj;
 }
