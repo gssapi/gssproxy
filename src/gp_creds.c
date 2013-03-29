@@ -34,6 +34,7 @@
 #include "gp_proxy.h"
 #include "gp_rpc_creds.h"
 #include "gp_creds.h"
+#include "gp_conv.h"
 
 #define GSS_MECH_KRB5_OID_LENGTH 9
 #define GSS_MECH_KRB5_OID "\052\206\110\206\367\022\001\002\002"
@@ -108,9 +109,15 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
 }
 
 static char *gp_get_ccache_name(struct gp_service *svc,
-                                gss_name_t desired_name)
+                                gssx_name *desired_name,
+                                gss_name_t *requested_name)
 {
+    gss_name_t name = GSS_C_NO_NAME;
+    gss_OID_desc name_type;
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
     char buffer[2048];
+    uid_t target_uid;
     struct passwd pwd, *res = NULL;
     char *ccache;
     char *tmp;
@@ -118,13 +125,26 @@ static char *gp_get_ccache_name(struct gp_service *svc,
     int len, left, right;
     int ret;
 
-    if (svc->krb5.ccache == NULL) {
-        ret = getpwuid_r(svc->euid, &pwd, buffer, 2048, &res);
-        if (ret || !res) {
-            return NULL;
-        }
+    target_uid = svc->euid;
 
-        ret = asprintf(&ccache, "%s/krb5cc_%s", CCACHE_PATH, pwd.pw_name);
+    if (desired_name) {
+        gp_conv_gssx_to_oid(&desired_name->name_type, &name_type);
+
+        if (svc->trusted &&
+            (gss_oid_equal(&name_type, GSS_C_NT_STRING_UID_NAME) ||
+             gss_oid_equal(&name_type, GSS_C_NT_MACHINE_UID_NAME))) {
+            target_uid = atol(desired_name->display_name.octet_string_val);
+        } else {
+            ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &name);
+            if (ret_maj) {
+                goto done;
+            }
+            *requested_name = name;
+        }
+    }
+
+    if (svc->krb5.ccache == NULL) {
+        ret = asprintf(&ccache, "%s/krb5cc_%u", CCACHE_PATH, target_uid);
         if (ret == -1) {
             ccache = NULL;
             goto done;
@@ -152,7 +172,7 @@ static char *gp_get_ccache_name(struct gp_service *svc,
             p++;
             left = p - ccache;
             right = len - left;
-            len = asprintf(&tmp, "%.*s%d%s", left - 2, ccache, svc->euid, p);
+            len = asprintf(&tmp, "%.*s%d%s", left - 2, ccache, target_uid, p);
             safefree(ccache);
             if (len == -1) {
                 goto done;
@@ -162,7 +182,7 @@ static char *gp_get_ccache_name(struct gp_service *svc,
             break;
         case 'u':
             if (!res) {
-                ret = getpwuid_r(svc->euid, &pwd, buffer, 2048, &res);
+                ret = getpwuid_r(target_uid, &pwd, buffer, 2048, &res);
                 if (ret || !res) {
                     safefree(ccache);
                     goto done;
@@ -196,7 +216,7 @@ done:
 uint32_t gp_add_krb5_creds(uint32_t *min,
                            struct gp_service *svc,
                            gss_cred_id_t in_cred,
-                           gss_name_t desired_name,
+                           gssx_name *desired_name,
                            gss_cred_usage_t cred_usage,
                            uint32_t initiator_time_req,
                            uint32_t acceptor_time_req,
@@ -214,6 +234,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     uint32_t discard;
+    gss_name_t req_name = GSS_C_NO_NAME;
 
     if (!min || !output_cred_handle) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -245,7 +266,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     }
 
     if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
-        ccache_name = gp_get_ccache_name(svc, desired_name);
+        ccache_name = gp_get_ccache_name(svc, desired_name, &req_name);
         if (!ccache_name) {
             ret_maj = GSS_S_CRED_UNAVAIL;
             goto done;
@@ -259,10 +280,6 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         }
 
         /* FIXME: initiate ? */
-    }
-
-    if (desired_name) {
-        /* FIXME: resolve principal name */
     }
 
     if (svc->krb5.keytab) {
