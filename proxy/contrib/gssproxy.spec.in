@@ -11,6 +11,7 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global servicename gssproxy
 %global pubconfpath %{_sysconfdir}/gssproxy
+%global gpstatedir %{_localstatedir}/lib/gssproxy
 
 ### Patches ###
 
@@ -79,6 +80,8 @@ rm -rf %{buildroot}
 %{_unitdir}/gssproxy.service
 %{_sbindir}/gssproxy
 %attr(755,root,root) %dir %{pubconfpath}
+%attr(700,root,root) %dir %{gpstatedir}
+%attr(700,root,root) %dir %{gpstatedir}/clients
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
 %{_libdir}/gssproxy/proxymech.so
 %{_mandir}/man5/gssproxy.conf.5*

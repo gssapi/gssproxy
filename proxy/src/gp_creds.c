@@ -176,17 +176,24 @@ done:
     return str;
 }
 
-static char *gp_get_ccache_name(struct gp_service *svc,
-                                gssx_name *desired_name,
-                                gss_name_t *requested_name)
+#define DEFAULT_CCACHE ""CCACHE_PATH"/krb5cc_%u"
+#define DEFAULT_CLIENT_KEYTAB ""VARDIR"lib/gssproxy/clients/%u.keytab"
+
+static int gp_get_cred_environment(struct gp_service *svc,
+                                   gssx_name *desired_name,
+                                   gss_name_t *requested_name, char **_ccache,
+                                   char **_client_keytab, char **_keytab)
 {
     gss_name_t name = GSS_C_NO_NAME;
     gss_OID_desc name_type;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     uid_t target_uid;
+    const char *fmtstr;
     char *ccache = NULL;
-    int ret;
+    char *client_keytab = NULL;
+    char *keytab = NULL;
+    int ret = 0;
 
     target_uid = svc->euid;
 
@@ -207,19 +214,45 @@ static char *gp_get_ccache_name(struct gp_service *svc,
     }
 
     if (svc->krb5.ccache == NULL) {
-        ret = asprintf(&ccache, "%s/krb5cc_%u", CCACHE_PATH, target_uid);
-        if (ret == -1) {
-            ccache = NULL;
-        }
+        fmtstr = DEFAULT_CCACHE;
     } else {
-        ccache = get_formatted_string(svc->krb5.ccache, target_uid);
+        fmtstr = svc->krb5.ccache;
     }
-
-done:
+    ccache = get_formatted_string(fmtstr, target_uid);
     if (!ccache) {
         GPDEBUG("Failed to construct ccache string.\n");
+        ret = ENOMEM;
+        goto done;
     }
-    return ccache;
+
+    if (svc->krb5.client_keytab == NULL) {
+        fmtstr = DEFAULT_CLIENT_KEYTAB;
+    } else {
+        fmtstr = svc->krb5.client_keytab;
+    }
+    client_keytab = get_formatted_string(fmtstr, target_uid);
+    if (!client_keytab) {
+        GPDEBUG("Failed to construct client_keytab string.\n");
+        ret = ENOMEM;
+        goto done;
+    }
+
+    if (svc->krb5.keytab != NULL) {
+        fmtstr = svc->krb5.keytab;
+        keytab = get_formatted_string(svc->krb5.ccache, target_uid);
+    }
+
+    *_ccache = ccache;
+    *_client_keytab = client_keytab;
+    *_keytab = keytab;
+
+done:
+    if (ret) {
+        free(ccache);
+        free(client_keytab);
+        free(keytab);
+    }
+    return ret;
 }
 
 uint32_t gp_add_krb5_creds(uint32_t *min,
@@ -234,7 +267,9 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
                            uint32_t *initiator_time_rec,
                            uint32_t *acceptor_time_rec)
 {
-    char *ccache_name;
+    char *ccache_name = NULL;
+    char *client_keytab = NULL;
+    char *keytab_name = NULL;
     krb5_context kctx;
     krb5_principal principal = NULL;
     krb5_keytab keytab = NULL;
@@ -274,13 +309,15 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         goto done;
     }
 
-    if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
-        ccache_name = gp_get_ccache_name(svc, desired_name, &req_name);
-        if (!ccache_name) {
-            ret_maj = GSS_S_CRED_UNAVAIL;
-            goto done;
-        }
+    ret_min = gp_get_cred_environment(svc, desired_name, &req_name,
+                                      &ccache_name, &client_keytab,
+                                      &keytab_name);
+    if (ret_min) {
+        ret_maj = GSS_S_CRED_UNAVAIL;
+        goto done;
+    }
 
+    if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
         kerr = krb5_cc_resolve(kctx, ccache_name, &ccache);
         if (kerr) {
             ret_maj = GSS_S_FAILURE;
@@ -291,8 +328,8 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         /* FIXME: initiate ? */
     }
 
-    if (svc->krb5.keytab) {
-        kerr = krb5_kt_resolve(kctx, svc->krb5.keytab, &keytab);
+    if (keytab_name) {
+        kerr = krb5_kt_resolve(kctx, keytab_name, &keytab);
         if (kerr != 0) {
             ret_maj = GSS_S_FAILURE;
             ret_min = kerr;
