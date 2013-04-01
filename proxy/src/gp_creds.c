@@ -270,15 +270,14 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     char *ccache_name = NULL;
     char *client_keytab = NULL;
     char *keytab_name = NULL;
-    krb5_context kctx;
-    krb5_principal principal = NULL;
-    krb5_keytab keytab = NULL;
-    krb5_ccache ccache = NULL;
-    krb5_error_code kerr;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     uint32_t discard;
     gss_name_t req_name = GSS_C_NO_NAME;
+    gss_OID_set_desc desired_mechs = { 1, &gp_mech_krb5 };
+    gss_key_value_element_desc cred_elems[3];
+    gss_key_value_set_desc cred_store;
+    int c;
 
     if (!min || !output_cred_handle) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -298,12 +297,6 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         return GSS_S_CRED_UNAVAIL;
     }
 
-    kerr = krb5_init_context(&kctx);
-    if (kerr != 0) {
-        *min = kerr;
-        return GSS_S_FAILURE;
-    }
-
     if (cred_usage == GSS_C_ACCEPT && svc->krb5.keytab == NULL) {
         ret_maj = GSS_S_CRED_UNAVAIL;
         goto done;
@@ -317,43 +310,30 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         goto done;
     }
 
-    if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
-        kerr = krb5_cc_resolve(kctx, ccache_name, &ccache);
-        if (kerr) {
-            ret_maj = GSS_S_FAILURE;
-            ret_min = kerr;
-            goto done;
-        }
-
-        /* FIXME: initiate ? */
+    cred_store.elements = cred_elems;
+    c = 0;
+    if (ccache_name) {
+        cred_elems[c].key = "ccache";
+        cred_elems[c].value = ccache_name;
+        c++;
     }
-
+    if (client_keytab) {
+        cred_elems[c].key = "client_keytab";
+        cred_elems[c].value = client_keytab;
+        c++;
+    }
     if (keytab_name) {
-        kerr = krb5_kt_resolve(kctx, keytab_name, &keytab);
-        if (kerr != 0) {
-            ret_maj = GSS_S_FAILURE;
-            ret_min = kerr;
-            goto done;
-        }
+        cred_elems[c].key = "keytab";
+        cred_elems[c].value = keytab_name;
+        c++;
     }
+    cred_store.count = c;
 
-    ret_maj = gss_krb5_import_cred(&ret_min,
-                                   ccache, principal, keytab,
-                                   output_cred_handle);
+    ret_maj = gss_acquire_cred_from(&ret_min, req_name, GSS_C_INDEFINITE,
+                                    &desired_mechs, cred_usage, &cred_store,
+                                    output_cred_handle, actual_mechs, NULL);
     if (ret_maj) {
         goto done;
-    }
-
-    if (actual_mechs) {
-        ret_maj = gss_create_empty_oid_set(&ret_min, actual_mechs);
-        if (ret_maj) {
-            goto done;
-        }
-        ret_maj = gss_add_oid_set_member(&ret_min,
-                                         &gp_mech_krb5, actual_mechs);
-        if (ret_maj) {
-            goto done;
-        }
     }
 
     if (initiator_time_rec || acceptor_time_rec) {
@@ -379,13 +359,6 @@ done:
         }
     }
     *min = ret_min;
-    if (ccache) {
-        krb5_cc_close(kctx, ccache);
-    }
-    if (keytab) {
-        krb5_kt_close(kctx, keytab);
-    }
 
-    krb5_free_context(kctx);
     return ret_maj;
 }
