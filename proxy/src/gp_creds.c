@@ -108,6 +108,74 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
     return NULL;
 }
 
+#define PWBUFLEN 2048
+static char *get_formatted_string(const char *orig, uid_t target_uid)
+{
+    struct passwd pwd, *res = NULL;
+    char buffer[PWBUFLEN];
+    int len, left, right;
+    char *str;
+    char *tmp;
+    char *p;
+    int ret;
+
+    str = strdup(orig);
+    if (!str) {
+        return NULL;
+    }
+    len = strlen(str);
+
+    p = str;
+    while ((p = strchr(p, '%')) != NULL) {
+        p++;
+        switch (*p) {
+        case '%':
+            left = p - str;
+            memmove(p, p + 1, left - 1);
+            len--;
+            continue;
+        case 'U':
+            p++;
+            left = p - str;
+            right = len - left;
+            len = asprintf(&tmp, "%.*s%d%s", left - 2, str, target_uid, p);
+            safefree(str);
+            if (len == -1) {
+                goto done;
+            }
+            str = tmp;
+            p = str + (len - right);
+            break;
+        case 'u':
+            if (!res) {
+                ret = getpwuid_r(target_uid, &pwd, buffer, 2048, &res);
+                if (ret || !res) {
+                    safefree(str);
+                    goto done;
+                }
+            }
+            p++;
+            left = p - str;
+            right = len - left;
+            len = asprintf(&tmp, "%.*s%s%s", left - 2, str, pwd.pw_name, p);
+            safefree(str);
+            if (len == -1) {
+                goto done;
+            }
+            str = tmp;
+            p = str + (len - right);
+            break;
+        default:
+            GPDEBUG("Invalid format code '%%%c'\n", *p);
+            safefree(str);
+            goto done;
+        }
+    }
+
+done:
+    return str;
+}
+
 static char *gp_get_ccache_name(struct gp_service *svc,
                                 gssx_name *desired_name,
                                 gss_name_t *requested_name)
@@ -116,13 +184,8 @@ static char *gp_get_ccache_name(struct gp_service *svc,
     gss_OID_desc name_type;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
-    char buffer[2048];
     uid_t target_uid;
-    struct passwd pwd, *res = NULL;
-    char *ccache;
-    char *tmp;
-    char *p;
-    int len, left, right;
+    char *ccache = NULL;
     int ret;
 
     target_uid = svc->euid;
@@ -147,63 +210,9 @@ static char *gp_get_ccache_name(struct gp_service *svc,
         ret = asprintf(&ccache, "%s/krb5cc_%u", CCACHE_PATH, target_uid);
         if (ret == -1) {
             ccache = NULL;
-            goto done;
         }
-
-        return ccache;
-    }
-
-    ccache = strdup(svc->krb5.ccache);
-    if (!ccache) {
-        goto done;
-    }
-    len = strlen(ccache);
-
-    p = ccache;
-    while ((p = strchr(p, '%')) != NULL) {
-        p++;
-        switch (*p) {
-        case '%':
-            left = p - ccache;
-            memmove(p, p + 1, left - 1);
-            len--;
-            continue;
-        case 'U':
-            p++;
-            left = p - ccache;
-            right = len - left;
-            len = asprintf(&tmp, "%.*s%d%s", left - 2, ccache, target_uid, p);
-            safefree(ccache);
-            if (len == -1) {
-                goto done;
-            }
-            ccache = tmp;
-            p = ccache + (len - right);
-            break;
-        case 'u':
-            if (!res) {
-                ret = getpwuid_r(target_uid, &pwd, buffer, 2048, &res);
-                if (ret || !res) {
-                    safefree(ccache);
-                    goto done;
-                }
-            }
-            p++;
-            left = p - ccache;
-            right = len - left;
-            len = asprintf(&tmp, "%.*s%s%s", left - 2, ccache, pwd.pw_name, p);
-            safefree(ccache);
-            if (len == -1) {
-                goto done;
-            }
-            ccache = tmp;
-            p = ccache + (len - right);
-            break;
-        default:
-            GPDEBUG("Invalid format code '%%%c'\n", *p);
-            safefree(ccache);
-            goto done;
-        }
+    } else {
+        ccache = get_formatted_string(svc->krb5.ccache, target_uid);
     }
 
 done:
