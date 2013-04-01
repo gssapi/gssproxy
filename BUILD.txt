@@ -12,7 +12,7 @@ In order to build gss-proxy the following development packages are needed:
     doxygen
     findutils
     gettext-devel
-    iniparser-devel
+    iniparser-devel or libini_config-devel (preferred)
     keyutils-libs-devel
     krb5-devel
     libselinux-devel
@@ -23,3 +23,18 @@ In order to build gss-proxy the following development packages are needed:
     m4
     pkgconfig
     popt-devel
+
+NOTE:
+The minimum supported Kerberos version is MIT Kerberos 1.11.2 as it includes
+[1] and [2]
+The keytab initiation feature where Gss-Proxy acquires crdentials on behalf
+of clients using a ketab will only be available in MIT in 1.12
+This patch [3] can be used to backport the feature in 1.11.2, this new feature
+simply allows combining two [4][5] features introduced in MIT 1.11
+
+[1] http://k5wiki.kerberos.org/wiki/Projects/Interposer_Mechanism
+[2] https://github.com/krb5/krb5/commit/36c76aa3c625afc9291b9e1df071db51ccf37dab
+[3] https://github.com/krb5/krb5/commit/38cc076579888695a5820ceb44fe43020f5b61e1
+[4] http://k5wiki.kerberos.org/wiki/Projects/Credential_Store_extensions
+[5] http://k5wiki.kerberos.org/wiki/Projects/Keytab_initiation
+
