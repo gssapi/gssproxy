@@ -20,14 +20,15 @@ gsspconfdir = $(sysconfdir)/gssproxy
 gssconfdir = $(sysconfdir)/gss
 localedir = @localedir@
 
-pidpath = @pidpath@
 ccpath = @ccpath@
-pipepath = @pipepath@
 initdir = @initdir@
 systemdunitdir = @systemdunitdir@
 logpath = @logpath@
 pubconfpath = @pubconfpath@
 pkgconfigdir = $(libdir)/pkgconfig
+
+gpstatedir = $(localstatedir)/lib/gssproxy
+gpclidir = $(gpstatedir)/clients
 
 AM_CFLAGS =
 if WANT_AUX_INFO
@@ -231,9 +232,9 @@ installgsspdirs::
     $(DESTDIR)$(mandir) \
     $(DESTDIR)$(gsspconfdir) \
     $(DESTDIR)$(gssconfdir) \
-    $(DESTDIR)$(pidpath) \
-    $(DESTDIR)$(pipepath) \
     $(DESTDIR)$(logpath) \
+    $(DESTDIR)$(gpstatedir) \
+    $(DESTDIR)$(gpclidir) \
     $(DESTDIR)$(pubconfpath)
 
 if HAVE_DOXYGEN
