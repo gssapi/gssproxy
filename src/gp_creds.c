@@ -193,6 +193,7 @@ static int gp_get_cred_environment(struct gp_service *svc,
     char *ccache = NULL;
     char *client_keytab = NULL;
     char *keytab = NULL;
+    bool user_requested = false;
     int ret = 0;
 
     target_uid = svc->euid;
@@ -204,6 +205,7 @@ static int gp_get_cred_environment(struct gp_service *svc,
             (gss_oid_equal(&name_type, GSS_C_NT_STRING_UID_NAME) ||
              gss_oid_equal(&name_type, GSS_C_NT_MACHINE_UID_NAME))) {
             target_uid = atol(desired_name->display_name.octet_string_val);
+            user_requested = true;
         } else {
             ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &name);
             if (ret_maj) {
@@ -225,10 +227,13 @@ static int gp_get_cred_environment(struct gp_service *svc,
         goto done;
     }
 
-    if (svc->krb5.client_keytab == NULL) {
-        fmtstr = DEFAULT_CLIENT_KEYTAB;
+    if ((target_uid == 0) && (!user_requested)) {
+        fmtstr = svc->krb5.keytab;
     } else {
         fmtstr = svc->krb5.client_keytab;
+    }
+    if (fmtstr == NULL) {
+        fmtstr = DEFAULT_CLIENT_KEYTAB;
     }
     client_keytab = get_formatted_string(fmtstr, target_uid);
     if (!client_keytab) {
