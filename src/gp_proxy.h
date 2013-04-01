@@ -42,6 +42,7 @@ struct gp_cred_krb5 {
     char *principal;
     char *keytab;
     char *ccache;
+    char *client_keytab;
 };
 
 struct gp_creds_handle;

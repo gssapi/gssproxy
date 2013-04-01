@@ -85,6 +85,14 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         }
     }
 
+    value = gp_config_get_string(ctx, secname, "krb5_client_keytab");
+    if (value) {
+        svc->krb5.client_keytab = strdup(value);
+        if (!svc->krb5.client_keytab) {
+            return ENOMEM;
+        }
+    }
+
     return 0;
 }
 
