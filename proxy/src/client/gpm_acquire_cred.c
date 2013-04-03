@@ -328,6 +328,7 @@ OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
                 break;
             case GSS_C_ACCEPT:
                 cu = GSS_C_BOTH;
+                break;
             default:
                 cu = GSS_C_INITIATE;
             }
@@ -342,6 +343,7 @@ OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
                 break;
             case GSS_C_INITIATE:
                 cu = GSS_C_BOTH;
+                break;
             default:
                 cu = GSS_C_ACCEPT;
             }
