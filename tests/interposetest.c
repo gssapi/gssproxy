@@ -857,7 +857,6 @@ static int run_cli_srv_test(int server_proxy_type,
             options = WNOHANG;
         }
         w = waitpid(-1, &status, options);
-        closewait = 0;
         if (w == cli) {
             cli = -1;
         } else if (w == srv) {
@@ -872,10 +871,10 @@ static int run_cli_srv_test(int server_proxy_type,
         if (closewait > 10) {
             ret = -1;
             goto done;
-        } else {
-            usleep(100000);
-            closewait++;
         }
+
+        usleep(100000);
+        closewait++;
     }
     ret = 0;
 
