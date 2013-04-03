@@ -52,7 +52,12 @@ OM_uint32 gpm_get_mic(OM_uint32 *minor_status,
     /* NOTE: the final free will also release the old context */
     arg->context_handle = *context_handle;
     arg->qop_req = qop_req;
-    gp_conv_buffer_to_gssx(message_buffer, &arg->message_buffer);
+    ret = gp_conv_buffer_to_gssx(message_buffer, &arg->message_buffer);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
 
     /* execute proxy request */
     ret = gpm_make_call(GSSX_GET_MIC, &uarg, &ures);

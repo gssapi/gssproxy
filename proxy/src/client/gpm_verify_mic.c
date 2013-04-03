@@ -51,8 +51,18 @@ OM_uint32 gpm_verify_mic(OM_uint32 *minor_status,
     /* format request */
     /* NOTE: the final free will also release the old context */
     arg->context_handle = *context_handle;
-    gp_conv_buffer_to_gssx(message_buffer, &arg->message_buffer);
-    gp_conv_buffer_to_gssx(message_token, &arg->token_buffer);
+    ret = gp_conv_buffer_to_gssx(message_buffer, &arg->message_buffer);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
+    ret = gp_conv_buffer_to_gssx(message_token, &arg->token_buffer);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
 
     /* execute proxy request */
     ret = gpm_make_call(GSSX_VERIFY, &uarg, &ures);
