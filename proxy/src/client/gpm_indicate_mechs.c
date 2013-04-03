@@ -688,7 +688,7 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
                 }
             }
             /* if excepted skip */
-            if (j == desired_mech_attrs->count) {
+            if (j == except_mech_attrs->count) {
                 continue;
             }
         }
@@ -707,7 +707,7 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
                 }
             }
             /* if not known skip */
-            if (j != desired_mech_attrs->count) {
+            if (j != critical_mech_attrs->count) {
                 continue;
             }
         }
