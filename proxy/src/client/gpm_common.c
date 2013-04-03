@@ -98,6 +98,9 @@ static int gpm_open_socket(struct gpm_ctx *gpmctx)
     }
 
     ret = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
+    if (ret == -1) {
+        ret = errno;
+    }
 
 done:
     if (ret) {
