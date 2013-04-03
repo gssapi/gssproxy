@@ -177,7 +177,7 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
     do {
         ret = 0;
         do {
-            wn = write(gpmctx->fd, &size, sizeof(uint32_t));
+            wn = send(gpmctx->fd, &size, sizeof(uint32_t), MSG_NOSIGNAL);
             if (wn == -1) {
                 ret = errno;
             }
@@ -201,7 +201,7 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
 
     pos = 0;
     while (length > pos) {
-        wn = write(gpmctx->fd, buffer + pos, length - pos);
+        wn = send(gpmctx->fd, buffer + pos, length - pos, MSG_NOSIGNAL);
         if (wn == -1) {
             if (errno == EINTR) {
                 continue;
