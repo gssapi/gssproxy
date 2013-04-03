@@ -91,7 +91,12 @@ int gp_get_mic(struct gssproxy_ctx *gpctx,
     /* what is the point of returning an input parameter ? - gd */
     *gmr->qop_state = gma->qop_req;
 
-    gp_conv_buffer_to_gssx(&message_token, &gmr->token_buffer);
+    ret = gp_conv_buffer_to_gssx(&message_token, &gmr->token_buffer);
+    if (ret) {
+        ret_maj = GSS_S_FAILURE;
+        ret_min = ret;
+        goto done;
+    }
 
     ret_maj = GSS_S_COMPLETE;
     ret_min = 0;
