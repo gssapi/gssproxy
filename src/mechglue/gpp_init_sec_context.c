@@ -82,7 +82,7 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                                 OM_uint32 *ret_flags,
                                 OM_uint32 *time_rec)
 {
-    enum gpp_behavior behavior;
+    enum gpp_behavior behavior = GPP_UNINITIALIZED;
     struct gpp_context_handle *ctx_handle = NULL;
     struct gpp_cred_handle *cred_handle = NULL;
     struct gpp_name_handle *name;
@@ -100,6 +100,7 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
 
     if (mech_type == GSS_C_NO_OID || gpp_is_special_oid(mech_type)) {
         maj = GSS_S_BAD_MECH;
+        min = 0;
         goto done;
     }
 

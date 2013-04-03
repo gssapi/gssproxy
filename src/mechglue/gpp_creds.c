@@ -63,17 +63,16 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
                                struct gpp_cred_handle **cred_handle)
 {
     struct gpp_cred_handle *cred;
-    OM_uint32 tmaj, tmin;
-    OM_uint32 maj, min;
+    OM_uint32 tmaj = GSS_S_COMPLETE;
+    OM_uint32 tmin = 0;
+    OM_uint32 maj = GSS_S_FAILURE;
+    OM_uint32 min = 0;
 
     cred = calloc(1, sizeof(struct gpp_cred_handle));
     if (!cred) {
-        *minor_status = 0;
-        return GSS_S_FAILURE;
+        min = ENOMEM;
+        goto done;
     }
-
-    tmaj = GSS_S_COMPLETE;
-    tmin = 0;
 
     /* See if we should try local first */
     if (behavior == GPP_LOCAL_ONLY || behavior == GPP_LOCAL_FIRST) {

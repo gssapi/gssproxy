@@ -363,7 +363,7 @@ void *server_thread(void *pvt)
     uint32_t ret_min;
     struct gssx_ctx *context_handle = NULL;
     struct gssx_cred *cred_handle = NULL;
-    struct gssx_name *src_name;
+    struct gssx_name *src_name = NULL;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     struct gssx_cred *deleg_cred = NULL;
     gss_OID_set mech_set = GSS_C_NO_OID_SET;

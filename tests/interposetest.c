@@ -228,7 +228,7 @@ void run_client(struct aproc *data)
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
     char *message = "SECRET";
     int ret = -1;
-    gss_iov_buffer_desc iov[2];
+    gss_iov_buffer_desc iov[2] = { { 0, { 0, NULL } }, { 0, { 0, NULL } } };
     int sealed;
     uint32_t max_size = 0;
 

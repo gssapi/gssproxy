@@ -281,8 +281,8 @@ OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
     gssx_name *dname = NULL;
     gssx_cred_element *e;
     gss_OID_desc tmp_oid;
-    uint32_t ret_min;
-    uint32_t ret_maj;
+    uint32_t ret_min = 0;
+    uint32_t ret_maj = GSS_S_COMPLETE;
     uint32_t life;
     int cu;
     int i;
@@ -403,8 +403,8 @@ OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
     gssx_name *dname = NULL;
     gssx_cred_element *e;
     gss_OID_desc tmp_oid;
-    uint32_t ret_min;
-    uint32_t ret_maj;
+    uint32_t ret_min = 0;
+    uint32_t ret_maj = GSS_S_COMPLETE;
     int i;
 
     if (!cred) {
@@ -465,8 +465,7 @@ OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
     }
 
     if (i >= cred->elements.elements_len) {
-        *minor_status = 0;
-        return GSS_S_FAILURE;
+        ret_maj = GSS_S_FAILURE;
     }
 
 done:
