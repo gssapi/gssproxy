@@ -296,8 +296,8 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
                            gss_buffer_set_t *attrs)
 {
     gss_buffer_set_t xattrs = GSS_C_NO_BUFFER_SET;
-    uint32_t i;
     int ret;
+    int i;
 
     *minor_status = 0;
 
