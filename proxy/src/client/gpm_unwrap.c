@@ -53,7 +53,9 @@ OM_uint32 gpm_unwrap(OM_uint32 *minor_status,
     /* format request */
     /* NOTE: the final free will also release the old context */
     arg->context_handle = *context_handle;
-    arg->qop_state = *qop_state;
+    if (qop_state) {
+        arg->qop_state = *qop_state;
+    }
 
     ret = gp_conv_buffer_to_gssx(input_message_buffer, &message_buffer);
     if (ret) {
