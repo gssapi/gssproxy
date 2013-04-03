@@ -329,8 +329,7 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
 
 done:
     if (ret) {
-        free_config(cfg);
-        cfg = NULL;
+        free_config(&cfg);
     }
 
     return cfg;
@@ -341,8 +340,9 @@ struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc)
     return svc->creds_handle;
 }
 
-void free_config(struct gp_config *config)
+void free_config(struct gp_config **cfg)
 {
+    struct gp_config *config = *cfg;
     uint32_t i;
 
     if (!config) {
@@ -357,4 +357,6 @@ void free_config(struct gp_config *config)
     }
 
     free(config->svcs);
+    free(config);
+    *cfg = NULL;
 }
