@@ -75,6 +75,8 @@ struct gp_creds *gp_conn_get_creds(struct gp_conn *conn)
 
 void gp_conn_free(struct gp_conn *conn)
 {
+    if (!conn) return;
+
     if (conn->us.sd != -1) {
         close(conn->us.sd);
     }

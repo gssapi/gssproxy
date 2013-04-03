@@ -300,7 +300,7 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
         ret_maj = gss_display_status(&ret_min,
                                      status, type, oid,
                                      &msg_ctx, &gssbuf);
-        if (ret_maj == 0) {
+        if (ret_maj == GSS_S_COMPLETE) {
             if (str) {
                 ret = asprintf(&t, "%s, %s", str, (char *)gssbuf.value);
                 if (ret == -1) {
@@ -316,9 +316,10 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
                 }
             }
             gss_release_buffer(&ret_min, &gssbuf);
-        }
-        if (ret_maj) {
+        } else {
             ret = EINVAL;
+        }
+        if (ret) {
             goto done;
         }
     } while (msg_ctx);

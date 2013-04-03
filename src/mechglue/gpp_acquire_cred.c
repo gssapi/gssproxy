@@ -256,6 +256,10 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
 
     GSSI_TRACE();
 
+    if (desired_name == GSS_C_NO_NAME) {
+        *minor_status = gpp_map_error(EINVAL);
+        return GSS_S_BAD_NAME;
+    }
     name = (struct gpp_name_handle *)desired_name;
 
     if (!output_cred_handle) {
@@ -289,7 +293,7 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
             goto done;
         }
 
-        if (name && name->remote && !name->local) {
+        if (name->remote && !name->local) {
             maj = gpp_name_to_local(&min, name->remote,
                                     name->mech_type, &name->local);
             if (maj) {

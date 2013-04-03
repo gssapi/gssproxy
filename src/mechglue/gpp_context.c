@@ -320,8 +320,8 @@ OM_uint32 gssi_set_sec_context_option(OM_uint32 *minor_status,
 
     GSSI_TRACE();
 
-    if (context_handle) {
-        ctx = (struct gpp_context_handle *)context_handle;
+    if (*context_handle) {
+        ctx = (struct gpp_context_handle *)(*context_handle);
     } else {
         ctx = calloc(1, sizeof(struct gpp_context_handle));
         if (!ctx) {
