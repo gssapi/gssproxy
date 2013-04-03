@@ -183,5 +183,6 @@ done:
 
     gss_release_cred(&ret_min, &out_cred);
     gss_release_oid_set(&ret_min, &use_mechs);
+    gss_release_oid_set(&ret_min, &desired_mechs);
     return ret;
 }

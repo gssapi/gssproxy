@@ -134,7 +134,7 @@ int main(int argc, const char *argv[])
 
     poptFreeContext(pc);
 
-    free_config(gpctx->config);
+    free_config(&gpctx->config);
 
     return 0;
 }

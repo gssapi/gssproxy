@@ -224,8 +224,8 @@ OM_uint32 gssi_inquire_context(OM_uint32 *minor_status,
     if (ctx_handle->local) {
         maj = gss_inquire_context(&min,
                                   ctx_handle->local,
-                                  src_name ? &s_name->local : NULL,
-                                  src_name ? &t_name->local : NULL,
+                                  s_name ? &s_name->local : NULL,
+                                  s_name ? &t_name->local : NULL,
                                   lifetime_rec,
                                   &mech_oid,
                                   ctx_flags,
@@ -234,8 +234,8 @@ OM_uint32 gssi_inquire_context(OM_uint32 *minor_status,
     } else {
         maj = gpm_inquire_context(&min,
                                   ctx_handle->remote,
-                                  src_name ? &s_name->remote : NULL,
-                                  src_name ? &t_name->remote : NULL,
+                                  s_name ? &s_name->remote : NULL,
+                                  s_name ? &t_name->remote : NULL,
                                   lifetime_rec,
                                   &mech_oid,
                                   ctx_flags,
@@ -247,16 +247,11 @@ OM_uint32 gssi_inquire_context(OM_uint32 *minor_status,
         goto done;
     }
 
-    if (mech_type) {
-        *mech_type = mech_oid;
-    }
-
-    if (src_name) {
+    if (s_name) {
         maj = gpp_copy_oid(&min, mech_oid, &s_name->mech_type);
         if (maj != GSS_S_COMPLETE) {
             goto done;
         }
-        *src_name = (gss_name_t)s_name;
     }
 
     if (t_name) {
@@ -264,12 +259,22 @@ OM_uint32 gssi_inquire_context(OM_uint32 *minor_status,
         if (maj != GSS_S_COMPLETE) {
             goto done;
         }
-        *targ_name = (gss_name_t)t_name;
     }
 
 done:
     *minor_status = gpp_map_error(min);
-    if (maj != GSS_S_COMPLETE) {
+    if (maj == GSS_S_COMPLETE) {
+        if (mech_type) {
+            *mech_type = mech_oid;
+        }
+        if (src_name) {
+            *src_name = (gss_name_t)s_name;
+        }
+        if (targ_name) {
+            *targ_name = (gss_name_t)t_name;
+        }
+    } else {
+        (void)gss_release_oid(&min, &mech_oid);
         (void)gssi_release_name(&min, (gss_name_t *)&s_name);
         (void)gssi_release_name(&min, (gss_name_t *)&t_name);
     }
@@ -331,14 +336,16 @@ OM_uint32 gssi_set_sec_context_option(OM_uint32 *minor_status,
         maj = gpp_remote_to_local_ctx(&min, &ctx->remote, &ctx->local);
         if (maj != GSS_S_COMPLETE) {
             *minor_status = gpp_map_error(min);
-            return maj;
+            goto done;
         }
     }
 
     maj = gss_set_sec_context_option(minor_status, &ctx->local,
                                      desired_object, value);
-    if (maj == GSS_S_COMPLETE) {
-        *context_handle = (gss_ctx_id_t)ctx;
+done:
+    *context_handle = (gss_ctx_id_t)ctx;
+    if (maj != GSS_S_COMPLETE) {
+        (void)gssi_delete_sec_context(&min, context_handle, NULL);
     }
     return maj;
 }

@@ -121,14 +121,17 @@ int gp_workers_init(struct gssproxy_ctx *gpctx)
         t->pool = w;
         ret = pthread_cond_init(&t->cond_wakeup, NULL);
         if (ret) {
+            free(t);
             goto done;
         }
         ret = pthread_mutex_init(&t->cond_mutex, NULL);
         if (ret) {
+            free(t);
             goto done;
         }
         ret = pthread_create(&t->tid, &attr, gp_worker_main, t);
         if (ret) {
+            free(t);
             goto done;
         }
         LIST_ADD(w->free_list, t);

@@ -206,10 +206,12 @@ done:
     }
     if (maj != GSS_S_COMPLETE && maj != GSS_S_CONTINUE_NEEDED) {
         free(ctx_handle);
-        free(cred_handle);
         *minor_status = gpp_map_error(min);
     } else {
         *context_handle = (gss_ctx_id_t)ctx_handle;
+    }
+    if (claimant_cred_handle == GSS_C_NO_CREDENTIAL) {
+        free(cred_handle);
     }
     return maj;
 }

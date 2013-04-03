@@ -106,6 +106,7 @@ OM_uint32 gpm_import_name(OM_uint32 *minor_status,
                           gssx_name **output_name)
 {
     gssx_name *name;
+    uint32_t maj, min;
     int ret;
 
     if (!minor_status) {
@@ -122,25 +123,34 @@ OM_uint32 gpm_import_name(OM_uint32 *minor_status,
 
     /* ignore call_ctx for now */
 
+    maj = GSS_S_FAILURE;
+
     name = calloc(1, sizeof(gssx_name));
     if (!name) {
-        *minor_status = ENOMEM;
-        return GSS_S_FAILURE;
+        ret = ENOMEM;
+        goto done;
     }
 
     ret = gp_conv_buffer_to_gssx(input_name_buffer, &name->display_name);
     if (ret) {
-        *minor_status = ret;
-        return GSS_S_FAILURE;
-    }
-    ret = gp_conv_oid_to_gssx(input_name_type, &name->name_type);
-    if (ret) {
-        *minor_status = ret;
-        return GSS_S_FAILURE;
+        goto done;
     }
 
-    *output_name = name;
-    return GSS_S_COMPLETE;
+    ret = gp_conv_oid_to_gssx(input_name_type, &name->name_type);
+    if (ret) {
+        goto done;
+    }
+
+    maj = GSS_S_COMPLETE;
+
+done:
+    *minor_status = ret;
+    if (maj == GSS_S_COMPLETE) {
+        *output_name = name;
+    } else {
+        (void)gpm_release_name(&min, &name);
+    }
+    return maj;
 }
 
 OM_uint32 gpm_export_name(OM_uint32 *minor_status,

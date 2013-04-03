@@ -861,6 +861,8 @@ uint32_t gp_export_creds_to_gssx_options(uint32_t *min, int type,
         ret_maj = GSS_S_FAILURE;
         goto done;
     }
+    *opt_array = opta;
+
     opta[num].option.octet_string_val = strdup(LINUX_CREDS_V1);
     if (!opta[num].option.octet_string_val) {
         ret_min = ENOMEM;
@@ -873,7 +875,6 @@ uint32_t gp_export_creds_to_gssx_options(uint32_t *min, int type,
 
     num++;
     *opt_num = num;
-    *opt_array = opta;
     ret_min = 0;
     ret_maj = GSS_S_COMPLETE;
 

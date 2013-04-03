@@ -284,7 +284,9 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
          * the use of the interposer */
         special_mechs = gpp_special_available_mechs(desired_mechs);
         if (special_mechs == GSS_C_NO_OID_SET) {
-            return GSS_S_FAILURE;
+            min = EINVAL;
+            maj = GSS_S_FAILURE;
+            goto done;
         }
 
         if (name && name->remote && !name->local) {

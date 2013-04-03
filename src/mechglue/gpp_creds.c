@@ -447,6 +447,7 @@ OM_uint32 gssi_release_cred(OM_uint32 *minor_status,
         }
     }
 
+    free(cred);
     *cred_handle = GSS_C_NO_CREDENTIAL;
     return rmaj;
 }
