@@ -317,9 +317,8 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
     case GPP_REMOTE_ONLY:
 
         /* FIXME: not currently available */
-        return GSS_S_UNAVAILABLE;
 
-        break;
+        /* fall through for now */
 
     default:
         maj = GSS_S_FAILURE;
