@@ -266,6 +266,8 @@ done:
     if (maj == GSS_S_COMPLETE) {
         if (mech_type) {
             *mech_type = mech_oid;
+        } else {
+            (void)gss_release_oid(&min, &mech_oid);
         }
         if (src_name) {
             *src_name = (gss_name_t)s_name;
