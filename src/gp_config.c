@@ -258,7 +258,6 @@ int load_config(struct gp_config *cfg)
     dictionary *d;
     char *tmpstr;
     int ret;
-    uint32_t ret_min, ret_maj;
 
     d = iniparser_load(cfg->config_file);
     if (!d) {
@@ -276,7 +275,6 @@ int load_config(struct gp_config *cfg)
 
     ret = load_services(cfg, d);
 
-done:
     iniparser_freedict(d);
     return ret;
 }
