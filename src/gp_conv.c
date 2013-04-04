@@ -292,7 +292,7 @@ int gp_conv_err_to_gssx_string(uint32_t status, int type, gss_OID oid,
     uint32_t msg_ctx;
     gss_buffer_desc gssbuf;
     char *str, *t;
-    int ret;
+    int ret = 0;
 
     msg_ctx = 0;
     str = NULL;
