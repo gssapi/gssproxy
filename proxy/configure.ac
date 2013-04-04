@@ -16,9 +16,8 @@ AC_CONFIG_AUX_DIR([build])
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects tar-pax])
 AM_PROG_CC_C_O
-AC_DISABLE_STATIC
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+LT_INIT([disable-static])
 AC_CONFIG_MACRO_DIR([m4])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.14])
