@@ -76,9 +76,7 @@ OM_uint32 gssi_import_sec_context_by_mech(OM_uint32 *minor_status,
 {
     struct gpp_context_handle *ctx;
     gss_buffer_desc wrap_token = {0};
-    gss_OID spmech;
     OM_uint32 maj, min = 0;
-    uint32_t len;
 
     GSSI_TRACE();
 
