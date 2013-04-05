@@ -178,7 +178,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             valnum = get_int_value(dict, secname, "euid");
             if (valnum == -1) {
                 /* malformed section, mech is missing */
-                GPDEBUG("Euid missing from [%s], ignoring.", secname);
+                GPDEBUG("Euid missing from [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
@@ -207,7 +207,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             value = get_char_value(dict, secname, "mechs");
             if (value == NULL) {
                 /* malformed section, mech is missing */
-                GPDEBUG("Mechs missing from [%s], ignoring.", secname);
+                GPDEBUG("Mechs missing from [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
@@ -222,11 +222,11 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
                     if (ret == 0) {
                         cfg->svcs[n]->mechs |= GP_CRED_KRB5;
                     } else {
-                        GPDEBUG("Failed to read krb5 config for %s, ignoring.",
+                        GPDEBUG("Failed to read krb5 config for %s, ignoring.\n",
                                 secname);
                     }
                 } else {
-                    GPDEBUG("Unknown mech: %s in [%s], ignoring.",
+                    GPDEBUG("Unknown mech: %s in [%s], ignoring.\n",
                             token, secname);
                 }
 
@@ -234,7 +234,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
             } while (token != NULL);
 
             if (cfg->svcs[n]->mechs == 0) {
-                GPDEBUG("No mechs found for [%s], ignoring.", secname);
+                GPDEBUG("No mechs found for [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 continue;
@@ -243,7 +243,7 @@ static int load_services(struct gp_config *cfg, dictionary *dict)
     }
 
     if (cfg->num_svcs == 0) {
-        GPERROR("No service sections configured!");
+        GPERROR("No service sections configured!\n");
         return ENOENT;
     }
 
@@ -322,7 +322,7 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
 
     ret = load_config(cfg);
     if (ret) {
-        GPDEBUG("Config file not found! Proceeding with defaults.");
+        GPDEBUG("Config file not found! Proceeding with defaults.\n");
     }
 
 done:
