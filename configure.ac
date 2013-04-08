@@ -106,11 +106,11 @@ else
     GSSAPI_LIBS="`$KRB5_CONFIG --libs gssapi`"
 fi
 AC_CHECK_LIB(gssapi_krb5, gss_import_cred,,
-	     [AC_MSG_ERROR([GSSAPI library does not support gss_import_cred])],
-	     [$GSSAPI_LIBS])
+             [AC_MSG_ERROR([GSSAPI library does not support gss_import_cred])],
+             [$GSSAPI_LIBS])
 AC_CHECK_LIB(gssapi_krb5, gss_export_cred,,
-	     [AC_MSG_ERROR([GSSAPI library does not support gss_export_cred])],
-	     [$GSSAPI_LIBS])
+             [AC_MSG_ERROR([GSSAPI library does not support gss_export_cred])],
+             [$GSSAPI_LIBS])
 
 AC_SUBST([GSSAPI_CFLAGS])
 AC_SUBST([GSSAPI_LIBS])
@@ -118,8 +118,8 @@ AC_SUBST([GSSAPI_LIBS])
 AC_CHECK_HEADERS([gssrpc/rpc.h],,[AC_MSG_ERROR([Could not find GSSRPC headers])])
 GSSRPC_LIBS="-lgssrpc"
 AC_CHECK_LIB(gssrpc, gssrpc_xdrmem_create,,
-	     [AC_MSG_ERROR([Failed to find GSSRPC symbols])],
-	     [$GSSRPC_LIBS])
+             [AC_MSG_ERROR([Failed to find GSSRPC symbols])],
+             [$GSSRPC_LIBS])
 AC_SUBST([GSSRPC_LIBS])
 
 WITH_INITSCRIPT
