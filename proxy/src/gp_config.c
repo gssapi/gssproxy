@@ -38,6 +38,7 @@ static void gp_service_free(struct gp_service *svc)
         free(svc->krb5.principal);
         free(svc->krb5.keytab);
         free(svc->krb5.ccache);
+        free(svc->krb5.client_keytab);
     }
     gp_free_creds_handle(&svc->creds_handle);
     memset(svc, 0, sizeof(struct gp_service));
