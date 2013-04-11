@@ -144,7 +144,7 @@ AC_CHECK_HEADERS([gssrpc/rpc.h],,[AC_MSG_ERROR([Could not find GSSRPC headers])]
 GSSRPC_LIBS="-lgssrpc"
 AC_CHECK_LIB(gssrpc, gssrpc_xdrmem_create,,
              [AC_MSG_ERROR([Failed to find GSSRPC symbols])],
-             [$GSSRPC_LIBS])
+             [$GSSAPI_LIBS $GSSRPC_LIBS])
 AC_SUBST([GSSRPC_LIBS])
 
 WITH_INITSCRIPT
