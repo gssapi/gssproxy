@@ -24,6 +24,182 @@
         <para>
             Optional configuration directives for the gssproxy daemon.
         </para>
+        <para>
+            The gssproxy.conf file is a classic ini-style configuration file.
+            Each option consist of a key = value pair.
+            Any characters behind '#' will be treated as comments and will be ignored.
+            Boolean parameters accept "1", "true", "yes" and "on" as
+            positive values. All other values will be considered as negative
+            values.
+        </para>
+    </refsect1>
+
+    <refsect1 id='sections'>
+        <title>SECTIONS</title>
+        <para>
+            A section in the gssproxy.conf file is identified by the sectionname in square brackets ([sectionname]).
+        </para>
+        <para>
+            There is one special section for global gssproxy settings, called
+            [gssproxy].
+        </para>
+        <para>
+            Services such as nfs, apache, ssh, etc. are represented by
+            sections like [service/nfs], [service/apache], etc. and are
+            identified by the "euid" setting (see below).
+        </para>
+    </refsect1>
+
+    <refsect1 id='substitutions'>
+	<title>VARIABLE SUBSTITUTIONS</title>
+
+	<para>
+            String parameters may contain substitution patterns. This allows gssproxy to deal with patterns for
+            the storage location of keytabs or credential caches easier.
+	</para>
+
+	<para>
+	    The supported patterns are:
+	</para>
+
+	<variablelist>
+            <varlistentry>
+                <term>%U</term>
+                    <listitem><para>substitutes to the user's numeric uid (e.g. 123)</para></listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>%u</term>
+                    <listitem><para>substitutes to the user's username (e.g. john).</para></listitem>
+            </varlistentry>
+        </variablelist>
+    </refsect1>
+
+    <refsect1 id='options'>
+        <title>OPTIONS</title>
+        <para>
+            gssproxy supports the following options:
+            <variablelist>
+
+                <varlistentry>
+                    <term>cred_store (string)</term>
+                    <listitem>
+                        <para>This parameter allows to control in which way gssproxy should use the cred_store interface provided by GSSAPI. The parameter can be defined multiple times per service.</para>
+                        <para>The syntax of the cred_store parameter is as
+                            follows:
+                            <![CDATA[cred_store = <cred_store_option>:<cred_store_value>]]></para>
+                        <para>Currently this interface supports the following
+                            options:</para>
+
+                        <variablelist>
+                            <varlistentry>
+                                <term>keytab</term>
+                                    <listitem><para>Defines the keytab the service should use. Example: cred_store = keytab:/path/to/keytab</para></listitem>
+                            </varlistentry>
+                            <varlistentry>
+                                <term>client_keytab</term>
+                                    <listitem><para>Defines a client keytab the service should use. Example: cred_store = client_keytab:/path/to/client_keytab.</para></listitem>
+                            </varlistentry>
+                            <varlistentry>
+                                <term>ccache</term>
+                                    <listitem><para>Defines a credential cache the service should use. Example: cred_store = ccache:/path/to/ccache.</para></listitem>
+                            </varlistentry>
+                        </variablelist>
+
+                        <para>Notably the client_keytab and the ccache setting
+                            typically are used with variable substitution
+                            placeholders (see above). For example:</para>
+
+<programlisting>
+    <userinput moreinfo="none">cred_store = keytab:/etc/krb5.keytab</userinput>
+    <userinput moreinfo="none">cred_store = ccache:FILE:/var/lib/gssproxy/krb5cc_%U</userinput>
+    <userinput moreinfo="none">cred_store = client_keytab:/var/lib/gssproxy/%U.keytab</userinput>
+</programlisting>
+
+                        <para>Default: cred_store = </para>
+
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term>debug (boolean)</term>
+                    <listitem>
+                        <para>Enable debugging to syslog.</para>
+                        <para>Default: debug = false</para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>euid (integer)</term>
+                    <listitem>
+                        <para>The numeric effective uid of a running process, required to identify a service.</para>
+                        <para>The "euid" parameter is imperative, any section
+                            without it will be discarded.</para>
+                        <para>Default: euid =</para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>kernel_nfsd (boolean)</term>
+                    <listitem>
+                        <para>Boolean flag that allows the Linux kernel to check if gssproxy is running (via <filename>/proc/net/rpc/use-gss-proxy</filename>).</para>
+                        <para>Default: kernel_nfsd = false</para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>krb5_principal (string)</term>
+                    <listitem>
+                        <para>The krb5 principal to be used by this service.</para>
+                        <para>Default: krb5_principal = </para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>mech (string)</term>
+                    <listitem>
+                        <para>Currently only <parameter>krb5</parameter> is supported.</para>
+                        <para>The "mech" parameter is imperative, any section
+                            without it will be discarded.</para>
+                        <para>Default: mech = </para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>socket (string)</term>
+                    <listitem>
+                        <para>This parameter allows to create a per-service socket file over which gssproxy client and server components communicate.
+                        </para>
+                        <para>When this parameter is not set, gssproxy will
+                            use a compiled-in default.</para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>trusted (boolean)</term>
+                        <listitem><para>Defines whether this service is considered trusted. Use with caution, this enables impersonation.</para>
+                            <para>Default: trusted = false</para>
+                        </listitem>
+                    </varlistentry>
+
+                <varlistentry>
+                    <term>worker threads (integer)</term>
+                    <listitem>
+                        <para>Defines the amount of worker threads gssproxy will create at startup.</para>
+                        <para>Default: worker threads = </para>
+                    </listitem>
+                    </varlistentry>
+
+            </variablelist>
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>SEE ALSO</title>
+        <para>
+            <citerefentry>
+                <refentrytitle>gssproxy</refentrytitle><manvolnum>8</manvolnum>
+            </citerefentry>
+        </para>
     </refsect1>
 
 </refentry>
