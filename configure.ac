@@ -16,6 +16,7 @@ AC_CONFIG_AUX_DIR([build])
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects tar-pax])
 AM_PROG_CC_C_O
+AM_PROG_AR
 AC_PROG_INSTALL
 LT_INIT([disable-static])
 AC_CONFIG_MACRO_DIR([m4])
