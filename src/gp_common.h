@@ -58,7 +58,7 @@
 } while (0)
 
 #define safefree(ptr) do { \
-    free(ptr); \
+    free(no_const(ptr)); \
     ptr = NULL; \
 } while(0)
 

@@ -176,13 +176,22 @@ done:
     return str;
 }
 
-#define DEFAULT_CCACHE ""CCACHE_PATH"/krb5cc_%u"
-#define DEFAULT_CLIENT_KEYTAB ""VARDIR"lib/gssproxy/clients/%u.keytab"
+static void free_cred_store_elements(gss_key_value_set_desc *cs)
+{
+    int i;
+
+    for (i = 0; i < cs->count; i++) {
+        safefree(cs->elements[i].key);
+        safefree(cs->elements[i].value);
+    }
+    safefree(cs->elements);
+}
 
 static int gp_get_cred_environment(struct gp_service *svc,
                                    gssx_name *desired_name,
-                                   gss_name_t *requested_name, char **_ccache,
-                                   char **_client_keytab, char **_keytab)
+                                   gss_name_t *requested_name,
+                                   gss_cred_usage_t cred_usage,
+                                   gss_key_value_set_desc *cs)
 {
     gss_name_t name = GSS_C_NO_NAME;
     gss_OID_desc name_type;
@@ -190,11 +199,13 @@ static int gp_get_cred_environment(struct gp_service *svc,
     uint32_t ret_min = 0;
     uid_t target_uid;
     const char *fmtstr;
-    char *ccache = NULL;
-    char *client_keytab = NULL;
-    char *keytab = NULL;
+    const char *p;
+    char *str;
     bool user_requested = false;
     int ret = 0;
+    int k_num = -1;
+    int ck_num = -1;
+    int c, s;
 
     target_uid = svc->euid;
 
@@ -215,47 +226,92 @@ static int gp_get_cred_environment(struct gp_service *svc,
         }
     }
 
-    if (svc->krb5.ccache == NULL) {
-        fmtstr = DEFAULT_CCACHE;
-    } else {
-        fmtstr = svc->krb5.ccache;
+    if (svc->krb5.cred_store == NULL) {
+        cs->elements = NULL;
+        cs->count = 0;
+        return 0;
     }
-    ccache = get_formatted_string(fmtstr, target_uid);
-    if (!ccache) {
-        GPDEBUG("Failed to construct ccache string.\n");
+
+    cs->count = svc->krb5.cred_count;
+    cs->elements = calloc(cs->count, sizeof(gss_key_value_element_desc));
+    if (!cs->elements) {
         ret = ENOMEM;
         goto done;
     }
 
-    if ((target_uid == 0) && (!user_requested)) {
-        fmtstr = svc->krb5.keytab;
-    } else {
-        fmtstr = svc->krb5.client_keytab;
-    }
-    if (fmtstr == NULL) {
-        fmtstr = DEFAULT_CLIENT_KEYTAB;
-    }
-    client_keytab = get_formatted_string(fmtstr, target_uid);
-    if (!client_keytab) {
-        GPDEBUG("Failed to construct client_keytab string.\n");
-        ret = ENOMEM;
-        goto done;
+    for (c = 0; c < cs->count; c++) {
+        p = strchr(svc->krb5.cred_store[c], ':');
+        if (!p) {
+            GPERROR("Invalid cred_store value"
+                    "no ':' separator found in [%s].\n",
+                    svc->krb5.cred_store[c]);
+            ret = EINVAL;
+            goto done;
+        }
+        s = p - svc->krb5.cred_store[c];
+        str = strdup(svc->krb5.cred_store[c]);
+        if (!str) {
+            ret = ENOMEM;
+            goto done;
+        }
+        str[s] = '\0';
+        cs->elements[c].key = str;
+
+        if (strcmp(cs->elements[c].key, "keytab") == 0) {
+            k_num = c;
+        } else if (strcmp(cs->elements[c].key, "client_keytab") == 0) {
+            ck_num = c;
+        }
+
+        fmtstr = p + 1;
+        cs->elements[c].value = get_formatted_string(fmtstr, target_uid);
+        if (!cs->elements[c].value) {
+            GPDEBUG("Failed to build credential store formatted string.\n");
+            ret = ENOMEM;
+            goto done;
+        }
     }
 
-    if (svc->krb5.keytab != NULL) {
-        fmtstr = svc->krb5.keytab;
-        keytab = get_formatted_string(svc->krb5.ccache, target_uid);
-    }
+    /* when a user is not explicitly requested then it means the calling
+     * application wants to use the credentials in the standard keytab,
+     * if any. */
+    if (!user_requested && k_num != -1) {
+        if (ck_num != -1) {
+            safefree(cs->elements[ck_num].value);
+            cs->elements[ck_num].value = strdup(cs->elements[k_num].value);
+            if (!cs->elements[ck_num].value) {
+                ret = ENOMEM;
+                goto done;
+            }
+        } else {
+            gss_key_value_element_desc *t;
+            c = cs->count;
+            t = realloc(cs->elements, c + 1);
+            if (!t) {
+                ret = ENOMEM;
+                goto done;
+            }
+            cs->elements = t;
+            cs->elements[c].key = strdup("client_keytab");
+            if (!cs->elements[c].key) {
+                ret = ENOMEM;
+                goto done;
+            }
 
-    *_ccache = ccache;
-    *_client_keytab = client_keytab;
-    *_keytab = keytab;
+            /* increment now so in case of failure to opy the value, key is
+             * still freed properly */
+            cs->count = c + 1;
+            cs->elements[c].value = strdup(cs->elements[k_num].value);
+            if (!cs->elements[c].value) {
+                ret = ENOMEM;
+                goto done;
+            }
+        }
+    }
 
 done:
     if (ret) {
-        free(ccache);
-        free(client_keytab);
-        free(keytab);
+        free_cred_store_elements(cs);
     }
     return ret;
 }
@@ -272,17 +328,12 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
                            uint32_t *initiator_time_rec,
                            uint32_t *acceptor_time_rec)
 {
-    char *ccache_name = NULL;
-    char *client_keytab = NULL;
-    char *keytab_name = NULL;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     uint32_t discard;
     gss_name_t req_name = GSS_C_NO_NAME;
     gss_OID_set_desc desired_mechs = { 1, &gp_mech_krb5 };
-    gss_key_value_element_desc cred_elems[3];
     gss_key_value_set_desc cred_store;
-    int c;
 
     if (!min || !output_cred_handle) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -302,37 +353,12 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         return GSS_S_CRED_UNAVAIL;
     }
 
-    if (cred_usage == GSS_C_ACCEPT && svc->krb5.keytab == NULL) {
-        ret_maj = GSS_S_CRED_UNAVAIL;
-        goto done;
-    }
-
     ret_min = gp_get_cred_environment(svc, desired_name, &req_name,
-                                      &ccache_name, &client_keytab,
-                                      &keytab_name);
+                                      cred_usage, &cred_store);
     if (ret_min) {
         ret_maj = GSS_S_CRED_UNAVAIL;
         goto done;
     }
-
-    cred_store.elements = cred_elems;
-    c = 0;
-    if (ccache_name) {
-        cred_elems[c].key = "ccache";
-        cred_elems[c].value = ccache_name;
-        c++;
-    }
-    if (client_keytab) {
-        cred_elems[c].key = "client_keytab";
-        cred_elems[c].value = client_keytab;
-        c++;
-    }
-    if (keytab_name) {
-        cred_elems[c].key = "keytab";
-        cred_elems[c].value = keytab_name;
-        c++;
-    }
-    cred_store.count = c;
 
     ret_maj = gss_acquire_cred_from(&ret_min, req_name, GSS_C_INDEFINITE,
                                     &desired_mechs, cred_usage, &cred_store,
