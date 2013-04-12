@@ -55,7 +55,7 @@ struct unix_sock_conn {
 };
 
 struct gp_conn {
-    struct gssproxy_ctx *gpctx;
+    struct gp_sock_ctx *sock_ctx;
     struct unix_sock_conn us;
     struct gp_creds creds;
     SEC_CTX secctx;
@@ -71,6 +71,11 @@ struct gp_buffer {
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn)
 {
     return &conn->creds;
+}
+
+const char *gp_conn_get_socket(struct gp_conn *conn)
+{
+    return conn->sock_ctx->socket;
 }
 
 void gp_conn_free(struct gp_conn *conn)
@@ -118,12 +123,19 @@ static int set_fd_flags(int fd, int flags)
     return 0;
 }
 
-int init_unix_socket(const char *file_name)
+struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
+                                     const char *file_name)
 {
     struct sockaddr_un addr = {0};
+    struct gp_sock_ctx *sock_ctx;
     mode_t old_mode;
     int ret = 0;
     int fd = -1;
+
+    sock_ctx = calloc(1, sizeof(struct gp_sock_ctx));
+    if (!sock_ctx) {
+        return NULL;
+    }
 
     /* can't bind if an old socket is around */
     unlink(file_name);
@@ -177,9 +189,15 @@ done:
             close(fd);
             fd = -1;
         }
+        safefree(sock_ctx);
+    } else {
+        sock_ctx->gpctx = gpctx;
+        sock_ctx->socket = file_name;
+        sock_ctx->fd = fd;
     }
     umask(old_mode);
-    return fd;
+
+    return sock_ctx;
 }
 
 static int get_peercred(int fd, struct gp_conn *conn)
@@ -334,7 +352,7 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
 
     if (rbuf->pos == rbuf->size) {
         /* got all data, hand over packet */
-        ret = gp_query_new(rbuf->conn->gpctx->workers, rbuf->conn,
+        ret = gp_query_new(rbuf->conn->sock_ctx->gpctx->workers, rbuf->conn,
                            rbuf->data, rbuf->size);
         if (ret != 0) {
             /* internal error, not much we can do */
@@ -472,7 +490,7 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
         ret = ENOMEM;
         goto done;
     }
-    conn->gpctx = verto_get_private(ev);
+    conn->sock_ctx = verto_get_private(ev);
     conn->us.sd = -1;
 
     listen_fd = verto_get_fd(ev);

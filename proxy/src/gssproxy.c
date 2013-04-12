@@ -40,9 +40,10 @@ int main(int argc, const char *argv[])
     verto_ctx *vctx;
     verto_ev *ev;
     int vflags;
-    int fd;
     struct gssproxy_ctx *gpctx;
+    struct gp_sock_ctx *sock_ctx;
     int ret;
+    int i;
 
     struct poptOption long_options[] = {
         POPT_AUTOHELP
@@ -98,14 +99,6 @@ int main(int argc, const char *argv[])
 
     init_server(gpctx->config->daemonize);
 
-    fd = init_unix_socket(gpctx->config->socket_name);
-    if (fd == -1) {
-        return 1;
-    }
-
-    /* special call to tell the Linux kernel gss-proxy is available */
-    init_proc_nfsd(gpctx->config);
-
     write_pid();
 
     vctx = init_event_loop();
@@ -114,12 +107,38 @@ int main(int argc, const char *argv[])
     }
     gpctx->vctx = vctx;
 
+    /* init main socket */
+    sock_ctx = init_unix_socket(gpctx, gpctx->config->socket_name);
+    if (!sock_ctx) {
+        return 1;
+    }
+
     vflags = VERTO_EV_FLAG_PERSIST | VERTO_EV_FLAG_IO_READ;
-    ev = verto_add_io(vctx, vflags, accept_sock_conn, fd);
+    ev = verto_add_io(vctx, vflags, accept_sock_conn, sock_ctx->fd);
     if (!ev) {
         return 1;
     }
-    verto_set_private(ev, gpctx, NULL);
+    verto_set_private(ev, sock_ctx, NULL);
+
+    /* init secondary sockets */
+    for (i = 0; i < gpctx->config->num_svcs; i++) {
+        if (gpctx->config->svcs[i]->socket != NULL) {
+            sock_ctx = init_unix_socket(gpctx, gpctx->config->svcs[i]->socket);
+            if (!sock_ctx) {
+                return 1;
+            }
+
+            vflags = VERTO_EV_FLAG_PERSIST | VERTO_EV_FLAG_IO_READ;
+            ev = verto_add_io(vctx, vflags, accept_sock_conn, sock_ctx->fd);
+            if (!ev) {
+                return 1;
+            }
+            verto_set_private(ev, sock_ctx, NULL);
+        }
+    }
+
+    /* special call to tell the Linux kernel gss-proxy is available */
+    init_proc_nfsd(gpctx->config);
 
     ret = gp_workers_init(gpctx);
     if (ret) {
