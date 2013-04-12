@@ -155,7 +155,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 GPDEBUG("Euid missing from [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
-                free(secname);
+                safefree(secname);
                 continue;
             }
             cfg->svcs[n]->euid = valnum;
@@ -185,7 +185,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 GPDEBUG("Mechs missing from [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
-                free(secname);
+                safefree(secname);
                 continue;
             }
 
@@ -213,11 +213,10 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 GPDEBUG("No mechs found for [%s], ignoring.\n", secname);
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
-                free(secname);
+                safefree(secname);
                 continue;
             }
-            free(secname);
-            secname = NULL;
+            safefree(secname);
         }
     }
 
@@ -229,7 +228,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
     ret = 0;
 
 done:
-    free(secname);
+    safefree(secname);
     return ret;
 }
 
