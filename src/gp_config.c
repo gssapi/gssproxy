@@ -184,6 +184,15 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 }
             }
 
+            value = gp_config_get_string(ctx, secname, "socket");
+            if (value != NULL) {
+                cfg->svcs[n]->socket = strdup(value);
+                if (!cfg->svcs[n]->socket) {
+                    ret = ENOMEM;
+                    goto done;
+                }
+            }
+
             ret = setup_service_creds_handle(cfg->svcs[n]);
             if (ret) {
                 goto done;

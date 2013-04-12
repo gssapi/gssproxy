@@ -65,9 +65,15 @@ static void gpm_init_once(void)
 
 static int get_pipe_name(struct gpm_ctx *gpmctx, char *name)
 {
+    const char *socket;
     int ret;
 
-    ret = snprintf(name, PATH_MAX, "%s", GP_SOCKET_NAME);
+    socket = getenv("GSSPROXY_SOCKET");
+    if (!socket) {
+        socket = GP_SOCKET_NAME;
+    }
+
+    ret = snprintf(name, PATH_MAX, "%s", socket);
     if (ret < 0 || ret >= PATH_MAX) {
         return ENAMETOOLONG;
     }

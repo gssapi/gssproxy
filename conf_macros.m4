@@ -46,12 +46,12 @@ AC_DEFUN([WITH_PUBCONF_PATH],
 AC_DEFUN([WITH_SOCKET_NAME],
   [ AC_ARG_WITH([socket-name],
                 [AC_HELP_STRING([--with-socket-name=PATH],
-                                [Name of the GSS Proxy socket file [/var/run/gssproxy.sock]]
+                                [Name of the GSS Proxy socket file [/var/lib/gssproxy/default.sock]]
                                )
                 ]
                )
-    gp_socket_name="\"VARDIR\"/run/gssproxy.sock"
-    socketname="${localstatedir}/run/gssproxy.sock"
+    gp_socket_name="\"VARDIR\"/lib/gssproxy/default.sock"
+    socketname="${localstatedir}/lib/gssproxy/default.sock"
     if test x"$with_socket_name" != x; then
         gp_socket_name=$with_socket_name
         socketname=$with_socket_name

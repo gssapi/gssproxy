@@ -51,6 +51,7 @@ struct gp_service {
     uid_t euid;
     bool trusted;
     bool kernel_nfsd;
+    char *socket;
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
@@ -76,6 +77,12 @@ struct gssproxy_ctx {
     verto_ctx *vctx;
 };
 
+struct gp_sock_ctx {
+    struct gssproxy_ctx *gpctx;
+    const char *socket;
+    int fd;
+};
+
 struct gp_conn;
 
 /* from gp_config.c */
@@ -91,12 +98,14 @@ void init_proc_nfsd(struct gp_config *cfg);
 void write_pid(void);
 
 /* from gp_socket.c */
-int init_unix_socket(const char *file_name);
+struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
+                                     const char *file_name);
 void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);
 void gp_conn_free(struct gp_conn *conn);
 void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
                          uint8_t *buffer, size_t buflen);
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn);
+const char *gp_conn_get_socket(struct gp_conn *conn);
 
 /* from gp_workers.c */
 int gp_workers_init(struct gssproxy_ctx *gpctx);
