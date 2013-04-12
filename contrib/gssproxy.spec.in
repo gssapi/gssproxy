@@ -68,7 +68,8 @@ make install DESTDIR=%{buildroot}
 rm -f %{buildroot}%{_libdir}/gssproxy/proxymech.la
 install -d -m755 %{buildroot}%{_sysconfdir}/gssproxy
 install -d -m755 %{buildroot}%{_unitdir}
-install -m644 examples/gssproxy-example.conf %{buildroot}%{_sysconfdir}/gssproxy/gssproxy.conf
+install -m644 examples/gssproxy.conf %{buildroot}%{_sysconfdir}/gssproxy/gssproxy.conf
+install -m644 examples/mech %{buildroot}%{_sysconfdir}/gss/mech
 install -m644 systemd/gssproxy.service %{buildroot}%{_unitdir}/gssproxy.service
 
 %clean
@@ -83,6 +84,7 @@ rm -rf %{buildroot}
 %attr(700,root,root) %dir %{gpstatedir}
 %attr(700,root,root) %dir %{gpstatedir}/clients
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
+%attr(0644,root,root) %config(noreplace) /%{_sysconfdir}/gss/mech
 %{_libdir}/gssproxy/proxymech.so
 %{_mandir}/man5/gssproxy.conf.5*
 %{_mandir}/man8/gssproxy.8*

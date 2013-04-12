@@ -199,7 +199,6 @@ interposetest_LDADD = \
     $(GSS_PROXY_LIBS)
 
 dist_noinst_DATA += \
-    examples/gssproxy-example.conf \
     m4
 
 noinst_PROGRAMS = cli_srv_comm interposetest

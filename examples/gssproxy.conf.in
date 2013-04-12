@@ -1,0 +1,11 @@
+[gssproxy]
+
+[service/nfs]
+  mechs = krb5
+  cred_store = keytab:/etc/krb5.keytab
+  cred_store = ccache:FILE:@gpclidir@/krb5cc_%U
+  cred_store = client_keytab:@gpclidir@/%U.keytab
+  trusted = yes
+  kernel_nfsd = yes
+  euid = 0
+
