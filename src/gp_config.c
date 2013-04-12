@@ -31,14 +31,26 @@
 #include "gp_proxy.h"
 #include "gp_config.h"
 
+static void free_str_array(char ***a)
+{
+    char **array = *a;
+    int i;
+
+    if (!a) {
+        return;
+    }
+    for (i = 0; array[i]; i++) {
+        safefree(array[i]);
+    }
+    safefree(*a);
+}
+
 static void gp_service_free(struct gp_service *svc)
 {
     free(svc->name);
     if (svc->mechs & GP_CRED_KRB5) {
         free(svc->krb5.principal);
-        free(svc->krb5.keytab);
-        free(svc->krb5.ccache);
-        free(svc->krb5.client_keytab);
+        free_str_array(&(svc->krb5.cred_store));
     }
     gp_free_creds_handle(&svc->creds_handle);
     memset(svc, 0, sizeof(struct gp_service));
@@ -60,7 +72,13 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
                              struct gp_ini_context *ctx,
                              const char *secname)
 {
-    const char *value;
+    struct { const char *a; const char *b; } deprecated_vals[] = {
+        {"krb5_keytab", "keytab" },
+        {"krb5_ccache", "ccache" },
+        {"krb5_client_keytab", "client_keytab" }
+    };
+    char *value;
+    int i;
 
     value = gp_config_get_string(ctx, secname, "krb5_principal");
     if (value) {
@@ -70,29 +88,21 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         }
     }
 
-    value = gp_config_get_string(ctx, secname, "krb5_keytab");
-    if (value) {
-        svc->krb5.keytab = strdup(value);
-        if (!svc->krb5.keytab) {
-            return ENOMEM;
+    /* check for deprecated options */
+    for (i = 0; i < 3; i++) {
+        value = gp_config_get_string(ctx, secname, deprecated_vals[i].a);
+        if (value) {
+            GPERROR("\"%s = %s\" is deprecated, "
+                    "please use \"cred_store = %s:%s\"\n",
+                    deprecated_vals[i].a, value,
+                    deprecated_vals[i].b, value);
+            return EINVAL;
         }
     }
 
-    value = gp_config_get_string(ctx, secname, "krb5_ccache");
-    if (value) {
-        svc->krb5.ccache = strdup(value);
-        if (!svc->krb5.ccache) {
-            return ENOMEM;
-        }
-    }
-
-    value = gp_config_get_string(ctx, secname, "krb5_client_keytab");
-    if (value) {
-        svc->krb5.client_keytab = strdup(value);
-        if (!svc->krb5.client_keytab) {
-            return ENOMEM;
-        }
-    }
+    svc->krb5.cred_store = gp_config_get_string_array(ctx, secname,
+                                                      "cred_store",
+                                                      &svc->krb5.cred_count);
 
     return 0;
 }
