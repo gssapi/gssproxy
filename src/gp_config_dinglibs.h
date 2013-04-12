@@ -27,6 +27,10 @@
 char *gp_dinglibs_get_string(struct gp_ini_context *ctx,
                              const char *secname,
                              const char *key);
+char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
+                                    const char *secname,
+                                    const char *key,
+                                    int *num_values);
 int gp_dinglibs_get_int(struct gp_ini_context *ctx,
                         const char *secname,
                         const char *key);

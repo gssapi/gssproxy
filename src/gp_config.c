@@ -379,6 +379,14 @@ char *gp_config_get_string(struct gp_ini_context *ctx,
     return gp_iniparser_get_string(ctx, secname, keyname);
 }
 
+char **gp_config_get_string_array(struct gp_ini_context *ctx,
+                                  const char *secname,
+                                  const char *keyname,
+                                  int *num_values)
+{
+    return NULL;
+}
+
 int gp_config_get_int(struct gp_ini_context *ctx,
                       const char *secname,
                       const char *keyname)
@@ -418,6 +426,14 @@ char *gp_config_get_string(struct gp_ini_context *ctx,
                            const char *keyname)
 {
     return gp_dinglibs_get_string(ctx, secname, keyname);
+}
+
+char **gp_config_get_string_array(struct gp_ini_context *ctx,
+                                  const char *secname,
+                                  const char *keyname,
+                                  int *num_values)
+{
+    return gp_dinglibs_get_string_array(ctx, secname, keyname, num_values);
 }
 
 int gp_config_get_int(struct gp_ini_context *ctx,
