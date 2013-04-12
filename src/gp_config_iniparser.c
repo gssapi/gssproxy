@@ -37,36 +37,57 @@
 
 #include <iniparser.h>
 
-char *gp_iniparser_get_string(struct gp_ini_context *ctx,
-                              const char *secname,
-                              const char *key)
+int gp_iniparser_get_string(struct gp_ini_context *ctx,
+                            const char *secname,
+                            const char *key,
+                            char **value)
 {
     dictionary *dict;
     char *skey;
-    char *value;
+    char *val;
     int ret;
 
     dict = (dictionary *)ctx->private_data;
 
-    ret = asprintf(&skey, "%s:%s", secname, key);
-    if (ret == -1) {
-        return NULL;
+    if (!value) {
+        return -1;
     }
 
-    value = iniparser_getstring(dict, skey, NULL);
+    *value = NULL;
+
+    ret = asprintf(&skey, "%s:%s", secname, key);
+    if (ret == -1) {
+        return -1;
+    }
+
+    val = iniparser_getstring(dict, skey, NULL);
     free(skey);
-    return value;
+
+    if (!val) {
+        return -1;
+    }
+
+    *value = val;
+
+    return 0;
 }
 
 int gp_iniparser_get_int(struct gp_ini_context *ctx,
                          const char *secname,
-                         const char *key)
+                         const char *key,
+                         int *value)
 {
     dictionary *dict;
     char *skey;
     int ret;
 
     dict = (dictionary *)ctx->private_data;
+
+    if (!value) {
+        return -1;
+    }
+
+    *value = -1;
 
     ret = asprintf(&skey, "%s:%s", secname, key);
     if (ret == -1) {
@@ -75,7 +96,14 @@ int gp_iniparser_get_int(struct gp_ini_context *ctx,
 
     ret = iniparser_getint(dict, skey, -1);
     free(skey);
-    return ret;
+
+    if (ret == -1) {
+        return -1;
+    }
+
+    *value = ret;
+
+    return 0;
 }
 
 int gp_iniparser_init(const char *config_file,

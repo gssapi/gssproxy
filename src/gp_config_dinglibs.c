@@ -37,14 +37,21 @@
 
 #include <ini_configobj.h>
 
-char *gp_dinglibs_get_string(struct gp_ini_context *ctx,
-                             const char *secname,
-                             const char *key)
+int gp_dinglibs_get_string(struct gp_ini_context *ctx,
+                           const char *secname,
+                           const char *key,
+                           char **value)
 {
     struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
     struct value_obj *vo = NULL;
-    const char *value;
     int ret;
+    char *val;
+
+    if (!value) {
+        return -1;
+    }
+
+    *value = NULL;
 
     ret = ini_get_config_valueobj(secname,
                                   key,
@@ -52,21 +59,24 @@ char *gp_dinglibs_get_string(struct gp_ini_context *ctx,
                                   INI_GET_FIRST_VALUE,
                                   &vo);
     if (ret || !vo) {
-        return NULL;
+        return -1;
     }
 
-    value = ini_get_const_string_config_value(vo, &ret);
+    val = ini_get_const_string_config_value(vo, &ret);
     if (ret) {
-        return NULL;
+        return ret;
     }
 
-    return value;
+    *value = val;
+
+    return 0;
 }
 
-char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
-                                    const char *secname,
-                                    const char *key,
-                                    int *num_values)
+int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
+                                 const char *secname,
+                                 const char *key,
+                                 int *num_values,
+                                 char ***values)
 {
     struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
     struct value_obj *vo = NULL;
@@ -75,18 +85,25 @@ char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
     int i, count = 0;
     char **array = NULL;
 
+    if (!values || !num_values) {
+        return -1;
+    }
+
+    *num_values = 0;
+    *values = NULL;
+
     ret = ini_get_config_valueobj(secname,
                                   key,
                                   ini_config,
                                   INI_GET_FIRST_VALUE,
                                   &vo);
     if (ret || !vo) {
-        return NULL;
+        return -1;
     }
 
     value = ini_get_const_string_config_value(vo, &ret);
     if (ret) {
-        return NULL;
+        return ret;
     }
 
     array = calloc(1, sizeof(char *));
@@ -131,7 +148,9 @@ char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
     } while (1);
 
     *num_values = count;
-    return array;
+    *values = array;
+
+    return 0;
 
  failed:
     if (array) {
@@ -140,17 +159,24 @@ char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
         }
         free(array);
     }
-    return NULL;
+    return -1;
 }
 
 int gp_dinglibs_get_int(struct gp_ini_context *ctx,
                         const char *secname,
-                        const char *key)
+                        const char *key,
+                        int *value)
 {
     struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
     struct value_obj *vo = NULL;
-    int value;
     int ret;
+    int val;
+
+    if (!value) {
+        return -1;
+    }
+
+    *value = -1;
 
     ret = ini_get_config_valueobj(secname,
                                   key,
@@ -162,15 +188,17 @@ int gp_dinglibs_get_int(struct gp_ini_context *ctx,
         return -1;
     }
 
-    value = ini_get_int_config_value(vo,
-                                     0, /* strict */
-                                     0, /* default */
-                                     &ret);
+    val = ini_get_int_config_value(vo,
+                                   0, /* strict */
+                                   0, /* default */
+                                   &ret);
     if (ret) {
         return -1;
     }
 
-    return value;
+    *value = val;
+
+    return 0;
 }
 
 int gp_dinglibs_init(const char *config_file,
