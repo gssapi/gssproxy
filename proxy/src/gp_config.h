@@ -36,6 +36,10 @@ int gp_config_init(const char *config_file,
 char *gp_config_get_string(struct gp_ini_context *ctx,
                            const char *secname,
                            const char *keyname);
+char **gp_config_get_string_array(struct gp_ini_context *ctx,
+                                  const char *secname,
+                                  const char *keyname,
+                                  int *num_values);
 int gp_config_get_int(struct gp_ini_context *ctx,
                       const char *secname,
                       const char *keyname);

@@ -63,6 +63,86 @@ char *gp_dinglibs_get_string(struct gp_ini_context *ctx,
     return value;
 }
 
+char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
+                                    const char *secname,
+                                    const char *key,
+                                    int *num_values)
+{
+    struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
+    struct value_obj *vo = NULL;
+    const char *value;
+    int ret;
+    int i, count = 0;
+    char **array = NULL;
+
+    ret = ini_get_config_valueobj(secname,
+                                  key,
+                                  ini_config,
+                                  INI_GET_FIRST_VALUE,
+                                  &vo);
+    if (ret || !vo) {
+        return NULL;
+    }
+
+    value = ini_get_const_string_config_value(vo, &ret);
+    if (ret) {
+        return NULL;
+    }
+
+    array = calloc(1, sizeof(char *));
+    if (array == NULL) {
+        goto failed;
+    }
+
+    array[count] = strdup(value);
+    if (array[count] == NULL) {
+        goto failed;
+    }
+
+    count++;
+
+    do {
+        ret = ini_get_config_valueobj(secname,
+                                      key,
+                                      ini_config,
+                                      INI_GET_NEXT_VALUE,
+                                      &vo);
+        if (ret || !vo) {
+            break;
+        }
+
+        value = ini_get_const_string_config_value(vo, &ret);
+        if (ret) {
+            break;
+        }
+
+        array = realloc(array, count);
+        if (array == NULL) {
+            goto failed;
+        }
+
+        array[count] = strdup(value);
+        if (array[count] == NULL) {
+            goto failed;
+        }
+
+        count++;
+
+    } while (1);
+
+    *num_values = count;
+    return array;
+
+ failed:
+    if (array) {
+        for (i=0; i < count; i++) {
+            free(array[i]);
+        }
+        free(array);
+    }
+    return NULL;
+}
+
 int gp_dinglibs_get_int(struct gp_ini_context *ctx,
                         const char *secname,
                         const char *key)
