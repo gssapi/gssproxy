@@ -24,16 +24,19 @@
    DEALINGS IN THE SOFTWARE.
 */
 
-char *gp_dinglibs_get_string(struct gp_ini_context *ctx,
-                             const char *secname,
-                             const char *key);
-char **gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
-                                    const char *secname,
-                                    const char *key,
-                                    int *num_values);
+int gp_dinglibs_get_string(struct gp_ini_context *ctx,
+                           const char *secname,
+                           const char *key,
+                           char **value);
+int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
+                                 const char *secname,
+                                 const char *key,
+                                 int *num_values,
+                                 char ***values);
 int gp_dinglibs_get_int(struct gp_ini_context *ctx,
                         const char *secname,
-                        const char *key);
+                        const char *key,
+                        int *value);
 int gp_dinglibs_init(const char *config_file,
                      struct gp_ini_context *ctx);
 int gp_dinglibs_close(struct gp_ini_context *ctx);

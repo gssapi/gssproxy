@@ -79,32 +79,43 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     };
     char *value;
     int i;
+    int ret;
 
-    value = gp_config_get_string(ctx, secname, "krb5_principal");
-    if (value) {
+    ret = gp_config_get_string(ctx, secname, "krb5_principal", &value);
+    if (ret == 0) {
         svc->krb5.principal = strdup(value);
         if (!svc->krb5.principal) {
             return ENOMEM;
         }
+    } else if (ret != ENOENT) {
+        return ret;
     }
 
     /* check for deprecated options */
     for (i = 0; i < 3; i++) {
-        value = gp_config_get_string(ctx, secname, deprecated_vals[i].a);
-        if (value) {
+        ret = gp_config_get_string(ctx, secname, deprecated_vals[i].a, &value);
+        if (ret == 0) {
             GPERROR("\"%s = %s\" is deprecated, "
                     "please use \"cred_store = %s:%s\"\n",
                     deprecated_vals[i].a, value,
                     deprecated_vals[i].b, value);
             return EINVAL;
+        } else if (ret != ENOENT) {
+            return ret;
         }
     }
 
-    svc->krb5.cred_store = gp_config_get_string_array(ctx, secname,
-                                                      "cred_store",
-                                                      &svc->krb5.cred_count);
+    /* instead look for the cred_store parameter */
+    ret = gp_config_get_string_array(ctx, secname,
+                                     "cred_store",
+                                     &svc->krb5.cred_count,
+                                     &svc->krb5.cred_store);
+    if (ret == ENOENT) {
+        /* when not there we ignore */
+        ret = 0;
+    }
 
-    return 0;
+    return ret;
 }
 
 static int setup_service_creds_handle(struct gp_service *svc)
@@ -159,33 +170,37 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 goto done;
             }
 
-            valnum = gp_config_get_int(ctx, secname, "euid");
-            if (valnum == -1) {
-                /* malformed section, mech is missing */
-                GPDEBUG("Euid missing from [%s], ignoring.\n", secname);
+            ret = gp_config_get_int(ctx, secname, "euid", &valnum);
+            if (ret != 0) {
+                /* if euid is missing or there is an error retrieving it
+                 * return an error and end. This is a fatal condition. */
+                if (ret == ENOENT) {
+                    GPERROR("Option 'euid' is missing from [%s].\n", secname);
+                    ret = EINVAL;
+                }
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 safefree(secname);
-                continue;
+                goto done;
             }
             cfg->svcs[n]->euid = valnum;
 
-            value = gp_config_get_string(ctx, secname, "trusted");
-            if (value != NULL) {
+            ret = gp_config_get_string(ctx, secname, "trusted", &value);
+            if (ret == 0) {
                 if (option_is_set(value)) {
                     cfg->svcs[n]->trusted = true;
                 }
             }
 
-            value = gp_config_get_string(ctx, secname, "kernel_nfsd");
-            if (value != NULL) {
+            ret = gp_config_get_string(ctx, secname, "kernel_nfsd", &value);
+            if (ret == 0) {
                 if (option_is_set(value)) {
                     cfg->svcs[n]->kernel_nfsd = true;
                 }
             }
 
-            value = gp_config_get_string(ctx, secname, "socket");
-            if (value != NULL) {
+            ret = gp_config_get_string(ctx, secname, "socket", &value);
+            if (ret == 0) {
                 cfg->svcs[n]->socket = strdup(value);
                 if (!cfg->svcs[n]->socket) {
                     ret = ENOMEM;
@@ -198,14 +213,18 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 goto done;
             }
 
-            value = gp_config_get_string(ctx, secname, "mechs");
-            if (value == NULL) {
-                /* malformed section, mech is missing */
-                GPDEBUG("Mechs missing from [%s], ignoring.\n", secname);
+            ret = gp_config_get_string(ctx, secname, "mechs", &value);
+            if (ret != 0) {
+                /* if mechs is missing or there is an error retrieving it
+                 * return an error and end. This is a fatal condition. */
+                if (ret == ENOENT) {
+                    GPERROR("Option 'mechs' is missing from [%s].\n", secname);
+                    ret = EINVAL;
+                }
                 gp_service_free(cfg->svcs[n]);
                 cfg->num_svcs--;
                 safefree(secname);
-                continue;
+                goto done;
             }
 
             token = strtok_r(value, ", ", &handle);
@@ -217,11 +236,12 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                     if (ret == 0) {
                         cfg->svcs[n]->mechs |= GP_CRED_KRB5;
                     } else {
-                        GPDEBUG("Failed to read krb5 config for %s, ignoring.\n",
+                        GPERROR("Failed to read krb5 config for %s.\n",
                                 secname);
+                        return ret;
                     }
                 } else {
-                    GPDEBUG("Unknown mech: %s in [%s], ignoring.\n",
+                    GPERROR("Unknown mech: %s in [%s], ignoring.\n",
                             token, secname);
                 }
 
@@ -287,17 +307,27 @@ int load_config(struct gp_config *cfg)
         return ret;
     }
 
-    tmpstr = gp_config_get_string(ctx, "gssproxy", "debug");
-    if (tmpstr) {
+    ret = gp_config_get_string(ctx, "gssproxy", "debug", &tmpstr);
+    if (ret == 0) {
         if (option_is_set(tmpstr)) {
             gp_debug_enable();
         }
+    } else if (ret != ENOENT) {
+        goto done;
     }
 
-    cfg->num_workers = gp_config_get_int(ctx, "gssproxy", "worker threads");
+    ret = gp_config_get_int(ctx, "gssproxy", "worker threads",
+                            &cfg->num_workers);
+    if (ret != 0 && ret != ENOENT) {
+        goto done;
+    }
 
     ret = load_services(cfg, ctx);
 
+done:
+    if (ret != 0) {
+        GPERROR("Error reading configuration %d: %s", ret, strerror(ret));
+    }
     gp_config_close(ctx);
     return ret;
 }
@@ -391,26 +421,29 @@ int gp_config_init(const char *config_file,
     return gp_iniparser_init(config_file, ctx);
 }
 
-char *gp_config_get_string(struct gp_ini_context *ctx,
-                           const char *secname,
-                           const char *keyname)
+int gp_config_get_string(struct gp_ini_context *ctx,
+                         const char *secname,
+                         const char *keyname,
+                         char **value)
 {
-    return gp_iniparser_get_string(ctx, secname, keyname);
+    return gp_iniparser_get_string(ctx, secname, keyname, value);
 }
 
-char **gp_config_get_string_array(struct gp_ini_context *ctx,
-                                  const char *secname,
-                                  const char *keyname,
-                                  int *num_values)
+int gp_config_get_string_array(struct gp_ini_context *ctx,
+                               const char *secname,
+                               const char *keyname,
+                               int *num_values,
+                               char ***values)
 {
     return NULL;
 }
 
 int gp_config_get_int(struct gp_ini_context *ctx,
                       const char *secname,
-                      const char *keyname)
+                      const char *keyname,
+                      int *value)
 {
-    return gp_iniparser_get_int(ctx, secname, keyname);
+    return gp_iniparser_get_int(ctx, secname, keyname, value);
 }
 
 int gp_config_get_nsec(struct gp_ini_context *ctx)
@@ -440,26 +473,30 @@ int gp_config_init(const char *config_file,
     return gp_dinglibs_init(config_file, ctx);
 }
 
-char *gp_config_get_string(struct gp_ini_context *ctx,
-                           const char *secname,
-                           const char *keyname)
+int gp_config_get_string(struct gp_ini_context *ctx,
+                         const char *secname,
+                         const char *keyname,
+                         char **value)
 {
-    return gp_dinglibs_get_string(ctx, secname, keyname);
+    return gp_dinglibs_get_string(ctx, secname, keyname, value);
 }
 
-char **gp_config_get_string_array(struct gp_ini_context *ctx,
-                                  const char *secname,
-                                  const char *keyname,
-                                  int *num_values)
+int gp_config_get_string_array(struct gp_ini_context *ctx,
+                               const char *secname,
+                               const char *keyname,
+                               int *num_values,
+                               char ***values)
 {
-    return gp_dinglibs_get_string_array(ctx, secname, keyname, num_values);
+    return gp_dinglibs_get_string_array(ctx, secname, keyname,
+                                        num_values, values);
 }
 
 int gp_config_get_int(struct gp_ini_context *ctx,
-                     const char *secname,
-                      const char *keyname)
+                      const char *secname,
+                      const char *keyname,
+                      int *value)
 {
-    return gp_dinglibs_get_int(ctx, secname, keyname);
+    return gp_dinglibs_get_int(ctx, secname, keyname, value);
 }
 
 int gp_config_get_nsec(struct gp_ini_context *ctx)

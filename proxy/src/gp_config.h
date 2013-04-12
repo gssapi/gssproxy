@@ -33,16 +33,19 @@ struct gp_ini_context {
 
 int gp_config_init(const char *config_file,
                    struct gp_ini_context *ctx);
-char *gp_config_get_string(struct gp_ini_context *ctx,
-                           const char *secname,
-                           const char *keyname);
-char **gp_config_get_string_array(struct gp_ini_context *ctx,
-                                  const char *secname,
-                                  const char *keyname,
-                                  int *num_values);
+int gp_config_get_string(struct gp_ini_context *ctx,
+                         const char *secname,
+                         const char *keyname,
+                         char **value);
+int gp_config_get_string_array(struct gp_ini_context *ctx,
+                               const char *secname,
+                               const char *keyname,
+                               int *num_values,
+                               char ***values);
 int gp_config_get_int(struct gp_ini_context *ctx,
                       const char *secname,
-                      const char *keyname);
+                      const char *keyname,
+                      int *value);
 int gp_config_get_nsec(struct gp_ini_context *ctx);
 char *gp_config_get_secname(struct gp_ini_context *ctx,
                             int i);
