@@ -50,21 +50,21 @@ int gp_iniparser_get_string(struct gp_ini_context *ctx,
     dict = (dictionary *)ctx->private_data;
 
     if (!value) {
-        return -1;
+        return EINVAL;
     }
 
     *value = NULL;
 
     ret = asprintf(&skey, "%s:%s", secname, key);
     if (ret == -1) {
-        return -1;
+        return ENOMEM;
     }
 
     val = iniparser_getstring(dict, skey, NULL);
     free(skey);
 
     if (!val) {
-        return -1;
+        return ENOENT;
     }
 
     *value = val;
@@ -84,21 +84,21 @@ int gp_iniparser_get_int(struct gp_ini_context *ctx,
     dict = (dictionary *)ctx->private_data;
 
     if (!value) {
-        return -1;
+        return EINVAL;
     }
 
     *value = -1;
 
     ret = asprintf(&skey, "%s:%s", secname, key);
     if (ret == -1) {
-        return -1;
+        return ENOMEM;
     }
 
     ret = iniparser_getint(dict, skey, -1);
     free(skey);
 
     if (ret == -1) {
-        return -1;
+        return ENOENT;
     }
 
     *value = ret;

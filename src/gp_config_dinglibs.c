@@ -58,8 +58,11 @@ int gp_dinglibs_get_string(struct gp_ini_context *ctx,
                                   ini_config,
                                   INI_GET_FIRST_VALUE,
                                   &vo);
-    if (ret || !vo) {
-        return -1;
+    if (ret) {
+        return ret;
+    }
+    if (!vo) {
+        return ENOENT;
     }
 
     val = ini_get_const_string_config_value(vo, &ret);
@@ -86,7 +89,7 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
     char **array = NULL;
 
     if (!values || !num_values) {
-        return -1;
+        return EINVAL;
     }
 
     *num_values = 0;
@@ -97,8 +100,11 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
                                   ini_config,
                                   INI_GET_FIRST_VALUE,
                                   &vo);
-    if (ret || !vo) {
-        return -1;
+    if (ret) {
+        return ret;
+    }
+    if (!vo) {
+        return ENOENT;
     }
 
     value = ini_get_const_string_config_value(vo, &ret);
@@ -108,12 +114,14 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
 
     array = calloc(1, sizeof(char *));
     if (array == NULL) {
-        goto failed;
+        ret = ENOMEM;
+        goto done;
     }
 
     array[count] = strdup(value);
     if (array[count] == NULL) {
-        goto failed;
+        ret = ENOMEM;
+        goto done;
     }
 
     count++;
@@ -124,23 +132,28 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
                                       ini_config,
                                       INI_GET_NEXT_VALUE,
                                       &vo);
-        if (ret || !vo) {
+        if (ret) {
+            goto done;
+        }
+        if (!vo) {
             break;
         }
 
         value = ini_get_const_string_config_value(vo, &ret);
         if (ret) {
-            break;
+            goto done;
         }
 
         array = realloc(array, count);
         if (array == NULL) {
-            goto failed;
+            ret = ENOMEM;
+            goto done;
         }
 
         array[count] = strdup(value);
         if (array[count] == NULL) {
-            goto failed;
+            ret = ENOMEM;
+            goto done;
         }
 
         count++;
@@ -150,16 +163,16 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
     *num_values = count;
     *values = array;
 
-    return 0;
+    ret = 0;
 
- failed:
-    if (array) {
-        for (i=0; i < count; i++) {
+done:
+    if (ret && array) {
+        for (i = 0; i < count; i++) {
             free(array[i]);
         }
         free(array);
     }
-    return -1;
+    return ret;
 }
 
 int gp_dinglibs_get_int(struct gp_ini_context *ctx,
@@ -173,7 +186,7 @@ int gp_dinglibs_get_int(struct gp_ini_context *ctx,
     int val;
 
     if (!value) {
-        return -1;
+        return EINVAL;
     }
 
     *value = -1;
@@ -184,8 +197,11 @@ int gp_dinglibs_get_int(struct gp_ini_context *ctx,
                                   INI_GET_FIRST_VALUE,
                                   &vo);
 
-    if (ret || !vo) {
-        return -1;
+    if (ret) {
+        return ret;
+    }
+    if (!vo) {
+        return ENOENT;
     }
 
     val = ini_get_int_config_value(vo,
@@ -193,7 +209,7 @@ int gp_dinglibs_get_int(struct gp_ini_context *ctx,
                                    0, /* default */
                                    &ret);
     if (ret) {
-        return -1;
+        return ret;
     }
 
     *value = val;
