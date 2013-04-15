@@ -31,9 +31,9 @@
 #include "gp_proxy.h"
 #include "gp_config.h"
 
-static void free_str_array(char ***a)
+static void free_str_array(const char ***a)
 {
-    char **array = *a;
+    const char **array = *a;
     int i;
 
     if (!a) {
@@ -77,7 +77,7 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         {"krb5_ccache", "ccache" },
         {"krb5_client_keytab", "client_keytab" }
     };
-    char *value;
+    const char *value;
     int i;
     int ret;
 
@@ -134,7 +134,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
 {
     int num_sec;
     char *secname = NULL;
-    char *value;
+    const char *value;
     char *token;
     char *handle;
     int valnum;
@@ -227,7 +227,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 goto done;
             }
 
-            token = strtok_r(value, ", ", &handle);
+            token = strtok_r(no_const(value), ", ", &handle);
             do {
 
                 ret = strcmp(value, "krb5");
@@ -299,7 +299,7 @@ static int gp_init_ini_context(const char *config_file,
 int load_config(struct gp_config *cfg)
 {
     struct gp_ini_context *ctx;
-    char *tmpstr;
+    const char *tmpstr;
     int ret;
 
     ret = gp_init_ini_context(cfg->config_file, &ctx);
@@ -476,7 +476,7 @@ int gp_config_init(const char *config_file,
 int gp_config_get_string(struct gp_ini_context *ctx,
                          const char *secname,
                          const char *keyname,
-                         char **value)
+                         const char **value)
 {
     return gp_dinglibs_get_string(ctx, secname, keyname, value);
 }
@@ -485,7 +485,7 @@ int gp_config_get_string_array(struct gp_ini_context *ctx,
                                const char *secname,
                                const char *keyname,
                                int *num_values,
-                               char ***values)
+                               const char ***values)
 {
     return gp_dinglibs_get_string_array(ctx, secname, keyname,
                                         num_values, values);

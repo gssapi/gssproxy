@@ -40,12 +40,12 @@
 int gp_dinglibs_get_string(struct gp_ini_context *ctx,
                            const char *secname,
                            const char *key,
-                           char **value)
+                           const char **value)
 {
     struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
     struct value_obj *vo = NULL;
     int ret;
-    char *val;
+    const char *val;
 
     if (!value) {
         return -1;
@@ -79,14 +79,14 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
                                  const char *secname,
                                  const char *key,
                                  int *num_values,
-                                 char ***values)
+                                 const char ***values)
 {
     struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
     struct value_obj *vo = NULL;
     const char *value;
     int ret;
     int i, count = 0;
-    char **array = NULL;
+    const char **array = NULL;
 
     if (!values || !num_values) {
         return EINVAL;
@@ -168,9 +168,9 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
 done:
     if (ret && array) {
         for (i = 0; i < count; i++) {
-            free(array[i]);
+            safefree(array[i]);
         }
-        free(array);
+        safefree(array);
     }
     return ret;
 }
