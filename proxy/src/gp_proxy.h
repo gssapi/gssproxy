@@ -40,7 +40,7 @@
 
 struct gp_cred_krb5 {
     char *principal;
-    char **cred_store;
+    const char **cred_store;
     int cred_count;
 };
 
