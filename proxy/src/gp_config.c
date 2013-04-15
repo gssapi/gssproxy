@@ -435,7 +435,7 @@ int gp_config_get_string_array(struct gp_ini_context *ctx,
                                int *num_values,
                                char ***values)
 {
-    return NULL;
+    return ENOENT;
 }
 
 int gp_config_get_int(struct gp_ini_context *ctx,
