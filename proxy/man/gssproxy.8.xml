@@ -78,6 +78,17 @@
             </varlistentry>
             <varlistentry>
                 <term>
+                    <option>-d</option>,<option>--debug</option>
+                </term>
+                <listitem>
+                    <para>
+                        Turn on debugging.
+                    </para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>
                     <option>--version</option>
                 </term>
                 <listitem>
