@@ -31,8 +31,15 @@
     <refsect1 id='description'>
         <title>DESCRIPTION</title>
         <para>
-            <command>gssproxy</command> provides a daemons to manage access to
-            GSSAPI credetnials.
+            <command>gssproxy</command> provides a daemon to manage access to
+            GSSAPI credentials.
+        </para>
+        <para>
+            <command>gssproxy</command> consists of the <command>gssproxy</command> daemon
+            (configured by the <citerefentry><refentrytitle>gssproxy.conf</refentrytitle>
+            <manvolnum>5</manvolnum></citerefentry> file) and a GSSAPI interposer plugin
+            (<citerefentry><refentrytitle>gssproxy-mech</refentrytitle><manvolnum>8</manvolnum>
+            </citerefentry>).
         </para>
     </refsect1>
 
@@ -131,6 +138,9 @@
         <para>
             <citerefentry>
                 <refentrytitle>gssproxy.conf</refentrytitle><manvolnum>5</manvolnum>
+            </citerefentry> and
+            <citerefentry>
+                <refentrytitle>gssproxy-mech</refentrytitle><manvolnum>8</manvolnum>
             </citerefentry>.
         </para>
     </refsect1>

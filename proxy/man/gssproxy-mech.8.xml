@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DocBook V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+<reference>
+<title>GssProxy GSSAPI mechanism manual page</title>
+<refentry>
+    <refentryinfo>
+        <productname>GSS Proxy</productname>
+        <orgname>GSS-Proxy - http://fedorahosted.org/gss-proxy</orgname>
+    </refentryinfo>
+
+    <refmeta>
+        <refentrytitle>gssproxy-mech</refentrytitle>
+        <manvolnum>8</manvolnum>
+    </refmeta>
+
+    <refnamediv id='name'>
+        <refname>gssproxy-mech</refname>
+        <refpurpose>GssProxy GSSAPI mechanism plugin</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv id='synopsis'>
+        <cmdsynopsis>
+            <command>proxymech_v1 2.16.840.1.113730.3.8.15.1 /usr/lib64/gssproxy/proxymech.so </command>
+            <arg choice='opt'>
+                <replaceable>options</replaceable>
+            </arg>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1 id='description'>
+        <title>DESCRIPTION</title>
+        <para>
+            The gssproxy proxymech module is a interposer plugin that is
+            loaded by GSSAPI. It is enabled by
+            <filename>/etc/gss/mech</filename> configuration file.
+        </para>
+        <para>
+            The interposer plugin allows to intercept the entire GSSAPI
+            communication and detour to the <command>gssproxy</command>
+            daemon. When the interposer plugin is installed two other
+            conditions need to be met in order to activate it:
+        </para>
+	<variablelist>
+            <varlistentry>
+                <term>a) interposer configuration file</term>
+                <listitem>
+                    <para>The plugin needs to be manually enabled in the
+                        <filename>/etc/gss/mech</filename> file.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>b) gssproxy environment variable</term>
+                <listitem>
+                    <para>
+                        The interposer plugin will not forward to the
+                        gssproxy daemon unless the environment variable
+                        named <emphasis>GSS_USE_PROXY=yes</emphasis> is set.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            Furthermore, the interposer plugin can be configured to behave in
+            different ways when called from the GSSAPI. This behavior is
+            controlled via the <emphasis>GSSPROXY_BEHAVIOR</emphasis>
+            environment variable. It accepts four different values:
+        </para>
+        <variablelist>
+            <varlistentry>
+                <term>LOCAL_ONLY</term>
+                <listitem>
+                    <para>All commands received with this setting will cause
+                        to immediately reenter the GSSAPI w/o any interaction
+                        with the gssproxy daemon. When the request cannot be
+                        processed it will just fail. This is the default
+                        behavior when the
+                        <emphasis>GSSPROXY_BEHAVIOR</emphasis> environment
+                        variable is not set at all.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>LOCAL_FIRST</term>
+                <listitem>
+                    <para>All commands received with this setting will cause
+                        to immediately reenter the GSSAPI. When the local
+                        GSSAPI cannot process the request, it will resend the
+                        request to the gssproxy daemon.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>REMOTE_FIRST</term>
+                <listitem>
+                    <para>All commands received with this setting will be
+                        forwarded to the gssproxy daemon first. If the request
+                        cannot be handled there, the request will reenter the
+                        local GSSAPI.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>REMOTE_ONLY</term>
+                <listitem>
+                    <para>This setting is currently not fully implemented and
+                        therefor not supported.
+                    </para>
+                </listitem>
+            </varlistentry>
+        </variablelist>
+        <para>
+            Finally the interposer may need to use a special per-service
+            socket in order to communicate with gssproxy. The path to this
+            socket is set via the <emphasis>GSSPROXY_SOCKET</emphasis>
+            environment variable.
+        </para>
+    </refsect1>
+
+    <refsect1 id='see_also'>
+        <title>SEE ALSO</title>
+        <para>
+            <citerefentry>
+                <refentrytitle>gssproxy.conf</refentrytitle><manvolnum>5</manvolnum>
+            </citerefentry> and
+            <citerefentry>
+                <refentrytitle>gssproxy</refentrytitle><manvolnum>8</manvolnum>
+            </citerefentry>.
+        </para>
+    </refsect1>
+</refentry>
+</reference>
