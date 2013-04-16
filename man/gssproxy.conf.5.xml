@@ -198,7 +198,10 @@
         <para>
             <citerefentry>
                 <refentrytitle>gssproxy</refentrytitle><manvolnum>8</manvolnum>
-            </citerefentry>
+            </citerefentry> and
+            <citerefentry>
+                <refentrytitle>gssproxy-mech</refentrytitle><manvolnum>8</manvolnum>
+            </citerefentry>.
         </para>
     </refsect1>
 

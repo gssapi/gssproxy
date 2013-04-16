@@ -12,7 +12,7 @@ XMLLINT_FLAGS = --catalogs --postvalid --nonet --xinclude --noout
 XSLTPROC_FLAGS = --catalogs --xinclude --nonet
 
 man_MANS = \
-    gssproxy.8 gssproxy.conf.5
+    gssproxy.8 gssproxy.conf.5 gssproxy-mech.8
 
 EXTRA_DIST = $(man_MANS:%=%.xml) $(wildcard $(srcdir)/include/*.xml)
 
