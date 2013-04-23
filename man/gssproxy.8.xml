@@ -73,7 +73,7 @@
                 <listitem>
                     <para>
                         Specify a non-default config file. The default is
-                        <filename>/etc/gssprosy/gssproxy.conf</filename>. For reference
+                        <filename>/etc/gssproxy/gssproxy.conf</filename>. For reference
                         on the config file syntax and options, consult the
                         <citerefentry>
                             <refentrytitle>gssproxy.conf</refentrytitle>
