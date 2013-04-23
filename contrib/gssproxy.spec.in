@@ -17,7 +17,7 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 ### Dependencies ###
 
-Requires: krb5-libs >= 1.11.1
+Requires: krb5-libs >= 1.11.2
 Requires: keyutils-libs
 Requires(post): systemd-units
 Requires(preun): systemd-units
@@ -35,7 +35,7 @@ BuildRequires: docbook-style-xsl
 BuildRequires: doxygen
 BuildRequires: gettext-devel
 BuildRequires: pkgconfig
-BuildRequires: krb5-devel
+BuildRequires: krb5-devel >= 1.11.2
 BuildRequires: libselinux-devel
 BuildRequires: keyutils-libs-devel
 BuildRequires: libini_config-devel >= 1.0.0.1
