@@ -56,18 +56,6 @@ static void gp_service_free(struct gp_service *svc)
     memset(svc, 0, sizeof(struct gp_service));
 }
 
-static bool gp_boolean_is_true(const char *s)
-{
-    if (strcasecmp(s, "1") == 0 ||
-        strcasecmp(s, "on") == 0 ||
-        strcasecmp(s, "true") == 0 ||
-        strcasecmp(s, "yes") == 0) {
-        return true;
-    }
-
-    return false;
-}
-
 static int get_krb5_mech_cfg(struct gp_service *svc,
                              struct gp_ini_context *ctx,
                              const char *secname)

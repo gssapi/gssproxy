@@ -35,3 +35,15 @@ bool gp_same(const char *a, const char *b)
 
     return false;
 }
+
+bool gp_boolean_is_true(const char *s)
+{
+    if (strcasecmp(s, "1") == 0 ||
+        strcasecmp(s, "on") == 0 ||
+        strcasecmp(s, "true") == 0 ||
+        strcasecmp(s, "yes") == 0) {
+        return true;
+    }
+
+    return false;
+}

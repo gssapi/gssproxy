@@ -66,6 +66,7 @@
 #define MAX_RPC_SIZE 1024*1024
 
 bool gp_same(const char *a, const char *b);
+bool gp_boolean_is_true(const char *s);
 
 #include "rpcgen/gss_proxy.h"
 
