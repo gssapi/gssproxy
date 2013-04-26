@@ -56,7 +56,7 @@ static void gp_service_free(struct gp_service *svc)
     memset(svc, 0, sizeof(struct gp_service));
 }
 
-static bool option_is_set(const char *s)
+static bool gp_boolean_is_true(const char *s)
 {
     if (strcasecmp(s, "1") == 0 ||
         strcasecmp(s, "on") == 0 ||
@@ -187,14 +187,14 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
 
             ret = gp_config_get_string(ctx, secname, "trusted", &value);
             if (ret == 0) {
-                if (option_is_set(value)) {
+                if (gp_boolean_is_true(value)) {
                     cfg->svcs[n]->trusted = true;
                 }
             }
 
             ret = gp_config_get_string(ctx, secname, "kernel_nfsd", &value);
             if (ret == 0) {
-                if (option_is_set(value)) {
+                if (gp_boolean_is_true(value)) {
                     cfg->svcs[n]->kernel_nfsd = true;
                 }
             }
@@ -309,7 +309,7 @@ int load_config(struct gp_config *cfg)
 
     ret = gp_config_get_string(ctx, "gssproxy", "debug", &tmpstr);
     if (ret == 0) {
-        if (option_is_set(tmpstr)) {
+        if (gp_boolean_is_true(tmpstr)) {
             gp_debug_enable();
         }
     } else if (ret != ENOENT) {
