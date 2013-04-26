@@ -81,7 +81,7 @@ rm -rf %{buildroot}
 %{_unitdir}/gssproxy.service
 %{_sbindir}/gssproxy
 %attr(755,root,root) %dir %{pubconfpath}
-%attr(700,root,root) %dir %{gpstatedir}
+%attr(755,root,root) %dir %{gpstatedir}
 %attr(700,root,root) %dir %{gpstatedir}/clients
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
 %attr(0644,root,root) %config(noreplace) /%{_sysconfdir}/gss/mech
