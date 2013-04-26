@@ -105,7 +105,8 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
     if (!envval) {
         return NULL;
     }
-    if ((strcmp(envval, "YES") != 0) && (strcmp(envval, "1") != 0)) {
+
+    if (!gp_boolean_is_true(envval)) {
         return NULL;
     }
 
