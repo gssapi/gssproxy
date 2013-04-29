@@ -27,8 +27,8 @@ logpath = @logpath@
 pubconfpath = @pubconfpath@
 pkgconfigdir = $(libdir)/pkgconfig
 
-gpstatedir = $(localstatedir)/lib/gssproxy
-gpclidir = $(gpstatedir)/clients
+gpstatedir = @gpstatedir@
+gpclidir = @gpstatedir@/clients
 
 AM_CFLAGS =
 if WANT_AUX_INFO

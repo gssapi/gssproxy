@@ -219,6 +219,23 @@ AC_DEFUN([WITH_CC_PATH],
     AC_DEFINE_UNQUOTED(CCACHE_PATH, "$config_ccpath", [Where to store ccache files for gssproxy])
   ])
 
+AC_DEFUN([WITH_GPSTATE_PATH],
+  [ AC_ARG_WITH([gpstate-path],
+                [AC_HELP_STRING([--with-gpstate-path=PATH],
+                                [Where to create default socket for gssproxy [/var/lib/gssproxy]]
+                               )
+                ]
+               )
+    config_gpstatepath="\"VARDIR\"/lib/gssproxy"
+    gpstatedir="${localstatedir}/lib/gssproxy"
+    if test x"$with_gpstate_path" != x; then
+        config_gpstatepath=$with_gpstate_path
+        gpstatepath=$with_gpstate_path
+    fi
+    AC_SUBST(gpstatedir)
+    AC_DEFINE_UNQUOTED(GPSTATE_PATH, "$config_gpstatepath", [Where to store ccache files for gssproxy])
+  ])
+
 AC_DEFUN([WITH_GSSIDEBUG],
   [ AC_ARG_WITH([gssidebug],
                 [AC_HELP_STRING([--with-gssidebug],

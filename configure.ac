@@ -66,6 +66,7 @@ WITH_MANPAGES
 WITH_XML_CATALOG
 WITH_SELINUX
 WITH_GSSIDEBUG
+WITH_GPSTATE_PATH
 
 m4_include([external/pkg.m4])
 m4_include([external/libpopt.m4])
