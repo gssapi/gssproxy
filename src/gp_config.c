@@ -363,7 +363,7 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
 
     ret = load_config(cfg);
     if (ret) {
-        GPDEBUG("Config file not found! Proceeding with defaults.\n");
+        GPDEBUG("Config file not found!\n");
     }
 
 done:
