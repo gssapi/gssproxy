@@ -242,11 +242,36 @@ AC_DEFUN([WITH_GSSIDEBUG],
                                 [Whether to build with interposer debugging support [no]]
                                )
                 ],
-		[],
+                [],
                 with_gssidebug=no
                )
     if test x"$with_gssidebug" = xyes; then
         AC_DEFINE_UNQUOTED(GSSI_DEBUGGING, 1, [Build with interposer debugging support])
     fi
+  ])
+
+AC_DEFUN([WITH_GPP_DEFAULT_BEHAVIOR],
+  [ AC_ARG_WITH([gpp_default_behavior],
+                [AC_HELP_STRING([--with-gpp-default-behavior=LOCAL_FIRST|LOCAL_ONLY|REMOTE_FIRST|REMOTE_ONLY],
+                                [Which default behavior the gssproxy interposer plugin should use [LOCAL_FIRST]]
+                               )
+                ],
+                [],
+               )
+    default_behavior=GPP_LOCAL_FIRST
+    if test x"$with_gpp_default_behavior" = x"LOCAL_FIRST"; then
+        AC_MSG_RESULT([Using gssproxy interposer behavior LOCAL_FIRST])
+    elif test x"$with_gpp_default_behavior" = x"LOCAL_ONLY"; then
+        AC_MSG_RESULT([Using gssproxy interposer behavior LOCAL_ONLY])
+        default_behavior=GPP_LOCAL_ONLY
+    elif test x"$with_gpp_default_behavior" = x"REMOTE_FIRST"; then
+        AC_MSG_RESULT([Using gssproxy interposer behavior REMOTE_FIRST])
+        default_behavior=GPP_REMOTE_FIRST
+    elif test x"$with_gpp_default_behavior" = x"REMOTE_ONLY"; then
+        AC_MSG_ERROR([REMOTE_ONLY currently not supported])
+    elif test x"$with_gpp_default_behavior" != x; then
+        AC_MSG_ERROR([unknown gpp default behavior])
+    fi
+    AC_DEFINE_UNQUOTED(GPP_DEFAULT_BEHAVIOR, $default_behavior, [Default gssproxy interposer plugin behavior])
   ])
 
