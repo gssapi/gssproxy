@@ -25,7 +25,6 @@
 
 #include <stdbool.h>
 #include <string.h>
-#include "gp_common.h"
 
 bool gp_same(const char *a, const char *b)
 {

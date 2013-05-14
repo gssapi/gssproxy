@@ -113,7 +113,8 @@ GP_MECHGLUE_OBJ = \
     src/mechglue/gpp_indicate_mechs.c \
     src/mechglue/gpp_priv_integ.c \
     src/mechglue/gpp_misc.c \
-    src/mechglue/gss_plugin.c
+    src/mechglue/gss_plugin.c \
+    src/gp_util.c
 
 dist_noinst_HEADERS = \
     rpcgen/gp_rpc.h \
@@ -153,7 +154,7 @@ gssproxy_SOURCES = \
     src/gp_export.c \
     src/gp_debug.c \
     src/gp_log.c \
-    src/gp_common.c \
+    src/gp_util.c \
     src/gp_rpc_accept_sec_context.c \
     src/gp_rpc_release_handle.c \
     src/gp_rpc_acquire_cred.c \
