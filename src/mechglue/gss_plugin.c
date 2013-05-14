@@ -75,12 +75,13 @@ enum gpp_behavior gpp_get_behavior(void)
             } else if (strcmp(envval, "REMOTE_ONLY") == 0) {
                 behavior = GPP_REMOTE_ONLY;
             } else {
-                /* unknwon setting, default to local first */
-                behavior = GPP_LOCAL_FIRST;
+                /* unknown setting, default to what has been configured
+                 * (by default local first) */
+                behavior = GPP_DEFAULT_BEHAVIOR;
             }
         } else {
-            /* default to local only for now */
-            behavior = GPP_LOCAL_FIRST;
+            /* default to what has been configured (by default local only) */
+            behavior = GPP_DEFAULT_BEHAVIOR;
         }
     }
 
