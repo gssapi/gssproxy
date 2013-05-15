@@ -146,29 +146,9 @@ done:
     return maj;
 }
 
-OM_uint32 gssi_export_name(OM_uint32 *minor_status,
+/* OM_uint32 gssi_export_name(OM_uint32 *minor_status,
                            const gss_name_t input_name,
-                           gss_buffer_t exported_name)
-{
-    struct gpp_name_handle *name;
-    OM_uint32 maj, min = 0;
-
-    GSSI_TRACE();
-
-    name = (struct gpp_name_handle *)input_name;
-    if (!name->local && !name->remote) {
-        return GSS_S_BAD_NAME;
-    }
-
-    if (name->local) {
-        maj = gss_export_name(&min, name->local, exported_name);
-    } else {
-        maj = gpm_export_name(&min, name->remote, exported_name);
-    }
-
-    *minor_status = gpp_map_error(min);
-    return maj;
-}
+                           gss_buffer_t exported_name) */
 
 OM_uint32 gssi_export_name_composite(OM_uint32 *minor_status,
                                      const gss_name_t input_name,
