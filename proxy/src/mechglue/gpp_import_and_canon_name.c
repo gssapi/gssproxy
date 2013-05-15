@@ -120,11 +120,11 @@ OM_uint32 gssi_import_name_by_mech(OM_uint32 *minor_status,
         goto done;
     }
 
-    /* Alays use remote name by default, otherwise canonicalization
+    /* Always use remote name by default, otherwise canonicalization
      * will loose information about the original name, for example
      * it will convert names of the special type GSS_C_NT_STRING_UID_NAME
      * or GSS_NT_MACHINE_UID_NAME in a non reversible way and the proxy
-     * will not be a le to use them as intended (for impersonation by
+     * will not be able to use them as intended (for impersonation by
      * trusted services) */
     maj = gpm_import_name(&min,
                           input_name_buffer,
