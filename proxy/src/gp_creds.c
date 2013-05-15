@@ -104,7 +104,7 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
     for (i = 0; i < gpctx->config->num_svcs; i++) {
         if (gpctx->config->svcs[i]->euid == gcs->ucred.uid) {
             if (gpctx->config->svcs[i]->socket &&
-                gp_same(socket, gpctx->config->svcs[i]->socket)) {
+                !gp_same(socket, gpctx->config->svcs[i]->socket)) {
                 continue;
             }
             return gpctx->config->svcs[i];
