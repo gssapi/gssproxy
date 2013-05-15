@@ -161,6 +161,7 @@ static int gpm_release_sock(struct gpm_ctx *gpmctx)
     return pthread_mutex_unlock(&gpmctx->lock);
 }
 
+/* must be called after the lock has been grabbed */
 static int gpm_send_buffer(struct gpm_ctx *gpmctx,
                            char *buffer, uint32_t length)
 {
@@ -173,8 +174,6 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
     if (length > MAX_RPC_SIZE) {
         return EINVAL;
     }
-
-    gpm_grab_sock(gpmctx);
 
     size = length | FRAGMENT_BIT;
     size = htonl(size);
@@ -225,46 +224,29 @@ done:
         /* on errors we can only close the fd and return */
         gpm_close_socket(gpmctx);
     }
-    gpm_release_sock(gpmctx);
     return ret;
 }
 
+/* must be called after the lock has been grabbed */
 static int gpm_recv_buffer(struct gpm_ctx *gpmctx,
                            char *buffer, uint32_t *length)
 {
     uint32_t size;
     size_t rn;
     size_t pos;
-    bool retry;
     int ret;
 
-    gpm_grab_sock(gpmctx);
-
-    retry = false;
+    ret = 0;
     do {
-        ret = 0;
-        do {
-            rn = read(gpmctx->fd, &size, sizeof(uint32_t));
-            if (rn == -1) {
-                ret = errno;
-            }
-        } while (ret == EINTR);
-        if (rn != 4) {
-            /* reopen and retry once */
-            if (retry == false) {
-                gpm_close_socket(gpmctx);
-                ret = gpm_open_socket(gpmctx);
-                if (ret == 0) {
-                    retry = true;
-                    continue;
-                }
-            } else {
-                ret = EIO;
-            }
-            goto done;
+        rn = read(gpmctx->fd, &size, sizeof(uint32_t));
+        if (rn == -1) {
+            ret = errno;
         }
-        retry = false;
-    } while (retry);
+    } while (ret == EINTR);
+    if (rn != 4) {
+        ret = EIO;
+        goto done;
+    }
 
     *length = ntohl(size);
     *length &= ~FRAGMENT_BIT;
@@ -298,29 +280,22 @@ done:
         /* on errors we can only close the fd and return */
         gpm_close_socket(gpmctx);
     }
-    gpm_release_sock(gpmctx);
     return ret;
 }
 
-static int gpm_next_xid(struct gpm_ctx *gpmctx, uint32_t *xid)
+/* must be called after the lock has been grabbed */
+static uint32_t gpm_next_xid(struct gpm_ctx *gpmctx)
 {
-    int ret;
-
-    ret = gpm_grab_sock(gpmctx);
-    if (ret) {
-        goto done;
-    }
+    uint32_t xid;
 
     if (gpmctx->next_xid < 0) {
-        *xid = 0;
         gpmctx->next_xid = 1;
+        xid = 0;
     } else {
-        *xid = gpmctx->next_xid++;
+        xid = gpmctx->next_xid++;
     }
 
-done:
-    gpm_release_sock(gpmctx);
-    return ret;
+    return xid;
 }
 
 static struct gpm_ctx *gpm_get_ctx(void)
@@ -435,6 +410,7 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     uint32_t length;
     uint32_t xid;
     bool xdrok;
+    bool sockgrab = false;
     int ret;
 
     xdrmem_create(&xdr_call_ctx, buffer, MAX_RPC_SIZE, XDR_ENCODE);
@@ -458,11 +434,14 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
         return EINVAL;
     }
 
-    ret = gpm_next_xid(gpmctx, &xid);
+    /* grab the lock for the whole conversation */
+    ret = gpm_grab_sock(gpmctx);
     if (ret) {
         goto done;
     }
-    msg.xid = xid;
+    sockgrab = true;
+
+    msg.xid = xid = gpm_next_xid(gpmctx);
 
     /* encode header */
     xdrok = xdr_gp_rpc_msg(&xdr_call_ctx, &msg);
@@ -490,6 +469,10 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
         goto done;
     }
 
+    /* release the lock */
+    gpm_release_sock(gpmctx);
+    sockgrab = false;
+
     /* decode header */
     xdrok = xdr_gp_rpc_msg(&xdr_reply_ctx, &msg);
     if (!xdrok) {
@@ -512,6 +495,9 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     }
 
 done:
+    if (sockgrab) {
+        gpm_release_sock(gpmctx);
+    }
     xdr_free((xdrproc_t)xdr_gp_rpc_msg, (char *)&msg);
     xdr_destroy(&xdr_call_ctx);
     xdr_destroy(&xdr_reply_ctx);
