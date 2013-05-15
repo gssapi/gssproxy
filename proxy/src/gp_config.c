@@ -31,7 +31,7 @@
 #include "gp_proxy.h"
 #include "gp_config.h"
 
-static void free_str_array(const char ***a)
+static void free_str_array(const char ***a, int *count)
 {
     const char **array = *a;
     int i;
@@ -39,8 +39,14 @@ static void free_str_array(const char ***a)
     if (!a) {
         return;
     }
-    for (i = 0; array[i]; i++) {
-        safefree(array[i]);
+    if (count) {
+        for (i = 0; i < *count; i++) {
+            safefree(array[i]);
+        }
+    } else {
+        for (i = 0; array[i]; i++) {
+            safefree(array[i]);
+        }
     }
     safefree(*a);
 }
@@ -50,7 +56,8 @@ static void gp_service_free(struct gp_service *svc)
     free(svc->name);
     if (svc->mechs & GP_CRED_KRB5) {
         free(svc->krb5.principal);
-        free_str_array(&(svc->krb5.cred_store));
+        free_str_array(&(svc->krb5.cred_store),
+                       &svc->krb5.cred_count);
     }
     gp_free_creds_handle(&svc->creds_handle);
     memset(svc, 0, sizeof(struct gp_service));
