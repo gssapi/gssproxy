@@ -324,6 +324,7 @@ done:
         GPERROR("Error reading configuration %d: %s", ret, strerror(ret));
     }
     gp_config_close(ctx);
+    safefree(ctx);
     return ret;
 }
 
