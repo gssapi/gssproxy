@@ -250,8 +250,8 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 safefree(secname);
                 continue;
             }
-            safefree(secname);
         }
+        safefree(secname);
     }
 
     if (cfg->num_svcs == 0) {
@@ -401,6 +401,7 @@ void free_config(struct gp_config **cfg)
 
     for (i=0; i < config->num_svcs; i++) {
         gp_service_free(config->svcs[i]);
+        safefree(config->svcs[i]);
     }
 
     free(config->svcs);
