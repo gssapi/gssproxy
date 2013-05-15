@@ -144,7 +144,7 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
             goto done;
         }
 
-        array = realloc(array, count);
+        array = realloc(array, (count+1) * sizeof(char *));
         if (array == NULL) {
             ret = ENOMEM;
             goto done;
