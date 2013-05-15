@@ -312,3 +312,9 @@ prerelease-srpm:
 	mv $(srcdir)/version.m4.orig $(srcdir)/version.m4
 endif
 
+####################
+# Testing          #
+####################
+
+test_proxymech:
+	TMPDIR=tests/scripts/ ./tests/scripts/dlopen.sh ./.libs/proxymech.so || exit 1
