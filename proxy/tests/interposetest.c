@@ -526,7 +526,8 @@ void run_server(struct aproc *data)
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
-
+#if 0
+    /* disabled until gss_export_name_composite server-side is fixed */
     gss_release_buffer(&ret_min, &exported_name);
 
     ret_maj = gss_export_name_composite(&ret_min, canon_name,
@@ -536,7 +537,7 @@ void run_server(struct aproc *data)
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
-
+#endif
     ret_maj = gss_display_name(&ret_min, canon_name,
                                &out_name_buf, &out_name_type);
     if (ret_maj) {
