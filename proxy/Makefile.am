@@ -54,7 +54,7 @@ check_PROGRAMS = \
 gssplib_LTLIBRARIES = \
     proxymech.la
 
-dist_noinst_SCRIPTS =
+dist_noinst_SCRIPTS = tests/scripts/dlopen.sh
 
 dist_noinst_DATA =
 
