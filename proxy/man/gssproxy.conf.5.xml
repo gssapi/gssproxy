@@ -155,12 +155,12 @@
                     </varlistentry>
 
                 <varlistentry>
-                    <term>mech (string)</term>
+                    <term>mechs (string)</term>
                     <listitem>
                         <para>Currently only <parameter>krb5</parameter> is supported.</para>
-                        <para>The "mech" parameter is imperative, any section
+                        <para>The "mechs" parameter is imperative, any section
                             without it will be discarded.</para>
-                        <para>Default: mech = </para>
+                        <para>Default: mechs = </para>
                     </listitem>
                     </varlistentry>
 
