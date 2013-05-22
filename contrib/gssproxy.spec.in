@@ -61,6 +61,7 @@ autoreconf -f -i
     --disable-rpath
 
 make %{?_smp_mflags} all
+make test_proxymech
 
 %install
 rm -rf %{buildroot}
