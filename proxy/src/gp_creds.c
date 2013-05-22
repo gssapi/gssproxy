@@ -292,7 +292,8 @@ static int gp_get_cred_environment(struct gp_service *svc,
         } else {
             gss_key_value_element_desc *t;
             c = cs->count;
-            t = realloc(cs->elements, c + 1);
+            t = realloc(cs->elements,
+                        (c + 1) * sizeof(gss_key_value_element_desc));
             if (!t) {
                 ret = ENOMEM;
                 goto done;
@@ -304,7 +305,7 @@ static int gp_get_cred_environment(struct gp_service *svc,
                 goto done;
             }
 
-            /* increment now so in case of failure to opy the value, key is
+            /* increment now so in case of failure to copy the value, key is
              * still freed properly */
             cs->count = c + 1;
             cs->elements[c].value = strdup(cs->elements[k_num].value);
