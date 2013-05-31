@@ -3,6 +3,7 @@ Description=GSSAPI Proxy Daemon
 # GSSPROXY will not be started until syslog is
 After=syslog.target
 Before=nfs-secure.service nfs-secure-server.service
+Requires=proc-fs-nfsd.mount
 
 [Service]
 ExecStart=@sbindir@/gssproxy -D
