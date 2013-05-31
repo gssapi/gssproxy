@@ -103,6 +103,8 @@ int main(int argc, const char *argv[])
 
     vctx = init_event_loop();
     if (!vctx) {
+        fprintf(stderr, "Failed to initialize event loop. "
+                        "Is there at least one libverto backend installed?\n");
         return 1;
     }
     gpctx->vctx = vctx;
