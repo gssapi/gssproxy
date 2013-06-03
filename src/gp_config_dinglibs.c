@@ -244,7 +244,7 @@ int gp_dinglibs_init(const char *config_file,
     }
 
     ret = ini_config_parse(file_ctx,
-                           INI_STOP_ON_NONE, /* error_level */
+                           INI_STOP_ON_ANY, /* error_level */
                            /* Merge section but allow duplicates */
                            INI_MS_MERGE |
                            INI_MV1S_ALLOW |
@@ -252,9 +252,17 @@ int gp_dinglibs_init(const char *config_file,
                            INI_PARSE_NOWRAP, /* parse_flags */
                            ini_config);
     if (ret) {
+        char **errors = NULL;
         /* we had a parsing failure */
         GPDEBUG("Failed to parse config file: %d (%s)\n",
             ret, strerror(ret));
+        if (ini_config_error_count(ini_config)) {
+            ini_config_get_errors(ini_config, &errors);
+            if (errors) {
+                ini_config_print_errors(stderr, errors);
+                ini_config_free_errors(errors);
+            }
+        }
         ini_config_file_destroy(file_ctx);
         ini_config_destroy(ini_config);
         return ret;
