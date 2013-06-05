@@ -20,6 +20,8 @@ BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 Requires: krb5-libs >= 1.11.2
 Requires: keyutils-libs
 Requires: libverto-tevent
+Requires: libini_config >= 1.0.0.1
+
 Requires(post): systemd-units
 Requires(preun): systemd-units
 Requires(postun): systemd-units
