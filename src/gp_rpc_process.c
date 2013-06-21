@@ -23,6 +23,7 @@
    DEALINGS IN THE SOFTWARE.
 */
 
+#include "gp_proxy.h"
 #include "gp_rpc_process.h"
 
 typedef int (*gp_exec_fn)(gp_exec_std_args);
@@ -336,7 +337,9 @@ static int gp_rpc_execute(struct gssproxy_ctx *gpctx,
                           struct gp_service *gpsvc, uint32_t proc,
                           union gp_rpc_arg *arg, union gp_rpc_res *res)
 {
-    GPDEBUG("gp_rpc_execute: executing %d (%s)\n", proc, gp_rpc_procname(proc));
+    GPDEBUG("gp_rpc_execute: executing %d (%s) for service \"%s\", euid: %d, socket: %s\n",
+        proc, gp_rpc_procname(proc), gpsvc->name, gpsvc->euid, gpsvc->socket);
+
     return gp_xdr_set[proc].exec_fn(gpctx, gpsvc, arg, res);
 }
 
