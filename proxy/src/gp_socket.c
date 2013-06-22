@@ -35,13 +35,7 @@
 #include <netinet/in.h>
 #include "gp_proxy.h"
 #include "gp_creds.h"
-
-#ifdef HAVE_SELINUX
-#include <selinux/selinux.h>
-#define SEC_CTX security_context_t
-#else
-#define SEC_CTX void *
-#endif /* HAVE_SELINUX */
+#include "gp_selinux.h"
 
 #define FRAGMENT_BIT (1 << 31)
 
@@ -58,7 +52,7 @@ struct gp_conn {
     struct gp_sock_ctx *sock_ctx;
     struct unix_sock_conn us;
     struct gp_creds creds;
-    SEC_CTX secctx;
+    SELINUX_CTX selinux_ctx;
 };
 
 struct gp_buffer {
@@ -67,6 +61,40 @@ struct gp_buffer {
     size_t size;
     size_t pos;
 };
+
+bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx)
+{
+    const char *ra, *rb;
+
+    if (ctx == NULL) {
+        return true;
+    }
+
+    if (!(conn->creds.type | CRED_TYPE_SELINUX) ||
+         (conn->selinux_ctx == NULL)) {
+        return false;
+    }
+
+    if (strcmp(SELINUX_context_user_get(ctx),
+               SELINUX_context_user_get(conn->selinux_ctx)) != 0) {
+        return false;
+    }
+    if (strcmp(SELINUX_context_role_get(ctx),
+               SELINUX_context_role_get(conn->selinux_ctx)) != 0) {
+        return false;
+    }
+    if (strcmp(SELINUX_context_type_get(ctx),
+               SELINUX_context_type_get(conn->selinux_ctx)) != 0) {
+        return false;
+    }
+    ra = SELINUX_context_range_get(ctx);
+    rb = SELINUX_context_range_get(conn->selinux_ctx);
+    if (ra && rb && (strcmp(ra, rb) != 0)) {
+        return false;
+    }
+
+    return true;
+}
 
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn)
 {
@@ -85,6 +113,7 @@ void gp_conn_free(struct gp_conn *conn)
     if (conn->us.sd != -1) {
         close(conn->us.sd);
     }
+    SELINUX_context_free(conn->selinux_ctx);
     free(conn);
 }
 
@@ -202,6 +231,7 @@ done:
 
 static int get_peercred(int fd, struct gp_conn *conn)
 {
+    SEC_CTX secctx;
     socklen_t len;
     int ret;
 
@@ -219,17 +249,17 @@ static int get_peercred(int fd, struct gp_conn *conn)
 
     conn->creds.type |= CRED_TYPE_UNIX;
 
-#ifdef HAVE_SELINUX
-    ret = getpeercon(fd, &conn->secctx);
+    ret = SELINUX_getpeercon(fd, &secctx);
     if (ret == 0) {
         conn->creds.type |= CRED_TYPE_SELINUX;
+        conn->selinux_ctx = SELINUX_context_new(secctx);
+        SELINUX_freecon(secctx);
     } else {
         ret = errno;
         GPDEBUG("Failed to get peer's SELinux context (%d:%s)\n",
                 ret, strerror(ret));
         /* consider thisnot fatal, selinux may be disabled */
     }
-#endif /* HAVE_SELINUX */
 
     return 0;
 }
@@ -507,8 +537,6 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
     }
     conn->us.sd = fd;
 
-    GPDEBUG("Client connected(fd = %d)\n", fd);
-
     ret = set_status_flags(fd, O_NONBLOCK);
     if (ret) {
         GPDEBUG("Failed to set O_NONBLOCK on %d!\n", fd);
@@ -525,6 +553,19 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
     if (ret) {
         goto done;
     }
+
+    GPDEBUG("Client connected (fd = %d)", fd);
+    if (conn->creds.type & CRED_TYPE_UNIX) {
+        GPDEBUG(" (pid = %d) (uid = %d) (gid = %d)",
+                conn->creds.ucred.pid,
+                conn->creds.ucred.uid,
+                conn->creds.ucred.gid);
+    }
+    if (conn->creds.type & CRED_TYPE_SELINUX) {
+        GPDEBUG(" (context = %s)",
+                SELINUX_context_str(conn->selinux_ctx));
+    }
+    GPDEBUG("\n");
 
     gp_setup_reader(vctx, conn);
 

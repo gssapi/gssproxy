@@ -30,6 +30,7 @@
 #include <errno.h>
 #include "gp_proxy.h"
 #include "gp_config.h"
+#include "gp_selinux.h"
 
 static void free_str_array(const char ***a, int *count)
 {
@@ -62,6 +63,7 @@ static void gp_service_free(struct gp_service *svc)
                        &svc->krb5.cred_count);
     }
     gp_free_creds_handle(&svc->creds_handle);
+    SELINUX_context_free(svc->selinux_ctx);
     memset(svc, 0, sizeof(struct gp_service));
 }
 
@@ -251,6 +253,16 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 cfg->num_svcs--;
                 safefree(secname);
                 continue;
+            }
+
+            ret = gp_config_get_string(ctx, secname,
+                                       "selinux_context", &value);
+            if (ret == 0) {
+                cfg->svcs[n]->selinux_ctx = SELINUX_context_new(value);
+                if (!cfg->svcs[n]->selinux_ctx) {
+                    ret = EINVAL;
+                    goto done;
+                }
             }
         }
         safefree(secname);

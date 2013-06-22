@@ -112,6 +112,10 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
                     continue;
                 }
             }
+            if (!gp_conn_check_selinux(conn,
+                                       gpctx->config->svcs[i]->selinux_ctx)) {
+                continue;
+            }
             return gpctx->config->svcs[i];
         }
     }
