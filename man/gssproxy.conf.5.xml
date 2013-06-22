@@ -165,6 +165,21 @@
                     </varlistentry>
 
                 <varlistentry>
+                    <term>selinux_context (string)</term>
+                    <listitem>
+                        <para>This parameter instructs the proxy to allow map a
+                              request to the service only if the context of the
+                              connecting client matches the one defined here.
+                        </para>
+                        <para>When this parameter is not set any client will be
+                              allowed regardless of their selinux context.
+                        </para>
+                        <para>Example: selinux_context = system_u:system_r:gssd_t
+                        </para>
+                    </listitem>
+                    </varlistentry>
+
+                <varlistentry>
                     <term>socket (string)</term>
                     <listitem>
                         <para>This parameter allows to create a per-service socket file over which gssproxy client and server components communicate.

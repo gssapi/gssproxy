@@ -133,6 +133,7 @@ dist_noinst_HEADERS = \
     src/gp_config_dinglibs.h \
     src/gp_debug.h \
     src/gp_rpc_creds.h \
+    src/gp_selinux.h \
     src/mechglue/gss_plugin.h
 
 

@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include "verto.h"
 #include "gp_common.h"
+#include "gp_selinux.h"
 
 #define _(STRING) gettext(STRING)
 
@@ -52,6 +53,7 @@ struct gp_service {
     bool trusted;
     bool kernel_nfsd;
     char *socket;
+    SELINUX_CTX selinux_ctx;
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
@@ -106,6 +108,7 @@ void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
                          uint8_t *buffer, size_t buflen);
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn);
 const char *gp_conn_get_socket(struct gp_conn *conn);
+bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx);
 
 /* from gp_workers.c */
 int gp_workers_init(struct gssproxy_ctx *gpctx);
