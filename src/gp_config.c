@@ -33,12 +33,14 @@
 
 static void free_str_array(const char ***a, int *count)
 {
-    const char **array = *a;
+    const char **array;
     int i;
 
     if (!a) {
         return;
     }
+    array = *a;
+
     if (count) {
         for (i = 0; i < *count; i++) {
             safefree(array[i]);
@@ -282,13 +284,13 @@ static int gp_init_ini_context(const char *config_file,
     }
 
     ret = gp_config_init(config_file, ctx);
+
     if (ret) {
-        return ret;
+        free(ctx);
+    } else {
+        *ctxp = ctx;
     }
-
-    *ctxp = ctx;
-
-    return 0;
+    return ret;
 }
 
 int load_config(struct gp_config *cfg)

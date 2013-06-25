@@ -266,7 +266,7 @@ OM_uint32 gssi_release_name(OM_uint32 *minor_status,
 {
     struct gpp_name_handle *name;
     uint32_t rmaj, rmin = 0;
-    OM_uint32 maj, min = 0;
+    OM_uint32 maj = 0, min = 0;
 
     GSSI_TRACE();
 
