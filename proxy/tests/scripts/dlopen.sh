@@ -7,12 +7,10 @@ cat >> $tempdir/dlopen.c << _EOF
 #include <dlfcn.h>
 #include <stdio.h>
 #include <limits.h>
-#include <sys/stat.h>
 /* Simple program to see if dlopen() would succeed. */
 int main(int argc, char **argv)
 {
 	int i;
-	struct stat st;
 	char buf[PATH_MAX];
 	for (i = 1; i < argc; i++) {
 		if (dlopen(argv[i], RTLD_NOW)) {
@@ -20,7 +18,7 @@ int main(int argc, char **argv)
 				argv[i]);
 		} else {
 			snprintf(buf, sizeof(buf), "./%s", argv[i]);
-			if ((stat(buf, &st) == 0) && dlopen(buf, RTLD_NOW)) {
+			if (dlopen(buf, RTLD_NOW)) {
 				fprintf(stdout, "dlopen() of \"./%s\" "
 					"succeeded.\n", argv[i]);
 			} else {
