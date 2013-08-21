@@ -123,12 +123,24 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
     return NULL;
 }
 
-#define PWBUFLEN 2048
-static char *get_formatted_string(const char *orig, uid_t target_uid)
+static char *uid_to_name(uid_t uid)
 {
     struct passwd pwd, *res = NULL;
     char buffer[PWBUFLEN];
+    int ret;
+
+    ret = getpwuid_r(uid, &pwd, buffer, PWBUFLEN, &res);
+    if (ret || !res) {
+        return NULL;
+    }
+    return strdup(pwd.pw_name);
+}
+
+#define PWBUFLEN 2048
+static char *get_formatted_string(const char *orig, uid_t target_uid)
+{
     int len, left, right;
+    char *user = NULL;
     char *str;
     char *tmp;
     char *p;
@@ -162,9 +174,9 @@ static char *get_formatted_string(const char *orig, uid_t target_uid)
             p = str + (len - right);
             break;
         case 'u':
-            if (!res) {
-                ret = getpwuid_r(target_uid, &pwd, buffer, 2048, &res);
-                if (ret || !res) {
+            if (!user) {
+                user = uid_to_name(target_uid);
+                if (!user) {
                     safefree(str);
                     goto done;
                 }
@@ -172,7 +184,7 @@ static char *get_formatted_string(const char *orig, uid_t target_uid)
             p++;
             left = p - str;
             right = len - left;
-            len = asprintf(&tmp, "%.*s%s%s", left - 2, str, pwd.pw_name, p);
+            len = asprintf(&tmp, "%.*s%s%s", left - 2, str, user, p);
             safefree(str);
             if (len == -1) {
                 goto done;
@@ -188,6 +200,7 @@ static char *get_formatted_string(const char *orig, uid_t target_uid)
     }
 
 done:
+    safefree(user);
     return str;
 }
 
