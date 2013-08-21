@@ -162,6 +162,14 @@
                     </varlistentry>
 
                 <varlistentry>
+                    <term>impersonate (boolean)</term>
+                    <listitem>
+                        <para>Use impersonation (s4u2self + s4u2proxy) to obtain credentials</para>
+                        <para>Default: impersonate = false</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>kernel_nfsd (boolean)</term>
                     <listitem>
                         <para>Boolean flag that allows the Linux kernel to check if gssproxy is running (via <filename>/proc/net/rpc/use-gss-proxy</filename>).</para>

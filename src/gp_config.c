@@ -208,6 +208,13 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 }
             }
 
+            ret = gp_config_get_string(ctx, secname, "impersonate", &value);
+            if (ret == 0) {
+                if (gp_boolean_is_true(value)) {
+                    cfg->svcs[n]->impersonate = true;
+                }
+            }
+
             ret = gp_config_get_string(ctx, secname, "socket", &value);
             if (ret == 0) {
                 cfg->svcs[n]->socket = strdup(value);
