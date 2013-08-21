@@ -53,6 +53,7 @@ struct gp_service {
     bool any_uid;
     bool trusted;
     bool kernel_nfsd;
+    bool impersonate;
     char *socket;
     SELINUX_CTX selinux_ctx;
     gss_cred_usage_t cred_usage;

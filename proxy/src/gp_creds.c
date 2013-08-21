@@ -123,6 +123,7 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
     return NULL;
 }
 
+#define PWBUFLEN 2048
 static char *uid_to_name(uid_t uid)
 {
     struct passwd pwd, *res = NULL;
@@ -136,7 +137,6 @@ static char *uid_to_name(uid_t uid)
     return strdup(pwd.pw_name);
 }
 
-#define PWBUFLEN 2048
 static char *get_formatted_string(const char *orig, uid_t target_uid)
 {
     int len, left, right;
@@ -144,7 +144,6 @@ static char *get_formatted_string(const char *orig, uid_t target_uid)
     char *str;
     char *tmp;
     char *p;
-    int ret;
 
     str = strdup(orig);
     if (!str) {
@@ -215,6 +214,19 @@ static void free_cred_store_elements(gss_key_value_set_desc *cs)
     safefree(cs->elements);
 }
 
+static bool try_impersonate(struct gp_service *svc,
+                            gss_cred_usage_t cred_usage)
+{
+    if (!svc->impersonate) {
+        return false;
+    }
+    if (cred_usage == GSS_C_ACCEPT) {
+        return false;
+    }
+
+    return true;
+}
+
 static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
                                    gssx_name *desired_name,
                                    gss_name_t *requested_name,
@@ -223,6 +235,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
 {
     struct gp_service *svc;
     gss_name_t name = GSS_C_NO_NAME;
+    gss_buffer_desc namebuf;
     gss_OID_desc name_type;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
@@ -231,10 +244,13 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
     const char *p;
     char *str;
     bool user_requested = false;
-    int ret = 0;
+    bool use_service_keytab = false;
+    int ret = -1;
     int k_num = -1;
     int ck_num = -1;
-    int c, s;
+    int c, d;
+
+    memset(cs, 0, sizeof(gss_key_value_set_desc));
 
     target_uid = gp_conn_get_uid(gpcall->connection);
     svc = gpcall->service;
@@ -264,6 +280,8 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             /* it's a user request if it comes from an arbitrary uid */
             if (svc->euid != target_uid) {
                 user_requested = true;
+            } else {
+                use_service_keytab = true;
             }
             ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &name);
             if (ret_maj) {
@@ -273,42 +291,68 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         }
     }
 
+    /* impersonation case (only for initiation) */
+    if (user_requested) {
+        if (try_impersonate(svc, *cred_usage)) {
+            /* When impersonating we want to use the service keytab to
+             * acquire initial credential ... */
+            use_service_keytab = true;
+
+            /* ... and after that make the s4u2self delegation dance with the
+             * target name identifying the user */
+            str = uid_to_name(target_uid);
+            if (str == NULL) {
+                GPERROR("Failed to get username from uid %d\n", target_uid);
+                return ENOENT;
+            }
+            namebuf.value = str;
+            namebuf.length = strlen(str);
+            ret_maj = gss_import_name(&ret_min, &namebuf,
+                                      GSS_C_NT_USER_NAME, requested_name);
+            safefree(str);
+            if (ret_maj) {
+                GPERROR("Failed to import username %s\n", str);
+                return ENOMEM;
+            }
+        }
+    }
+
     if (svc->krb5.cred_store == NULL) {
-        cs->elements = NULL;
-        cs->count = 0;
         return 0;
     }
 
-    cs->count = svc->krb5.cred_count;
-    cs->elements = calloc(cs->count, sizeof(gss_key_value_element_desc));
+    /* allocate 1 more than in source, just in case we need to add
+     * an internal client_keytab element */
+    cs->elements = calloc(svc->krb5.cred_count + 1,
+                          sizeof(gss_key_value_element_desc));
     if (!cs->elements) {
         ret = ENOMEM;
         goto done;
     }
-
-    for (c = 0; c < cs->count; c++) {
-        p = strchr(svc->krb5.cred_store[c], ':');
+    c = 0;
+    for (d = 0; d < svc->krb5.cred_count; d++) {
+        p = strchr(svc->krb5.cred_store[d], ':');
         if (!p) {
             GPERROR("Invalid cred_store value"
                     "no ':' separator found in [%s].\n",
-                    svc->krb5.cred_store[c]);
+                    svc->krb5.cred_store[d]);
             ret = EINVAL;
             goto done;
         }
-        s = p - svc->krb5.cred_store[c];
-        str = strdup(svc->krb5.cred_store[c]);
-        if (!str) {
+
+        if (strncmp(svc->krb5.cred_store[d], "client_keytab:", 14) == 0) {
+            ck_num = c;
+        } else if (strncmp(svc->krb5.cred_store[d], "keytab:", 7) == 0) {
+            k_num = c;
+        }
+
+        ret = asprintf(&str, "%.*s", (int)(p - svc->krb5.cred_store[d]),
+                                     svc->krb5.cred_store[d]);
+        if (ret == -1) {
             ret = ENOMEM;
             goto done;
         }
-        str[s] = '\0';
         cs->elements[c].key = str;
-
-        if (strcmp(cs->elements[c].key, "keytab") == 0) {
-            k_num = c;
-        } else if (strcmp(cs->elements[c].key, "client_keytab") == 0) {
-            ck_num = c;
-        }
 
         fmtstr = p + 1;
         cs->elements[c].value = get_formatted_string(fmtstr, target_uid);
@@ -317,45 +361,41 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             ret = ENOMEM;
             goto done;
         }
+
+        c++;
     }
+    cs->count = c;
 
     /* when a user is not explicitly requested then it means the calling
      * application wants to use the credentials in the standard keytab,
      * if any. */
-    if (!user_requested && k_num != -1) {
-        if (ck_num != -1) {
-            safefree(cs->elements[ck_num].value);
-            cs->elements[ck_num].value = strdup(cs->elements[k_num].value);
-            if (!cs->elements[ck_num].value) {
-                ret = ENOMEM;
-                goto done;
-            }
-        } else {
-            gss_key_value_element_desc *t;
-            c = cs->count;
-            t = realloc(cs->elements,
-                        (c + 1) * sizeof(gss_key_value_element_desc));
-            if (!t) {
-                ret = ENOMEM;
-                goto done;
-            }
-            cs->elements = t;
-            cs->elements[c].key = strdup("client_keytab");
-            if (!cs->elements[c].key) {
+    if (use_service_keytab) {
+        if (k_num == -1) {
+            ret = EINVAL;
+            goto done;
+        }
+        if (ck_num == -1) {
+            /* we always have space for 1 more */
+            ck_num = cs->count;
+
+            cs->elements[ck_num].key = strdup("client_keytab");
+            if (!cs->elements[ck_num].key) {
                 ret = ENOMEM;
                 goto done;
             }
 
-            /* increment now so in case of failure to copy the value, key is
-             * still freed properly */
-            cs->count = c + 1;
-            cs->elements[c].value = strdup(cs->elements[k_num].value);
-            if (!cs->elements[c].value) {
-                ret = ENOMEM;
-                goto done;
-            }
+            cs->count = ck_num + 1;
+        } else {
+            safefree(cs->elements[ck_num].value);
+        }
+        cs->elements[ck_num].value = strdup(cs->elements[k_num].value);
+        if (!cs->elements[ck_num].value) {
+            ret = ENOMEM;
+            goto done;
         }
     }
+
+    ret = 0;
 
 done:
     if (ret) {
@@ -382,6 +422,13 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     gss_name_t req_name = GSS_C_NO_NAME;
     gss_OID_set_desc desired_mechs = { 1, &gp_mech_krb5 };
     gss_key_value_set_desc cred_store;
+    gss_cred_id_t impersonator_cred = GSS_C_NO_CREDENTIAL;
+    gss_cred_id_t user_cred = GSS_C_NO_CREDENTIAL;
+    gss_ctx_id_t initiator_context = GSS_C_NO_CONTEXT;
+    gss_ctx_id_t acceptor_context = GSS_C_NO_CONTEXT;
+    gss_name_t target_name = GSS_C_NO_NAME;
+    gss_buffer_desc init_token = GSS_C_EMPTY_BUFFER;
+    gss_buffer_desc accept_token = GSS_C_EMPTY_BUFFER;
 
     if (!min || !output_cred_handle) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -408,11 +455,60 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         goto done;
     }
 
-    ret_maj = gss_acquire_cred_from(&ret_min, req_name, GSS_C_INDEFINITE,
-                                    &desired_mechs, cred_usage, &cred_store,
-                                    output_cred_handle, actual_mechs, NULL);
-    if (ret_maj) {
-        goto done;
+    if (!try_impersonate(gpcall->service, cred_usage)) {
+        ret_maj = gss_acquire_cred_from(&ret_min, req_name, GSS_C_INDEFINITE,
+                                        &desired_mechs, cred_usage,
+                                        &cred_store, output_cred_handle,
+                                        actual_mechs, NULL);
+        if (ret_maj) {
+            goto done;
+        }
+    } else { /* impersonation */
+        ret_maj = gss_acquire_cred_from(&ret_min, GSS_C_NO_NAME,
+                                        GSS_C_INDEFINITE,
+                                        &desired_mechs, GSS_C_BOTH,
+                                        &cred_store, &impersonator_cred,
+                                        NULL, NULL);
+        if (ret_maj) {
+            goto done;
+        }
+        ret_maj = gss_inquire_cred(&ret_min, impersonator_cred,
+                                   &target_name, NULL, NULL, NULL);
+        if (ret_maj) {
+            goto done;
+        }
+
+        ret_maj = gss_acquire_cred_impersonate_name(&ret_min,
+                                                    impersonator_cred,
+                                                    req_name,
+                                                    GSS_C_INDEFINITE,
+                                                    &desired_mechs,
+                                                    GSS_C_INITIATE,
+                                                    &user_cred,
+                                                    actual_mechs, NULL);
+        if (ret_maj) {
+            goto done;
+        }
+        /* now acquire credentials for impersonated user to self */
+        ret_maj = gss_init_sec_context(&ret_min, user_cred, &initiator_context,
+                                       target_name, &gp_mech_krb5,
+                                       GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG,
+                                       GSS_C_INDEFINITE,
+                                       GSS_C_NO_CHANNEL_BINDINGS,
+                                       GSS_C_NO_BUFFER, NULL,
+                                       &init_token, NULL, NULL);
+        if (ret_maj) {
+            goto done;
+        }
+        /* accept context to be able to store delgated credentials */
+        ret_maj = gss_accept_sec_context(&ret_min, &acceptor_context,
+                                         impersonator_cred, &init_token,
+                                         GSS_C_NO_CHANNEL_BINDINGS,
+                                         NULL, NULL, &accept_token,
+                                         NULL, NULL, output_cred_handle);
+        if (ret_maj) {
+            goto done;
+        }
     }
 
     if (initiator_time_rec || acceptor_time_rec) {
@@ -437,6 +533,12 @@ done:
             gss_release_oid_set(&discard, actual_mechs);
         }
     }
+    gss_release_cred(&discard, &impersonator_cred);
+    gss_release_cred(&discard, &user_cred);
+    gss_release_name(&discard, &target_name);
+    gss_delete_sec_context(&discard, &initiator_context, NULL);
+    gss_release_buffer(&discard, &init_token);
+    gss_release_buffer(&discard, &accept_token);
     *min = ret_min;
 
     return ret_maj;
