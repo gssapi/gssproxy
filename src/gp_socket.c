@@ -70,7 +70,7 @@ bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx)
         return true;
     }
 
-    if (!(conn->creds.type | CRED_TYPE_SELINUX) ||
+    if (!(conn->creds.type & CRED_TYPE_SELINUX) ||
          (conn->selinux_ctx == NULL)) {
         return false;
     }
