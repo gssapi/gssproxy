@@ -678,7 +678,7 @@ int gp_get_export_creds_type(struct gssx_call_ctx *ctx)
 
 static uint32_t gp_export_creds_enoent(uint32_t *min, gss_buffer_t buf)
 {
-    int32_t *p;
+    uint32_t *p;
 
     p = malloc(CREDS_HDR);
     if (!p) {
@@ -704,7 +704,7 @@ static uint32_t gp_export_creds_linux(uint32_t *min, gss_name_t name,
     struct passwd pwd, *res;
     char *pwbuf = NULL;
     char *grbuf = NULL;
-    int32_t *p;
+    uint32_t *p;
     size_t len;
     int count, num;
     int ret;
