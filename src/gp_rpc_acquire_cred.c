@@ -26,8 +26,7 @@
 #include "gp_rpc_process.h"
 #include <gssapi/gssapi_krb5.h>
 
-int gp_acquire_cred(struct gssproxy_ctx *gpctx,
-                    struct gp_service *gpsvc,
+int gp_acquire_cred(struct gp_call_ctx *gpcall,
                     union gp_rpc_arg *arg,
                     union gp_rpc_res *res)
 {
@@ -49,7 +48,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
     acr = &res->acquire_cred;
 
     if (aca->input_cred_handle) {
-        ret_maj = gp_import_gssx_cred(&ret_min, gpsvc,
+        ret_maj = gp_import_gssx_cred(&ret_min, gpcall,
                                       aca->input_cred_handle, &in_cred);
         if (ret_maj) {
             goto done;
@@ -80,7 +79,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
         for (i = 0; i < desired_mechs->count; i++) {
             desired_mech = &desired_mechs->elements[i];
 
-            if (!gp_creds_allowed_mech(gpsvc, desired_mech)) {
+            if (!gp_creds_allowed_mech(gpcall, desired_mech)) {
                 continue;
             }
 
@@ -99,7 +98,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
             goto done;
         }
     } else {
-        ret_maj = gp_get_supported_mechs(&ret_min, gpsvc, &use_mechs);
+        ret_maj = gp_get_supported_mechs(&ret_min, &use_mechs);
         if (ret_maj) {
             goto done;
         }
@@ -114,7 +113,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
          * that define keytabs and ccaches and principals */
         if (gss_oid_equal(desired_mech, gss_mech_krb5)) {
             ret_maj = gp_add_krb5_creds(&ret_min,
-                                        gpsvc,
+                                        gpcall,
                                         in_cred,
                                         aca->desired_name,
                                         cred_usage,
@@ -150,7 +149,7 @@ int gp_acquire_cred(struct gssproxy_ctx *gpctx,
         ret_min = ENOMEM;
         goto done;
     }
-    ret_maj = gp_export_gssx_cred(&ret_min, gpsvc,
+    ret_maj = gp_export_gssx_cred(&ret_min, gpcall,
                                   &out_cred, acr->output_cred_handle);
     if (ret_maj) {
         goto done;

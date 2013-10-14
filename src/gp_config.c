@@ -184,6 +184,13 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
             }
             cfg->svcs[n]->euid = valnum;
 
+            ret = gp_config_get_string(ctx, secname, "allow_any_uid", &value);
+            if (ret == 0) {
+                if (gp_boolean_is_true(value)) {
+                    cfg->svcs[n]->any_uid = true;
+                }
+            }
+
             ret = gp_config_get_string(ctx, secname, "trusted", &value);
             if (ret == 0) {
                 if (gp_boolean_is_true(value)) {

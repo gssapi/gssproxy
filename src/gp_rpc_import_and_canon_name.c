@@ -31,8 +31,7 @@
  * I am not kidding, if you hav not read it, go back and do it now, or do not
  * touch this function */
 
-int gp_import_and_canon_name(struct gssproxy_ctx *gpctx,
-                             struct gp_service *gpsvc,
+int gp_import_and_canon_name(struct gp_call_ctx *gpcall,
                              union gp_rpc_arg *arg,
                              union gp_rpc_res *res)
 {

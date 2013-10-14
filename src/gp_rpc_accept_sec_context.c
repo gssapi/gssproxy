@@ -25,8 +25,7 @@
 
 #include "gp_rpc_process.h"
 
-int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
-                          struct gp_service *gpsvc,
+int gp_accept_sec_context(struct gp_call_ctx *gpcall,
                           union gp_rpc_arg *arg,
                           union gp_rpc_res *res)
 {
@@ -67,14 +66,15 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
     }
 
     if (asca->cred_handle) {
-        ret_maj = gp_import_gssx_cred(&ret_min, gpsvc, asca->cred_handle, &ach);
+        ret_maj = gp_import_gssx_cred(&ret_min, gpcall,
+                                      asca->cred_handle, &ach);
         if (ret_maj) {
             goto done;
         }
     }
 
     if (ach == GSS_C_NO_CREDENTIAL) {
-        ret_maj = gp_add_krb5_creds(&ret_min, gpsvc,
+        ret_maj = gp_add_krb5_creds(&ret_min, gpcall,
                                     NULL, NULL,
                                     GSS_C_ACCEPT,
                                     0, 0,
@@ -145,8 +145,7 @@ int gp_accept_sec_context(struct gssproxy_ctx *gpctx,
             ret_min = ENOMEM;
             goto done;
         }
-        ret_maj = gp_export_gssx_cred(&ret_min,
-                                      gpsvc,
+        ret_maj = gp_export_gssx_cred(&ret_min, gpcall,
                                       &dch, ascr->delegated_cred_handle);
         if (ret_maj) {
             goto done;
