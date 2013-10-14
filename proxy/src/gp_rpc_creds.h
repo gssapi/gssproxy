@@ -30,14 +30,13 @@
 #include <stdint.h>
 #include <gssapi/gssapi.h>
 
-struct gp_service;
+struct gp_call_ctx;
 
-bool gp_creds_allowed_mech(struct gp_service *svc, gss_OID desired_mech);
-uint32_t gp_get_supported_mechs(uint32_t *min,
-                                struct gp_service *svc, gss_OID_set *set);
+bool gp_creds_allowed_mech(struct gp_call_ctx *gpcall, gss_OID desired_mech);
+uint32_t gp_get_supported_mechs(uint32_t *min, gss_OID_set *set);
 
 uint32_t gp_add_krb5_creds(uint32_t *min,
-                           struct gp_service *svc,
+                           struct gp_call_ctx *gpcall,
                            gss_cred_id_t in_cred,
                            gssx_name *desired_name,
                            gss_cred_usage_t cred_usage,

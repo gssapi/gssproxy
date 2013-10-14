@@ -25,8 +25,7 @@
 
 #include "gp_rpc_process.h"
 
-int gp_release_handle(struct gssproxy_ctx *gpctx,
-                      struct gp_service *gpsvc,
+int gp_release_handle(struct gp_call_ctx *gpcall,
                       union gp_rpc_arg *arg,
                       union gp_rpc_res *res)
 {

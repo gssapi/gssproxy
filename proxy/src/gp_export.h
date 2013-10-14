@@ -29,11 +29,11 @@
 #include <gssapi/gssapi.h>
 #include "rpcgen/gss_proxy.h"
 
-struct gp_service;
+struct gp_call_ctx;
 
-uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_service *svc,
+uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
                              gss_cred_id_t *in, gssx_cred *out);
-uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_service *svc,
+uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
                              gssx_cred *cred, gss_cred_id_t *out);
 
 int gp_get_exported_context_type(struct gssx_call_ctx *ctx);

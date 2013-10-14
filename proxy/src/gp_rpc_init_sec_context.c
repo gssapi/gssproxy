@@ -25,8 +25,7 @@
 
 #include "gp_rpc_process.h"
 
-int gp_init_sec_context(struct gssproxy_ctx *gpctx,
-                        struct gp_service *gpsvc,
+int gp_init_sec_context(struct gp_call_ctx *gpcall,
                         union gp_rpc_arg *arg,
                         union gp_rpc_res *res)
 {
@@ -68,14 +67,17 @@ int gp_init_sec_context(struct gssproxy_ctx *gpctx,
     }
 
     if (isca->cred_handle) {
-        ret_maj = gp_import_gssx_cred(&ret_min, gpsvc,
+        ret_maj = gp_import_gssx_cred(&ret_min, gpcall,
                                       isca->cred_handle, &ich);
         if (ret_maj) {
             goto done;
         }
+    } else {
+        /* FIXME: get ccache from gpsvc ? */
+        ret_maj = GSS_S_CRED_UNAVAIL;
+        ret_min = 0;
+        goto done;
     }
-
-    /* FIXME: gett ccache from gpsvc */
 
     ret_maj = gp_conv_gssx_to_name(&ret_min, isca->target_name, &target_name);
     if (ret_maj) {

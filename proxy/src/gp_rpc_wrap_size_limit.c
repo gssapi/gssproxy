@@ -27,8 +27,7 @@
 #include "gp_rpc_process.h"
 #include <gssapi/gssapi.h>
 
-int gp_wrap_size_limit(struct gssproxy_ctx *gpctx,
-                       struct gp_service *gpsvc,
+int gp_wrap_size_limit(struct gp_call_ctx *gpcall,
                        union gp_rpc_arg *arg,
                        union gp_rpc_res *res)
 {

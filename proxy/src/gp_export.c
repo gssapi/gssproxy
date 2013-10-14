@@ -187,7 +187,7 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
     return 0;
 }
 
-uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_service *svc,
+uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
                              gss_cred_id_t *in, gssx_cred *out)
 {
     uint32_t ret_maj;
@@ -268,7 +268,7 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_service *svc,
         el->acceptor_time_rec = acceptor_lifetime;
     }
 
-    handle = gp_service_get_creds_handle(svc);
+    handle = gp_service_get_creds_handle(gpcall->service);
     if (!handle) {
         ret_maj = GSS_S_FAILURE;
         ret_min = EINVAL;
@@ -340,7 +340,7 @@ static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
     }
 }
 
-uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_service *svc,
+uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
                              gssx_cred *cred, gss_cred_id_t *out)
 {
     gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
@@ -349,7 +349,7 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_service *svc,
     uint32_t ret_min;
     int ret;
 
-    handle = gp_service_get_creds_handle(svc);
+    handle = gp_service_get_creds_handle(gpcall->service);
     if (!handle) {
         ret_maj = GSS_S_FAILURE;
         ret_min = EINVAL;

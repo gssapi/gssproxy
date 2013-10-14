@@ -101,6 +101,11 @@ struct gp_creds *gp_conn_get_creds(struct gp_conn *conn)
     return &conn->creds;
 }
 
+uid_t gp_conn_get_uid(struct gp_conn *conn)
+{
+    return conn->creds.ucred.uid;
+}
+
 const char *gp_conn_get_socket(struct gp_conn *conn)
 {
     return conn->sock_ctx->socket;

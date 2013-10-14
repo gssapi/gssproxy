@@ -42,8 +42,7 @@
 struct gssproxy_ctx;
 struct gp_service;
 
-#define gp_exec_std_args struct gssproxy_ctx *gpctx, \
-                         struct gp_service *gpsvc, \
+#define gp_exec_std_args struct gp_call_ctx *gpcall, \
                          union gp_rpc_arg *arg, \
                          union gp_rpc_res *res
 

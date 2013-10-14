@@ -50,6 +50,7 @@ struct gp_creds_handle;
 struct gp_service {
     char *name;
     uid_t euid;
+    bool any_uid;
     bool trusted;
     bool kernel_nfsd;
     char *socket;
@@ -87,6 +88,12 @@ struct gp_sock_ctx {
 
 struct gp_conn;
 
+struct gp_call_ctx {
+    struct gssproxy_ctx *gpctx;
+    struct gp_service *service;
+    struct gp_conn *connection;
+};
+
 /* from gp_config.c */
 struct gp_config *read_config(char *config_file, int opt_daemonize);
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
@@ -107,6 +114,7 @@ void gp_conn_free(struct gp_conn *conn);
 void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
                          uint8_t *buffer, size_t buflen);
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn);
+uid_t gp_conn_get_uid(struct gp_conn *conn);
 const char *gp_conn_get_socket(struct gp_conn *conn);
 bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx);
 
@@ -117,8 +125,7 @@ int gp_query_new(struct gp_workers *w, struct gp_conn *conn,
                  uint8_t *buffer, size_t buflen);
 
 /* from gp_rpc.c */
-int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
-                        struct gp_service *gpsvc,
+int gp_rpc_process_call(struct gp_call_ctx *gpcall,
                         uint8_t *inbuf, size_t inlen,
                         uint8_t **outbuf, size_t *outlen);
 

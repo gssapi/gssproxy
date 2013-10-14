@@ -49,12 +49,12 @@ struct supported_mechs_map {
     { 0, NULL }
 };
 
-bool gp_creds_allowed_mech(struct gp_service *svc, gss_OID desired_mech)
+bool gp_creds_allowed_mech(struct gp_call_ctx *gpcall, gss_OID desired_mech)
 {
     int i;
 
     for (i = 0; supported_mechs_map[i].internal_id != 0; i++) {
-        if (svc->mechs & supported_mechs_map[i].internal_id) {
+        if (gpcall->service->mechs & supported_mechs_map[i].internal_id) {
             if (gss_oid_equal(desired_mech, supported_mechs_map[i].mech)) {
                 return true;
             }
@@ -64,8 +64,7 @@ bool gp_creds_allowed_mech(struct gp_service *svc, gss_OID desired_mech)
     return false;
 }
 
-uint32_t gp_get_supported_mechs(uint32_t *min,
-                                struct gp_service *svc, gss_OID_set *set)
+uint32_t gp_get_supported_mechs(uint32_t *min, gss_OID_set *set)
 {
     uint32_t ret_maj;
     uint32_t ret_min;
@@ -102,7 +101,8 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
     socket = gp_conn_get_socket(conn);
 
     for (i = 0; i < gpctx->config->num_svcs; i++) {
-        if (gpctx->config->svcs[i]->euid == gcs->ucred.uid) {
+        if (gpctx->config->svcs[i]->any_uid ||
+            gpctx->config->svcs[i]->euid == gcs->ucred.uid) {
             if (gpctx->config->svcs[i]->socket) {
                 if (!gp_same(socket, gpctx->config->svcs[i]->socket)) {
                     continue;
@@ -202,12 +202,13 @@ static void free_cred_store_elements(gss_key_value_set_desc *cs)
     safefree(cs->elements);
 }
 
-static int gp_get_cred_environment(struct gp_service *svc,
+static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
                                    gssx_name *desired_name,
                                    gss_name_t *requested_name,
                                    gss_cred_usage_t cred_usage,
                                    gss_key_value_set_desc *cs)
 {
+    struct gp_service *svc;
     gss_name_t name = GSS_C_NO_NAME;
     gss_OID_desc name_type;
     uint32_t ret_maj = 0;
@@ -222,17 +223,25 @@ static int gp_get_cred_environment(struct gp_service *svc,
     int ck_num = -1;
     int c, s;
 
-    target_uid = svc->euid;
+    target_uid = gp_conn_get_uid(gpcall->connection);
+    svc = gpcall->service;
 
     if (desired_name) {
         gp_conv_gssx_to_oid(&desired_name->name_type, &name_type);
 
+        /* A service retains the trusted flag only if the current uid matches
+         * the configured euid */
         if (svc->trusted &&
+            (svc->euid == target_uid) &&
             (gss_oid_equal(&name_type, GSS_C_NT_STRING_UID_NAME) ||
              gss_oid_equal(&name_type, GSS_C_NT_MACHINE_UID_NAME))) {
             target_uid = atol(desired_name->display_name.octet_string_val);
             user_requested = true;
         } else {
+            /* it's a user request if it comes from an arbitrary uid */
+            if (svc->euid != target_uid) {
+                user_requested = true;
+            }
             ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &name);
             if (ret_maj) {
                 goto done;
@@ -333,7 +342,7 @@ done:
 }
 
 uint32_t gp_add_krb5_creds(uint32_t *min,
-                           struct gp_service *svc,
+                           struct gp_call_ctx *gpcall,
                            gss_cred_id_t in_cred,
                            gssx_name *desired_name,
                            gss_cred_usage_t cred_usage,
@@ -369,7 +378,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         return GSS_S_CRED_UNAVAIL;
     }
 
-    ret_min = gp_get_cred_environment(svc, desired_name, &req_name,
+    ret_min = gp_get_cred_environment(gpcall, desired_name, &req_name,
                                       cred_usage, &cred_store);
     if (ret_min) {
         ret_maj = GSS_S_CRED_UNAVAIL;

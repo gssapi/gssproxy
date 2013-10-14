@@ -333,14 +333,14 @@ static const char *gp_rpc_procname(uint32_t proc)
     return gp_xdr_set[proc].proc_name;
 }
 
-static int gp_rpc_execute(struct gssproxy_ctx *gpctx,
-                          struct gp_service *gpsvc, uint32_t proc,
+static int gp_rpc_execute(struct gp_call_ctx *gpcall, uint32_t proc,
                           union gp_rpc_arg *arg, union gp_rpc_res *res)
 {
     GPDEBUG("gp_rpc_execute: executing %d (%s) for service \"%s\", euid: %d, socket: %s\n",
-        proc, gp_rpc_procname(proc), gpsvc->name, gpsvc->euid, gpsvc->socket);
+        proc, gp_rpc_procname(proc), gpcall->service->name,
+        gp_conn_get_uid(gpcall->connection), gpcall->service->socket);
 
-    return gp_xdr_set[proc].exec_fn(gpctx, gpsvc, arg, res);
+    return gp_xdr_set[proc].exec_fn(gpcall, arg, res);
 }
 
 static int gp_rpc_return_buffer(XDR *xdr_reply_ctx, char *reply_buffer,
@@ -371,8 +371,7 @@ static void gp_rpc_free_xdrs(int proc,
     xdr_free(gp_xdr_set[proc].res_fn, (char *)res);
 }
 
-int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
-                        struct gp_service *gpsvc,
+int gp_rpc_process_call(struct gp_call_ctx *gpcall,
                         uint8_t *inbuf, size_t inlen,
                         uint8_t **outbuf, size_t *outlen)
 {
@@ -398,7 +397,7 @@ int gp_rpc_process_call(struct gssproxy_ctx *gpctx,
     ret = gp_rpc_decode_call(&xdr_call_ctx, &xid, &proc, &arg, &acc, &rej);
     if (!ret) {
         /* execute request */
-        ret = gp_rpc_execute(gpctx, gpsvc, proc, &arg, &res);
+        ret = gp_rpc_execute(gpcall, proc, &arg, &res);
         if (ret) {
             acc = GP_RPC_SYSTEM_ERR;
             ret = EINVAL;
