@@ -205,7 +205,7 @@ static void free_cred_store_elements(gss_key_value_set_desc *cs)
 static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
                                    gssx_name *desired_name,
                                    gss_name_t *requested_name,
-                                   gss_cred_usage_t cred_usage,
+                                   gss_cred_usage_t *cred_usage,
                                    gss_key_value_set_desc *cs)
 {
     struct gp_service *svc;
@@ -225,6 +225,16 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
 
     target_uid = gp_conn_get_uid(gpcall->connection);
     svc = gpcall->service;
+
+    /* filter based on cred_usage */
+    if (svc->cred_usage != GSS_C_BOTH) {
+        if (*cred_usage == GSS_C_BOTH) {
+            *cred_usage = svc->cred_usage;
+        } else if (svc->cred_usage != *cred_usage) {
+            ret = EACCES;
+            goto done;
+        }
+    }
 
     if (desired_name) {
         gp_conv_gssx_to_oid(&desired_name->name_type, &name_type);
@@ -379,7 +389,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     }
 
     ret_min = gp_get_cred_environment(gpcall, desired_name, &req_name,
-                                      cred_usage, &cred_store);
+                                      &cred_usage, &cred_store);
     if (ret_min) {
         ret_maj = GSS_S_CRED_UNAVAIL;
         goto done;

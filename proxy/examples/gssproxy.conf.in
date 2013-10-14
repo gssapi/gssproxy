@@ -13,6 +13,7 @@
   cred_store = keytab:/etc/krb5.keytab
   cred_store = ccache:FILE:@gpstatedir@/clients/krb5cc_%U
   cred_store = client_keytab:@gpstatedir@/clients/%U.keytab
+  cred_usage = initiate
   allow_any_uid = yes
   trusted = yes
   euid = 0

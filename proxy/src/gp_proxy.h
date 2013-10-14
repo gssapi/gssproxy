@@ -55,6 +55,7 @@ struct gp_service {
     bool kernel_nfsd;
     char *socket;
     SELINUX_CTX selinux_ctx;
+    gss_cred_usage_t cred_usage;
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;

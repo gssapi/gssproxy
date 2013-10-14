@@ -163,6 +163,9 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
             }
             cfg->num_svcs++;
 
+            /* by default allow both */
+            cfg->svcs[n]->cred_usage = GSS_C_BOTH;
+
             cfg->svcs[n]->name = strdup(secname + 8);
             if (!cfg->svcs[n]->name) {
                 ret = ENOMEM;
@@ -267,6 +270,22 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
             if (ret == 0) {
                 cfg->svcs[n]->selinux_ctx = SELINUX_context_new(value);
                 if (!cfg->svcs[n]->selinux_ctx) {
+                    ret = EINVAL;
+                    goto done;
+                }
+            }
+
+            ret = gp_config_get_string(ctx, secname, "cred_usage", &value);
+            if (ret == 0) {
+                if (strcasecmp(value, "initiate") == 0) {
+                    cfg->svcs[n]->cred_usage = GSS_C_INITIATE;
+                } else if (strcasecmp(value, "accept") == 0) {
+                    cfg->svcs[n]->cred_usage = GSS_C_ACCEPT;
+                } else if (strcasecmp(value, "both") == 0) {
+                    cfg->svcs[n]->cred_usage = GSS_C_BOTH;
+                } else {
+                    GPDEBUG("Invalid value '%s' for cred_usage in [%s].\n",
+                            value, secname);
                     ret = EINVAL;
                     goto done;
                 }
