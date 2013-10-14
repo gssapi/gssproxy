@@ -80,6 +80,14 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     }
 
     /* return values */
+    if (res->status.major_status) {
+        gpm_save_status(&res->status);
+        ret_maj = res->status.major_status;
+        *minor_status = res->status.minor_status;
+        ret = 0;
+        goto done;
+    }
+
     if (mech_type) {
         if (res->status.mech.octet_string_len) {
             ret = gp_conv_gssx_to_oid_alloc(&res->status.mech, &mech);
@@ -87,14 +95,6 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
                 goto done;
             }
         }
-    }
-
-    if (res->status.major_status) {
-        gpm_save_status(&res->status);
-        ret_maj = res->status.major_status;
-        *minor_status = res->status.minor_status;
-        ret = 0;
-        goto done;
     }
 
     if (res->context_handle) {
