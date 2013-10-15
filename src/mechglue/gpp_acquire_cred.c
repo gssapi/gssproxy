@@ -109,7 +109,7 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
         maj = acquire_local(&min, name, time_req, desired_mechs, cred_usage,
                             out_cred_handle, actual_mechs, time_rec);
 
-        if (maj != GSS_S_NO_CRED || behavior != GPP_LOCAL_FIRST) {
+        if (maj == GSS_S_COMPLETE || behavior == GPP_LOCAL_ONLY) {
             goto done;
         }
 
@@ -119,31 +119,30 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
     }
 
     /* Then try with remote */
-    if (behavior == GPP_REMOTE_ONLY || behavior == GPP_REMOTE_FIRST) {
-
-        if (name && name->local && !name->remote) {
-            maj = gpp_local_to_name(&min, name->local, &name->remote);
-            if (maj) {
-                goto done;
-            }
-        }
-
-        maj = gpm_acquire_cred(&min,
-                               name ? name->remote : NULL,
-                               time_req,
-                               desired_mechs,
-                               cred_usage,
-                               &out_cred_handle->remote,
-                               actual_mechs,
-                               time_rec);
-        if (maj == GSS_S_COMPLETE || behavior == GPP_REMOTE_ONLY) {
+    if (name && name->local && !name->remote) {
+        maj = gpp_local_to_name(&min, name->local, &name->remote);
+        if (maj) {
             goto done;
         }
+    }
 
+    maj = gpm_acquire_cred(&min,
+                           name ? name->remote : NULL,
+                           time_req,
+                           desired_mechs,
+                           cred_usage,
+                           &out_cred_handle->remote,
+                           actual_mechs,
+                           time_rec);
+    if (maj == GSS_S_COMPLETE || behavior == GPP_REMOTE_ONLY) {
+        goto done;
+    }
+
+    if (behavior == GPP_REMOTE_FIRST) {
         /* So remote failed, but we can fallback to local, try that */
         maj = acquire_local(&min, name, time_req, desired_mechs, cred_usage,
                             out_cred_handle, actual_mechs, time_rec);
-   }
+    }
 
 done:
     if (maj != GSS_S_COMPLETE &&
