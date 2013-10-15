@@ -74,10 +74,7 @@
                     <para>All commands received with this setting will cause
                         to immediately reenter the GSSAPI w/o any interaction
                         with the gssproxy daemon. When the request cannot be
-                        processed it will just fail. This is the default
-                        behavior when the
-                        <emphasis>GSSPROXY_BEHAVIOR</emphasis> environment
-                        variable is not set at all.
+                        processed it will just fail.
                     </para>
                 </listitem>
             </varlistentry>
@@ -88,6 +85,9 @@
                         to immediately reenter the GSSAPI. When the local
                         GSSAPI cannot process the request, it will resend the
                         request to the gssproxy daemon.
+                        This is the default behavior when the
+                        <emphasis>GSSPROXY_BEHAVIOR</emphasis> environment
+                        variable is not set.
                     </para>
                 </listitem>
             </varlistentry>
