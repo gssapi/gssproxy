@@ -180,5 +180,6 @@ AC_DEFINE_UNQUOTED([ABS_BUILD_DIR], ["$abs_build_dir"], [Absolute path to the bu
 AC_SUBST([abs_builddir], $abs_build_dir)
 
 AC_CONFIG_FILES([Makefile systemd/gssproxy.service man/Makefile
-                 contrib/gssproxy.spec examples/mech examples/gssproxy.conf])
+                 contrib/gssproxy.spec examples/mech examples/gssproxy.conf
+		 man/gssproxy-mech.8.xml])
 AC_OUTPUT
