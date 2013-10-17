@@ -259,19 +259,25 @@ AC_DEFUN([WITH_GPP_DEFAULT_BEHAVIOR],
                 [],
                )
     default_behavior=GPP_LOCAL_FIRST
+    default_behavior_env=LOCAL_FIRST
     if test x"$with_gpp_default_behavior" = x"LOCAL_FIRST"; then
         AC_MSG_RESULT([Using gssproxy interposer behavior LOCAL_FIRST])
+	default_behavior=GPP_LOCAL_FIRST
+	default_behavior_env=LOCAL_FIRST
     elif test x"$with_gpp_default_behavior" = x"LOCAL_ONLY"; then
         AC_MSG_RESULT([Using gssproxy interposer behavior LOCAL_ONLY])
         default_behavior=GPP_LOCAL_ONLY
+	default_behavior_env=LOCAL_ONLY
     elif test x"$with_gpp_default_behavior" = x"REMOTE_FIRST"; then
         AC_MSG_RESULT([Using gssproxy interposer behavior REMOTE_FIRST])
         default_behavior=GPP_REMOTE_FIRST
+	default_behavior_env=REMOTE_FIRST
     elif test x"$with_gpp_default_behavior" = x"REMOTE_ONLY"; then
         AC_MSG_ERROR([REMOTE_ONLY currently not supported])
     elif test x"$with_gpp_default_behavior" != x; then
         AC_MSG_ERROR([unknown gpp default behavior])
     fi
+    AC_SUBST(GPP_DEFAULT_BEHAVIOR, $default_behavior_env)
     AC_DEFINE_UNQUOTED(GPP_DEFAULT_BEHAVIOR, $default_behavior, [Default gssproxy interposer plugin behavior])
   ])
 
