@@ -85,9 +85,6 @@
                         to immediately reenter the GSSAPI. When the local
                         GSSAPI cannot process the request, it will resend the
                         request to the gssproxy daemon.
-                        This is the default behavior when the
-                        <emphasis>GSSPROXY_BEHAVIOR</emphasis> environment
-                        variable is not set.
                     </para>
                 </listitem>
             </varlistentry>
@@ -110,6 +107,11 @@
                 </listitem>
             </varlistentry>
         </variablelist>
+        <para>
+                The default setting for <emphasis>GSSPROXY_BEHAVIOR</emphasis>
+                is @GPP_DEFAULT_BEHAVIOR@.
+        </para>
+
         <para>
             Finally the interposer may need to use a special per-service
             socket in order to communicate with gssproxy. The path to this
