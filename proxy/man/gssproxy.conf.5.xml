@@ -95,6 +95,15 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>cred_usage (string)</term>
+                    <listitem>
+                        <para>Allow to restrict the kind of operations permitted for this service.</para>
+                        <para>The allowed options are: initiate, accept, both</para>
+                        <para>Default: cred_usage = both </para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>cred_store (string)</term>
                     <listitem>
                         <para>This parameter allows to control in which way gssproxy should use the cred_store interface provided by GSSAPI. The parameter can be defined multiple times per service.</para>
