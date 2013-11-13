@@ -70,6 +70,9 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
         goto done;
     }
 
+    arg->req_flags = req_flags;
+    arg->time_req = time_req;
+
     if (input_cb) {
         ret = gp_conv_cb_to_gssx_alloc(input_cb, &arg->input_cb);
         if (ret) {
