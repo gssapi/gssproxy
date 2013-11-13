@@ -176,7 +176,8 @@ static bool gpp_special_equal(const gss_OID s, const gss_OID n)
 }
 
 struct gpp_special_oid_list {
-    gss_OID_desc oid;
+    gss_OID_desc regular_oid;
+    gss_OID_desc special_oid;
     struct gpp_special_oid_list *next;
     sig_atomic_t next_is_set;
 };
@@ -250,19 +251,25 @@ static const gss_OID gpp_new_special_mech(const gss_OID n)
     if (!item) {
         return GSS_C_NO_OID;
     }
-    item->oid.length = base->length + n->length;
-    item->oid.elements = malloc(item->oid.length);
-    if (!item->oid.elements) {
+    item->regular_oid.length = n->length;
+    item->regular_oid.elements = malloc(n->length);
+    item->special_oid.length = base->length + n->length;
+    item->special_oid.elements = malloc(item->special_oid.length);
+    if (!item->regular_oid.elements ||
+        !item->special_oid.elements) {
+        free(item->regular_oid.elements);
+        free(item->special_oid.elements);
         free(item);
         return GSS_C_NO_OID;
     }
 
-    memcpy(item->oid.elements, base->elements, base->length);
-    memcpy(item->oid.elements + base->length, n->elements, n->length);
+    memcpy(item->regular_oid.elements, n->elements, n->length);
+    memcpy(item->special_oid.elements, base->elements, base->length);
+    memcpy(item->special_oid.elements + base->length, n->elements, n->length);
 
     gpp_add_special_oids(item);
 
-    return (const gss_OID)&item->oid;
+    return (const gss_OID)&item->special_oid;
 }
 
 const gss_OID gpp_special_mech(const gss_OID mech_type)
@@ -278,20 +285,40 @@ const gss_OID gpp_special_mech(const gss_OID mech_type)
     if (mech_type == GSS_C_NO_OID) {
         /* return the first special one if none specified */
         if (item) {
-            return (const gss_OID)&item->oid;
+            return (const gss_OID)&item->special_oid;
         }
         return GSS_C_NO_OID;
     }
 
     while (item) {
-        if (gpp_special_equal(&item->oid, mech_type)) {
-            return (const gss_OID)&item->oid;
+        if (gpp_special_equal(&item->special_oid, mech_type)) {
+            return (const gss_OID)&item->special_oid;
         }
         item = gpp_next_special_oids(item);
     }
 
     /* none matched, add new special oid to the set */
     return gpp_new_special_mech(mech_type);
+}
+
+const gss_OID gpp_unspecial_mech(const gss_OID mech_type)
+{
+    struct gpp_special_oid_list *item = NULL;
+
+    if (!gpp_is_special_oid(mech_type)) {
+        return mech_type;
+    }
+
+    item = gpp_get_special_oids();
+    while (item) {
+        if (gss_oid_equal(&item->special_oid, mech_type)) {
+            return (const gss_OID)&item->regular_oid;
+        }
+        item = gpp_next_special_oids(item);
+    }
+
+    /* none matched */
+    return mech_type;
 }
 
 gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs)
@@ -318,8 +345,9 @@ gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs)
                 }
                 break;
             }
-            if (gpp_special_equal(&item->oid, &mechs->elements[i])) {
-                maj = gss_add_oid_set_member(&min, &item->oid, &amechs);
+            if (gpp_special_equal(&item->special_oid, &mechs->elements[i])) {
+                maj = gss_add_oid_set_member(&min, &item->special_oid,
+                                             &amechs);
                 if (maj != GSS_S_COMPLETE) {
                     goto done;
                 }
@@ -362,7 +390,8 @@ OM_uint32 gssi_internal_release_oid(OM_uint32 *minor_status, gss_OID *oid)
     item = gpp_get_special_oids();
 
     while (item) {
-        if (&item->oid == *oid) {
+        if ((&item->regular_oid == *oid) ||
+            (&item->special_oid == *oid)) {
             *oid = GSS_C_NO_OID;
             return GSS_S_COMPLETE;
         }
