@@ -213,7 +213,8 @@ OM_uint32 gssi_inquire_cred_by_mech(OM_uint32 *minor_status,
                                        initiator_lifetime, acceptor_lifetime,
                                        cred_usage);
     } else if (cred->remote) {
-        maj = gpm_inquire_cred_by_mech(&min, cred->remote, mech_type,
+        maj = gpm_inquire_cred_by_mech(&min, cred->remote,
+                                       gpp_unspecial_mech(mech_type),
                                        gpname ? &gpname->remote : NULL,
                                        initiator_lifetime, acceptor_lifetime,
                                        cred_usage);
