@@ -24,6 +24,7 @@
 */
 
 #include "gp_rpc_process.h"
+#include <gssapi/gssapi_krb5.h>
 
 int gp_init_sec_context(struct gp_call_ctx *gpcall,
                         union gp_rpc_arg *arg,
@@ -74,13 +75,7 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
         if (ret_maj) {
             goto done;
         }
-    } else {
-        /* FIXME: get ccache from gpsvc ? */
-        ret_maj = GSS_S_CRED_UNAVAIL;
-        ret_min = 0;
-        goto done;
     }
-
     ret_maj = gp_conv_gssx_to_name(&ret_min, isca->target_name, &target_name);
     if (ret_maj) {
         goto done;
@@ -105,6 +100,23 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
 
     if (isca->input_token) {
         gp_conv_gssx_to_buffer(isca->input_token, &ibuf);
+    }
+
+    if (!isca->cred_handle) {
+        if (gss_oid_equal(mech_type, gss_mech_krb5)) {
+            ret_maj = gp_add_krb5_creds(&ret_min, gpcall,
+                                        NULL, NULL,
+                                        GSS_C_INITIATE,
+                                        time_req, 0, &ich,
+                                        NULL, NULL, NULL);
+        } else {
+            ret_maj = GSS_S_NO_CRED;
+            ret_min = 0;
+        }
+
+        if (ret_maj) {
+            goto done;
+        }
     }
 
     ret_maj = gss_init_sec_context(&ret_min,
@@ -170,5 +182,6 @@ done:
                                  &iscr->status);
     gss_release_name(&ret_min, &target_name);
     gss_release_oid(&ret_min, &mech_type);
+    gss_release_cred(&ret_min, &ich);
     return ret;
 }
