@@ -289,6 +289,11 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             }
             *requested_name = name;
         }
+    } else {
+        /* No name provided */
+        if (svc->euid != target_uid) {
+            user_requested = true;
+        }
     }
 
     /* impersonation case (only for initiation) */
