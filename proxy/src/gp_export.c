@@ -390,6 +390,7 @@ done:
 #define LINUX_LUCID_V1      "linux_lucid_v1"
 
 enum exp_ctx_types {
+    EXP_CTX_PARTIAL = -1, /* cannot be specified by client */
     EXP_CTX_DEFAULT = 0,
     EXP_CTX_LINUX_LUCID_V1 = 1,
 };
@@ -416,6 +417,11 @@ int gp_get_exported_context_type(struct gssx_call_ctx *ctx)
     }
 
     return EXP_CTX_DEFAULT;
+}
+
+int gp_get_continue_needed_type(void)
+{
+    return EXP_CTX_PARTIAL;
 }
 
 #define KRB5_CTX_FLAG_INITIATOR         0x00000001
@@ -513,7 +519,7 @@ done:
 }
 
 
-uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
+uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type, gss_OID mech,
                                   gss_ctx_id_t *in, gssx_ctx *out)
 {
     uint32_t ret_maj;
@@ -529,9 +535,6 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
     int is_open;
     int ret;
 
-/* TODO: For mechs that need multiple roundtrips to complete */
-    /* out->state; */
-
     /* we do not need the client to release anything until we handle state */
     out->needs_release = false;
 
@@ -539,6 +542,11 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
                                   &lifetime_rec, &mech_type, &ctx_flags,
                                   &is_locally_initiated, &is_open);
     if (ret_maj) {
+        if (type == EXP_CTX_PARTIAL) {
+            /* This may happen on partially established context,
+             * so just go on and put in what we can */
+            goto export;
+        }
         goto done;
     }
 
@@ -571,9 +579,26 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
         out->open = true;
     }
 
+export:
     /* note: once converted the original context token is not usable anymore,
      * so this must be the last call to use it */
     switch (type) {
+    case EXP_CTX_PARTIAL:
+        /* this happens only when a init_sec_context call returns a partially
+         * initialized context so we return only what we have, not much */
+        ret = gp_conv_oid_to_gssx(mech, &out->mech);
+        if (ret) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ret;
+            goto done;
+        }
+
+        out->locally_initiated = true;
+        out->open = false;
+
+        /* out->state; */
+
+        /* fall through */
     case EXP_CTX_DEFAULT:
         ret_maj = gss_export_sec_context(&ret_min, in, &export_buffer);
         if (ret_maj) {

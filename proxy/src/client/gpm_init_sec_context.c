@@ -104,13 +104,6 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
         }
     }
 
-    if (res->status.major_status) {
-        gpm_save_status(&res->status);
-        ret_maj = res->status.major_status;
-        ret_min = res->status.minor_status;
-        goto done;
-    }
-
     if (res->context_handle) {
         ctx = res->context_handle;
         /* we are stealing the delegated creds on success, so we do not want
@@ -118,11 +111,17 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
         res->context_handle = NULL;
     }
 
-    ret = gp_conv_gssx_to_buffer_alloc(res->output_token, &outbuf);
-    if (ret) {
-        gpm_save_internal_status(ret, strerror(ret));
-        goto done;
+    if (res->output_token) {
+        ret = gp_conv_gssx_to_buffer_alloc(res->output_token, &outbuf);
+        if (ret) {
+            gpm_save_internal_status(ret, strerror(ret));
+            goto done;
+        }
     }
+
+    ret_maj = res->status.major_status;
+    ret_min = res->status.minor_status;
+    gpm_save_status(&res->status);
 
 done:
     if (ret != 0) {

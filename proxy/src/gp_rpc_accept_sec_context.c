@@ -46,6 +46,8 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
     gss_cred_id_t *pdch = NULL;
     int exp_ctx_type;
     int exp_creds_type;
+    uint32_t acpt_maj;
+    uint32_t acpt_min;
     int ret;
 
     asca = &arg->accept_sec_context;
@@ -109,9 +111,17 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
                                      &ret_flags,
                                      NULL,
                                      pdch);
-    if (ret_maj) {
+    if (ret_maj != GSS_S_COMPLETE &&
+        ret_maj != GSS_S_CONTINUE_NEEDED) {
         goto done;
+    } else {
+        acpt_maj = ret_maj;
+        acpt_min = ret_min;
     }
+    if (acpt_maj == GSS_S_CONTINUE_NEEDED) {
+        exp_ctx_type = gp_get_continue_needed_type();
+    }
+
 
     ascr->context_handle = calloc(1, sizeof(gssx_ctx));
     if (!ascr->context_handle) {
@@ -119,7 +129,7 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
         ret_min = ENOMEM;
         goto done;
     }
-    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type,
+    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type, oid,
                                        &ctx, ascr->context_handle);
     if (ret_maj) {
         goto done;
@@ -138,7 +148,7 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
         goto done;
     }
 
-    if ((ret_flags & GSS_C_DELEG_FLAG) && asca->ret_deleg_cred) {
+    if ((ret_flags & GSS_C_DELEG_FLAG) && asca->ret_deleg_cred && dch) {
         ascr->delegated_cred_handle = calloc(1, sizeof(gssx_cred));
         if (!ascr->delegated_cred_handle) {
             ret_maj = GSS_S_FAILURE;
@@ -159,6 +169,10 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
                                               &ascr->options.options_val);
 
 done:
+    if (ret_maj == GSS_S_COMPLETE) {
+        ret_maj = acpt_maj;
+        ret_min = acpt_min;
+    }
     ret = gp_conv_status_to_gssx(&asca->call_ctx,
                                  ret_maj, ret_min, oid,
                                  &ascr->status);
