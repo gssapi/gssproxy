@@ -85,7 +85,7 @@ int gp_unwrap(struct gp_call_ctx *gpcall,
         goto done;
     }
 
-    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type,
+    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type, GSS_C_NO_OID,
                                        &context_handle,
                                        uwr->context_handle);
     if (ret_maj) {

@@ -45,6 +45,8 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
     gss_buffer_desc obuf = GSS_C_EMPTY_BUFFER;
     uint32_t ret_maj;
     uint32_t ret_min;
+    uint32_t init_maj;
+    uint32_t init_min;
     int exp_ctx_type;
     int ret;
 
@@ -121,6 +123,12 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
     if (ret_maj != GSS_S_COMPLETE &&
         ret_maj != GSS_S_CONTINUE_NEEDED) {
         goto done;
+    } else {
+        init_maj = ret_maj;
+        init_min = ret_min;
+    }
+    if (init_maj == GSS_S_CONTINUE_NEEDED) {
+        exp_ctx_type = gp_get_continue_needed_type();
     }
 
     iscr->context_handle = calloc(1, sizeof(gssx_ctx));
@@ -129,7 +137,7 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
         ret_min = ENOMEM;
         goto done;
     }
-    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type,
+    ret_maj = gp_export_ctx_id_to_gssx(&ret_min, exp_ctx_type, mech_type,
                                        &ctx, iscr->context_handle);
     if (ret_maj) {
         goto done;
@@ -150,7 +158,13 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
         }
     }
 
+    ret_maj = GSS_S_COMPLETE;
+
 done:
+    if (ret_maj == GSS_S_COMPLETE) {
+        ret_maj = init_maj;
+        ret_min = init_min;
+    }
     ret = gp_conv_status_to_gssx(&isca->call_ctx,
                                  ret_maj, ret_min, mech_type,
                                  &iscr->status);

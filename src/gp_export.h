@@ -37,7 +37,8 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
                              gssx_cred *cred, gss_cred_id_t *out);
 
 int gp_get_exported_context_type(struct gssx_call_ctx *ctx);
-uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type,
+int gp_get_continue_needed_type(void);
+uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type, gss_OID mech,
                                   gss_ctx_id_t *in, gssx_ctx *out);
 uint32_t gp_import_gssx_to_ctx_id(uint32_t *min, int type,
                                   gssx_ctx *in, gss_ctx_id_t *out);
