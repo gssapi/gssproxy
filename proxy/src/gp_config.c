@@ -209,6 +209,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
     int num_sec;
     char *secname = NULL;
     const char *value;
+    char *vcopy;
     char *token;
     char *handle;
     int valnum;
@@ -318,7 +319,12 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 goto done;
             }
 
-            token = strtok_r(no_const(value), ", ", &handle);
+            vcopy = strdup(value);
+            if (!vcopy) {
+                ret = ENOMEM;
+                goto done;
+            }
+            token = strtok_r(vcopy, ", ", &handle);
             do {
 
                 ret = strcmp(value, "krb5");
@@ -329,6 +335,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                     } else {
                         GPERROR("Failed to read krb5 config for %s.\n",
                                 secname);
+                        safefree(vcopy);
                         return ret;
                     }
                 } else {
@@ -338,6 +345,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
 
                 token = strtok_r(NULL, ", ", &handle);
             } while (token != NULL);
+            safefree(vcopy);
 
             if (cfg->svcs[n]->mechs == 0) {
                 GPDEBUG("No mechs found for [%s], ignoring.\n", secname);
