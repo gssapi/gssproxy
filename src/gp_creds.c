@@ -548,3 +548,9 @@ done:
 
     return ret_maj;
 }
+
+void gp_filter_flags(struct gp_call_ctx *gpcall, uint32_t *flags)
+{
+    *flags |= gpcall->service->enforce_flags;
+    *flags &= ~gpcall->service->filter_flags;
+}
