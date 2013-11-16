@@ -57,6 +57,8 @@ struct gp_service {
     char *socket;
     SELINUX_CTX selinux_ctx;
     gss_cred_usage_t cred_usage;
+    uint32_t filter_flags;
+    uint32_t enforce_flags;
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
