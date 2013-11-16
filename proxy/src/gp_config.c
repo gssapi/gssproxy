@@ -32,6 +32,27 @@
 #include "gp_config.h"
 #include "gp_selinux.h"
 
+#include <gssapi/gssapi.h>
+
+struct gp_flag_def {
+    const char *name;
+    uint32_t value;
+};
+
+struct gp_flag_def flag_names[] = {
+    { "DELEGATE", GSS_C_DELEG_FLAG },
+    { "MUTUAL_AUTH", GSS_C_MUTUAL_FLAG },
+    { "REPLAY_DETECT", GSS_C_REPLAY_FLAG },
+    { "SEQUENCE", GSS_C_SEQUENCE_FLAG },
+    { "CONFIDENTIALITY", GSS_C_CONF_FLAG },
+    { "INTEGRITIY", GSS_C_INTEG_FLAG },
+    { "ANONYMOUS", GSS_C_ANON_FLAG },
+    { NULL, 0 }
+};
+
+#define DEFAULT_FILTERED_FLAGS GSS_C_DELEG_FLAG
+#define DEFAULT_ENFORCED_FLAGS 0
+
 static void free_str_array(const char ***a, int *count)
 {
     const char **array;
@@ -115,6 +136,60 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     }
 
     return ret;
+}
+
+static int parse_flags(const char *value, uint32_t *storage)
+{
+    char *handle;
+    char *token;
+    char *str;
+    bool add;
+    unsigned long int conv;
+    uint32_t flagval;
+    int i;
+
+    str = strdup(value);
+    if (!str) {
+        return ENOMEM;
+    }
+
+    token = strtok_r(str, ", ", &handle);
+    for (token = strtok_r(str, ", ", &handle);
+         token != NULL;
+         token = strtok_r(NULL, ", ", &handle)) {
+        switch (token[0]) {
+        case '+':
+            add = true;
+            break;
+        case '-':
+            add = false;
+            break;
+        default:
+            GPERROR("Ignoring flag [%s], missing +/- qualifier.\n", token);
+            continue;
+        }
+        token++;
+        for (i = 0; flag_names[i].name != NULL; i++) {
+            if (strcasecmp(token, flag_names[i].name) == 0) {
+                flagval = flag_names[i].value;
+                break;
+            }
+        }
+        if (flag_names[i].name == NULL) {
+            conv = strtoul(token, &handle, 0);
+            if (conv == 0 || conv == ULONG_MAX || *handle != '\0') {
+                GPERROR("Ignoring flag [%s], unrecognized value.\n", token);
+                continue;
+            }
+            flagval = conv;
+        }
+        GPDEBUG("%s Flag %s (%u).\n", add?"Add":"Remove", token, flagval);
+        if (add) *storage |= flagval;
+        else *storage &= ~flagval;
+    }
+    safefree(str);
+
+    return 0;
 }
 
 static int setup_service_creds_handle(struct gp_service *svc)
@@ -296,6 +371,19 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                     ret = EINVAL;
                     goto done;
                 }
+            }
+
+            cfg->svcs[n]->filter_flags = DEFAULT_FILTERED_FLAGS;
+            ret = gp_config_get_string(ctx, secname, "filter_flags", &value);
+            if (ret == 0) {
+                parse_flags(value, &cfg->svcs[n]->filter_flags);
+            }
+
+            cfg->svcs[n]->enforce_flags = DEFAULT_ENFORCED_FLAGS;
+            ret = gp_config_get_string(ctx, secname, "enforce_flags", &value);
+            if (ret == 0) {
+                ret = parse_flags(value, &cfg->svcs[n]->enforce_flags);
+                if (ret) goto done;
             }
         }
         safefree(secname);
