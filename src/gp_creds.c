@@ -376,7 +376,12 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
      * if any. */
     if (use_service_keytab) {
         if (k_num == -1) {
-            ret = EINVAL;
+            if (ck_num == -1) {
+                ret = EINVAL;
+            } else {
+                /* allow a service to define only the client keytab */
+                ret = 0;
+            }
             goto done;
         }
         if (ck_num == -1) {
