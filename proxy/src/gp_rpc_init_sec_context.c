@@ -119,6 +119,8 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
         }
     }
 
+    gp_filter_flags(gpcall, &req_flags);
+
     ret_maj = gss_init_sec_context(&ret_min,
                                    ich,
                                    &ctx,
