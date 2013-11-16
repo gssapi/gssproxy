@@ -162,6 +162,64 @@
                     </varlistentry>
 
                 <varlistentry>
+                    <term>enforce_flags (string)</term>
+                    <listitem>
+                        <para>
+                            A list of GSS Request Flags that are added
+                            unconditionally to every context initialization
+                            call.
+                            Flags can only be added to the list or removed
+                            from the list by prepending a +/- sign to the
+                            flag name or value.
+                        </para>
+                        <para>
+                            Recognized flag names: DELEGATE, MUTUAL_AUTH,
+                            REPLAY_DETECT, SEQUENCE, CONFIDENTIALITY,
+                            INTEGRITY, ANONYMOUS
+                        </para>
+                        <para>Examples:
+<programlisting>
+    <userinput moreinfo="none">enforce_flags = +REPLAY_DETECT</userinput>
+    <userinput moreinfo="none">enforce_flags = -0x0001</userinput>
+</programlisting>
+                        </para>
+                        <para>Default: enforce_flags =</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term>filter_flags (string)</term>
+                    <listitem>
+                        <para>
+                            A list of GSS Request Flags that are filtered
+                            unconditionally from every context initialization
+                            call.
+                            Flags can only be added to the list or removed
+                            from the list by prepending a +/- sign to the
+                            flag name or value.
+                        </para>
+                        <para>
+                            NOTE: Because often gssproxy is used to withold
+                            access to credentials the Delegate Flag is filtered
+                            by default. To allow a service to delegate
+                            credentials use the first example below.
+                        </para>
+                        <para>
+                            Recognized flag names: DELEGATE, MUTUAL_AUTH,
+                            REPLAY_DETECT, SEQUENCE, CONFIDENTIALITY,
+			    INTEGRITY, ANONYMOUS
+                        </para>
+                        <para>Examples:
+<programlisting>
+    <userinput moreinfo="none">filter_flags = -DELEGATE</userinput>
+    <userinput moreinfo="none">filter_flags = -0x0001 +ANONYMOUS</userinput>
+</programlisting>
+                        </para>
+                        <para>Default: filter_flags = +DELEGATE</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>impersonate (boolean)</term>
                     <listitem>
                         <para>Use impersonation (s4u2self + s4u2proxy) to obtain credentials</para>
