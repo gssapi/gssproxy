@@ -149,6 +149,8 @@ AC_CHECK_LIB(gssrpc, gssrpc_xdrmem_create,,
              [$GSSAPI_LIBS $GSSRPC_LIBS])
 AC_SUBST([GSSRPC_LIBS])
 
+AC_CHECK_FUNCS([__secure_getenv secure_getenv])
+
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
     WITH_SYSTEMD_UNIT_DIR

@@ -68,7 +68,7 @@ static int get_pipe_name(struct gpm_ctx *gpmctx, char *name)
     const char *socket;
     int ret;
 
-    socket = getenv("GSSPROXY_SOCKET");
+    socket = gp_getenv("GSSPROXY_SOCKET");
     if (!socket) {
         socket = GP_SOCKET_NAME;
     }
