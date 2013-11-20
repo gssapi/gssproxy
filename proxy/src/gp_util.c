@@ -23,8 +23,10 @@
    DEALINGS IN THE SOFTWARE.
 */
 
+#include "config.h"
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 
 bool gp_same(const char *a, const char *b)
 {
@@ -45,4 +47,22 @@ bool gp_boolean_is_true(const char *s)
     }
 
     return false;
+}
+
+char *gp_getenv(const char *name)
+{
+#if HAVE_SECURE_GETENV
+    return secure_getenv(name);
+#elif HAVE___SECURE_GETENV
+    return __secure_getenv(name);
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#warning secure_getenv not available, falling back to poorman emulation
+    if ((getuid() == geteuid()) &&
+        (getgid() == getegid())) {
+        return getenv(name);
+    }
+    return NULL;
+#endif
 }

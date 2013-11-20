@@ -64,7 +64,7 @@ enum gpp_behavior gpp_get_behavior(void)
     char *envval;
 
     if (behavior == GPP_UNINITIALIZED) {
-        envval = getenv("GSSPROXY_BEHAVIOR");
+        envval = gp_getenv("GSSPROXY_BEHAVIOR");
         if (envval) {
             if (strcmp(envval, "LOCAL_ONLY") == 0) {
                 behavior = GPP_LOCAL_ONLY;
@@ -102,7 +102,7 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
 
     /* avoid looping in the gssproxy daemon by avoiding to interpose
      * any mechanism */
-    envval = getenv("GSS_USE_PROXY");
+    envval = gp_getenv("GSS_USE_PROXY");
     if (!envval) {
         return NULL;
     }

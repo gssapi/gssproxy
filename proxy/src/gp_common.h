@@ -67,6 +67,7 @@
 
 bool gp_same(const char *a, const char *b);
 bool gp_boolean_is_true(const char *s);
+char *gp_getenv(const char *name);
 
 #include "rpcgen/gss_proxy.h"
 

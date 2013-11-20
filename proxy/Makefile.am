@@ -102,7 +102,9 @@ GP_RPCCLI_OBJ = \
     src/client/gpm_wrap.c \
     src/client/gpm_unwrap.c \
     src/client/gpm_wrap_size_limit.c \
-    src/client/gpm_common.c
+    src/client/gpm_common.c \
+    src/gp_util.c
+
 GP_MECHGLUE_OBJ = \
     src/mechglue/gpp_accept_sec_context.c \
     src/mechglue/gpp_acquire_cred.c \
@@ -114,8 +116,7 @@ GP_MECHGLUE_OBJ = \
     src/mechglue/gpp_indicate_mechs.c \
     src/mechglue/gpp_priv_integ.c \
     src/mechglue/gpp_misc.c \
-    src/mechglue/gss_plugin.c \
-    src/gp_util.c
+    src/mechglue/gss_plugin.c
 
 dist_noinst_HEADERS = \
     rpcgen/gp_rpc.h \
