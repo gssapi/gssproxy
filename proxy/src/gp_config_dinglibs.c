@@ -238,7 +238,7 @@ int gp_dinglibs_init(const char *config_file,
                                &file_ctx);
     if (ret) {
         GPDEBUG("Failed to open config file: %d (%s)\n",
-            ret, strerror(ret));
+            ret, gp_strerror(ret));
         ini_config_destroy(ini_config);
         return ret;
     }
@@ -255,7 +255,7 @@ int gp_dinglibs_init(const char *config_file,
         char **errors = NULL;
         /* we had a parsing failure */
         GPDEBUG("Failed to parse config file: %d (%s)\n",
-            ret, strerror(ret));
+            ret, gp_strerror(ret));
         if (ini_config_error_count(ini_config)) {
             ini_config_get_errors(ini_config, &errors);
             if (errors) {

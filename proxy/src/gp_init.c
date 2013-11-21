@@ -158,7 +158,7 @@ void init_proc_nfsd(struct gp_config *cfg)
         ret = errno;
         GPDEBUG("Failed to open %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
         return;
     }
 
@@ -167,7 +167,7 @@ void init_proc_nfsd(struct gp_config *cfg)
         ret = errno;
         GPDEBUG("Failed to write to %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
     }
 
     ret = close(fd);
@@ -175,7 +175,7 @@ void init_proc_nfsd(struct gp_config *cfg)
         ret = errno;
         GPDEBUG("Failed to close %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
     }
 }
 
@@ -191,7 +191,7 @@ void write_pid(void)
     if (!f) {
         ret = errno;
         GPDEBUG("Failed to open %s: %d (%s)\n",
-                GP_PID_FILE, ret, strerror(ret));
+                GP_PID_FILE, ret, gp_strerror(ret));
         return;
     }
 
@@ -204,6 +204,6 @@ void write_pid(void)
     if (ret != 0) {
         ret = errno;
         GPDEBUG("Failed to close %s: %d (%s)\n",
-                GP_PID_FILE, ret, strerror(ret));
+                GP_PID_FILE, ret, gp_strerror(ret));
     }
 }

@@ -184,7 +184,7 @@ struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd == -1) {
         ret = errno;
-        GPDEBUG("Failed to init socket! (%d: %s)\n", ret, strerror(ret));
+        GPDEBUG("Failed to init socket! (%d: %s)\n", ret, gp_strerror(ret));
         goto done;
     }
 
@@ -192,14 +192,14 @@ struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
     if (ret == -1) {
         ret = errno;
         GPDEBUG("Failed to bind socket %s! (%d: %s)\n", addr.sun_path,
-            ret, strerror(ret));
+            ret, gp_strerror(ret));
         goto done;
     }
 
     ret = listen(fd, 10);
     if (ret == -1) {
         ret = errno;
-        GPDEBUG("Failed to listen! (%d: %s)\n", ret, strerror(ret));
+        GPDEBUG("Failed to listen! (%d: %s)\n", ret, gp_strerror(ret));
         goto done;
     }
 
@@ -218,7 +218,7 @@ struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
 done:
     if (ret) {
         GPERROR("Failed to create Unix Socket! (%d:%s)",
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
         if (fd != -1) {
             close(fd);
             fd = -1;
@@ -245,7 +245,7 @@ static int get_peercred(int fd, struct gp_conn *conn)
     if (ret == -1) {
         ret = errno;
         GPDEBUG("Failed to get SO_PEERCRED options! (%d:%s)\n",
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
         return ret;
     }
     if (len != sizeof(struct ucred)) {
@@ -262,7 +262,7 @@ static int get_peercred(int fd, struct gp_conn *conn)
     } else {
         ret = errno;
         GPDEBUG("Failed to get peer's SELinux context (%d:%s)\n",
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
         /* consider thisnot fatal, selinux may be disabled */
     }
 
@@ -579,7 +579,7 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
 done:
     if (ret) {
         GPERROR("Error connecting client: (%d:%s)",
-                ret, strerror(ret));
+                ret, gp_strerror(ret));
         gp_conn_free(conn);
     }
 }
