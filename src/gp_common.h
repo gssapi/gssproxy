@@ -69,6 +69,9 @@ bool gp_same(const char *a, const char *b);
 bool gp_boolean_is_true(const char *s);
 char *gp_getenv(const char *name);
 
+/* NOTE: read the note in gp_util.c before using gp_strerror() */
+char *gp_strerror(int errnum);
+
 #include "rpcgen/gss_proxy.h"
 
 union gp_rpc_arg {
