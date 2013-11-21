@@ -90,7 +90,7 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
     /* execute proxy request */
     ret = gpm_make_call(GSSX_INIT_SEC_CONTEXT, &uarg, &ures);
     if (ret) {
-        gpm_save_internal_status(ret, strerror(ret));
+        gpm_save_internal_status(ret, gp_strerror(ret));
         goto done;
     }
 
@@ -114,7 +114,7 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
     if (res->output_token) {
         ret = gp_conv_gssx_to_buffer_alloc(res->output_token, &outbuf);
         if (ret) {
-            gpm_save_internal_status(ret, strerror(ret));
+            gpm_save_internal_status(ret, gp_strerror(ret));
             goto done;
         }
     }

@@ -464,7 +464,7 @@ int load_config(struct gp_config *cfg)
 
 done:
     if (ret != 0) {
-        GPERROR("Error reading configuration %d: %s", ret, strerror(ret));
+        GPERROR("Error reading configuration %d: %s", ret, gp_strerror(ret));
     }
     gp_config_close(ctx);
     safefree(ctx);
