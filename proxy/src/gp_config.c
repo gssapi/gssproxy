@@ -153,7 +153,6 @@ static int parse_flags(const char *value, uint32_t *storage)
         return ENOMEM;
     }
 
-    token = strtok_r(str, ", ", &handle);
     for (token = strtok_r(str, ", ", &handle);
          token != NULL;
          token = strtok_r(NULL, ", ", &handle)) {
