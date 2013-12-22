@@ -254,6 +254,15 @@
                     </varlistentry>
 
                 <varlistentry>
+                    <term>run_as_user (string)</term>
+                    <listitem>
+                        <para>The name of the user gssproxy will drop privileges to.</para>
+                        <para>This option is only available in the global section.</para>
+                        <para>Default: run_as_user = </para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>selinux_context (string)</term>
                     <listitem>
                         <para>This parameter instructs the proxy to allow map a

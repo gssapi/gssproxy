@@ -453,6 +453,17 @@ int load_config(struct gp_config *cfg)
         goto done;
     }
 
+    ret = gp_config_get_string(ctx, "gssproxy", "run_as_user", &tmpstr);
+    if (ret == 0) {
+        cfg->proxy_user = strdup(tmpstr);
+        if (!cfg->proxy_user) {
+            ret = ENOMEM;
+            goto done;
+        }
+    } else if (ret != ENOENT) {
+        goto done;
+    }
+
     ret = gp_config_get_int(ctx, "gssproxy", "worker threads",
                             &cfg->num_workers);
     if (ret != 0 && ret != ENOENT) {
@@ -540,6 +551,7 @@ void free_config(struct gp_config **cfg)
 
     free(config->config_file);
     free(config->socket_name);
+    free(config->proxy_user);
 
     for (i=0; i < config->num_svcs; i++) {
         gp_service_free(config->svcs[i]);
