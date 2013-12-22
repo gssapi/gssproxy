@@ -74,6 +74,8 @@ struct gp_config {
 
     struct gp_service **svcs;
     int num_svcs;
+
+    char *proxy_user;       /* user to drop privs to if not NULL */
 };
 
 struct gp_workers;
@@ -109,6 +111,7 @@ void fini_server(void);
 verto_ctx *init_event_loop(void);
 void init_proc_nfsd(struct gp_config *cfg);
 void write_pid(void);
+int drop_privs(struct gp_config *cfg);
 
 /* from gp_socket.c */
 struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,

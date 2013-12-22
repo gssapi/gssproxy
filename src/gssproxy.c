@@ -142,6 +142,11 @@ int main(int argc, const char *argv[])
     /* special call to tell the Linux kernel gss-proxy is available */
     init_proc_nfsd(gpctx->config);
 
+    ret = drop_privs(gpctx->config);
+    if (ret) {
+        exit(EXIT_FAILURE);
+    }
+
     ret = gp_workers_init(gpctx);
     if (ret) {
         exit(EXIT_FAILURE);

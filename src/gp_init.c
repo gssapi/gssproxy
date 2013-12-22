@@ -33,6 +33,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <pwd.h>
+#include <grp.h>
 #include "gp_proxy.h"
 
 void init_server(bool daemonize)
@@ -206,4 +208,48 @@ void write_pid(void)
         GPDEBUG("Failed to close %s: %d (%s)\n",
                 GP_PID_FILE, ret, gp_strerror(ret));
     }
+}
+
+int drop_privs(struct gp_config *cfg)
+{
+    char buf[2048];
+    struct passwd *pw, pws;
+    int ret;
+
+    if (cfg->proxy_user == NULL) {
+        /* not dropping privs */
+        return 0;
+    }
+
+    ret = getpwnam_r(cfg->proxy_user, &pws, buf, 2048, &pw);
+    if (ret) {
+        GPDEBUG("Failed to look up proxy user: '%s'! [%d:%s]\n",
+                cfg->proxy_user, ret, gp_strerror(ret));
+        return ret;
+    }
+
+    ret = initgroups(pw->pw_name, pw->pw_gid);
+    if (ret) {
+        GPDEBUG("Failed to set access credentials: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        return ret;
+    }
+
+    ret = setgid(pw->pw_gid);
+    if (ret == -1) {
+        ret = errno;
+        GPDEBUG("Failed to set group id to %d: [%d:%s]\n",
+                pw->pw_gid, ret, gp_strerror(ret));
+        return ret;
+    }
+
+    ret = setuid(pw->pw_uid);
+    if (ret == -1) {
+        ret = errno;
+        GPDEBUG("Failed to set user id to %d: [%d:%s]\n",
+                pw->pw_uid, ret, gp_strerror(ret));
+        return ret;
+    }
+
+    return 0;
 }
