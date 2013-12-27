@@ -43,6 +43,7 @@ int gp_conv_oid_to_gssx_alloc(gss_OID in, gssx_OID **out);
 void gp_conv_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out);
 int gp_conv_gssx_to_buffer_alloc(gssx_buffer *in, gss_buffer_t *out);
 int gp_copy_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out);
+int gp_copy_gssx_to_string_buffer(gssx_buffer *in, gss_buffer_t out);
 int gp_conv_buffer_to_gssx(gss_buffer_t in, gssx_buffer *out);
 int gp_conv_buffer_to_gssx_alloc(gss_buffer_t in, gssx_buffer **out);
 

@@ -184,6 +184,27 @@ int gp_copy_gssx_to_buffer(gssx_buffer *in, gss_buffer_t out)
     return 0;
 }
 
+int gp_copy_gssx_to_string_buffer(gssx_buffer *in, gss_buffer_t out)
+{
+    gss_buffer_desc empty = GSS_C_EMPTY_BUFFER;
+    char *str;
+
+    if (in->octet_string_len == 0) {
+        *out = empty;
+        return 0;
+    }
+
+    str = malloc(in->octet_string_len + 1);
+    if (!str) {
+        return ENOMEM;
+    }
+    memcpy(str, in->octet_string_val, in->octet_string_len);
+    str[in->octet_string_len] = '\0';
+    out->length = in->octet_string_len;
+    out->value = str;
+    return 0;
+}
+
 int gp_conv_buffer_to_gssx(gss_buffer_t in, gssx_buffer *out)
 {
     return gp_conv_octet_string(in->length, in->value, out);
