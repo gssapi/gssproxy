@@ -71,7 +71,8 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
         output_name->name_type.octet_string_val = NULL;
     }
 
-    ret = gp_copy_gssx_to_buffer(&in_name->display_name, output_name_buffer);
+    ret = gp_copy_gssx_to_string_buffer(&in_name->display_name,
+                                        output_name_buffer);
     if (ret) {
         ret_min = ret;
         ret_maj = GSS_S_FAILURE;
