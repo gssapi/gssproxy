@@ -42,6 +42,7 @@ int main(int argc, const char *argv[])
     int vflags;
     struct gssproxy_ctx *gpctx;
     struct gp_sock_ctx *sock_ctx;
+    int wait_fd;
     int ret;
     int i;
 
@@ -97,7 +98,7 @@ int main(int argc, const char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    init_server(gpctx->config->daemonize);
+    init_server(gpctx->config->daemonize, &wait_fd);
 
     write_pid();
 
@@ -139,8 +140,14 @@ int main(int argc, const char *argv[])
         }
     }
 
-    /* special call to tell the Linux kernel gss-proxy is available */
+    /* We need to tell nfsd that GSS-Proxy is available before it starts,
+     * as nfsd needs to know GSS-Proxy is in use before the first time it
+     * needs to call accept_sec_context. */
     init_proc_nfsd(gpctx->config);
+
+    /* Now it is safe to tell the init system that we're done starting up,
+     * so it can continue with dependencies and start nfsd */
+    init_done(wait_fd);
 
     ret = drop_privs(gpctx->config);
     if (ret) {
