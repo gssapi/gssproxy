@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 
 bool gp_same(const char *a, const char *b)
 {
@@ -124,4 +125,42 @@ char *gp_strerror(int errnum)
 
     errno = saved_errno;
     return buf;
+}
+
+ssize_t gp_safe_read(int fd, void *buf, size_t count)
+{
+    char *b = (char *)buf;
+    ssize_t len = 0;
+    ssize_t ret;
+
+    do {
+        ret = read(fd, &b[len], count - len);
+        if (ret == -1) {
+            if (errno == EINTR) continue;
+            return ret;
+        }
+        if (ret == 0) break; /* EOF */
+        len += ret;
+    } while (count > len);
+
+    return len;
+}
+
+ssize_t gp_safe_write(int fd, const void *buf, size_t count)
+{
+    const char *b = (const char *)buf;
+    ssize_t len = 0;
+    ssize_t ret;
+
+    do {
+        ret = write(fd, &b[len], count - len);
+        if (ret == -1) {
+            if (errno == EINTR) continue;
+            return ret;
+        }
+        if (ret == 0) break; /* EOF */
+        len += ret;
+    } while (count > len);
+
+    return len;
 }

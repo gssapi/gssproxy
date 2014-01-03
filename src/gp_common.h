@@ -69,6 +69,8 @@ bool gp_same(const char *a, const char *b);
 bool gp_boolean_is_true(const char *s);
 char *gp_getenv(const char *name);
 
+ssize_t gp_safe_read(int fd, void *buf, size_t count);
+ssize_t gp_safe_write(int fd, const void *buf, size_t count);
 /* NOTE: read the note in gp_util.c before using gp_strerror() */
 char *gp_strerror(int errnum);
 
