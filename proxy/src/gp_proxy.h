@@ -106,7 +106,8 @@ struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
 void free_config(struct gp_config **config);
 
 /* from gp_init.c */
-void init_server(bool daemonize);
+void init_server(bool daemonize, int *wait_fd);
+void init_done(int wait_fd);
 void fini_server(void);
 verto_ctx *init_event_loop(void);
 void init_proc_nfsd(struct gp_config *cfg);

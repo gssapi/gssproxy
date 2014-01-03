@@ -37,12 +37,22 @@
 #include <grp.h>
 #include "gp_proxy.h"
 
-void init_server(bool daemonize)
+void init_server(bool daemonize, int *wait_fd)
 {
     pid_t pid, sid;
     int ret;
 
+    *wait_fd = -1;
+
     if (daemonize) {
+        int pipefd[2];
+        char buf[1];
+
+        /* create parent-child pipe */
+        ret = pipe(pipefd);
+        if (ret == -1) {
+            exit(EXIT_FAILURE);
+        }
 
         pid = fork();
         if (pid == -1) {
@@ -50,9 +60,21 @@ void init_server(bool daemonize)
             exit(EXIT_FAILURE);
         }
         if (pid != 0) {
-            /* ok kill the parent */
-            exit(EXIT_SUCCESS);
+            /* wait for child to signal it is ready */
+            close(pipefd[1]);
+            ret = gp_safe_read(pipefd[0], buf, 1);
+            if (ret == 1) {
+                /* child signaled all ok */
+                exit(EXIT_SUCCESS);
+            } else {
+                /* lost child, something went wrong */
+                exit(EXIT_FAILURE);
+            }
         }
+
+        /* child */
+        close(pipefd[0]);
+        *wait_fd = pipefd[1];
 
         sid = setsid();
         if (sid == -1) {
@@ -76,6 +98,20 @@ void init_server(bool daemonize)
     setenv("GSS_USE_PROXY", "NO", 1);
 
     gp_logging_init();
+}
+
+void init_done(int wait_fd)
+{
+    char buf = 0;
+    int ret;
+
+    if (wait_fd != -1) {
+        ret = gp_safe_write(wait_fd, &buf, 1);
+        if (ret != 1) {
+            exit(EXIT_FAILURE);
+        }
+        close(wait_fd);
+    }
 }
 
 void fini_server(void)
