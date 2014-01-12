@@ -356,7 +356,7 @@ done:
     return ret;
 }
 
-uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
+uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *_out)
 {
     uint32_t ret_maj;
     uint32_t ret_min;
@@ -364,6 +364,7 @@ uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
     gss_OID name_type;
     gss_buffer_desc exported_name = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc exported_composite_name = GSS_C_EMPTY_BUFFER;
+    gssx_name out = { .display_name.octet_string_len = 0 };
     int ret;
 
     ret_maj = gss_display_name(&ret_min, in, &name_buffer, &name_type);
@@ -371,13 +372,13 @@ uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
         goto done;
     }
 
-    ret = gp_conv_buffer_to_gssx(&name_buffer, &out->display_name);
+    ret = gp_conv_buffer_to_gssx(&name_buffer, &out.display_name);
     if (ret) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ret;
         goto done;
     }
-    ret = gp_conv_oid_to_gssx(name_type, &out->name_type);
+    ret = gp_conv_oid_to_gssx(name_type, &out.name_type);
     if (ret) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ret;
@@ -386,7 +387,7 @@ uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
 
     ret_maj = gss_export_name(&ret_min, in, &exported_name);
     if (ret_maj == 0) {
-        ret = gp_conv_buffer_to_gssx(&exported_name, &out->exported_name);
+        ret = gp_conv_buffer_to_gssx(&exported_name, &out.exported_name);
         if (ret) {
             ret_maj = GSS_S_FAILURE;
             ret_min = ret;
@@ -403,7 +404,7 @@ uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
 
     ret_maj = gss_export_name_composite(&ret_min, in, &exported_composite_name);
     if (ret_maj == 0) {
-        ret = gp_conv_buffer_to_gssx(&exported_composite_name, &out->exported_composite_name);
+        ret = gp_conv_buffer_to_gssx(&exported_composite_name, &out.exported_composite_name);
         if (ret) {
             ret_maj = GSS_S_FAILURE;
             ret_min = ret;
@@ -413,7 +414,8 @@ uint32_t gp_conv_name_to_gssx(uint32_t *min, gss_name_t in, gssx_name *out)
         /* In case the error is GSS_S_NAME_NOT_MN the name was not
          * canonicalized but that is ok we simply do not export the name
          * in this case */
-        if (ret_maj != GSS_S_NAME_NOT_MN) {
+        if (ret_maj != GSS_S_NAME_NOT_MN &&
+            ret_maj != GSS_S_UNAVAILABLE) {
             goto done;
         }
     }
@@ -428,10 +430,12 @@ done:
     gss_release_buffer(&ret_min, &exported_name);
     gss_release_buffer(&ret_min, &exported_composite_name);
     if (ret_maj) {
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->display_name);
-        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->name_type);
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->exported_name);
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->exported_composite_name);
+        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out.display_name);
+        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out.name_type);
+        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out.exported_name);
+        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out.exported_composite_name);
+    } else {
+        *_out = out;
     }
     return ret_maj;
 }
