@@ -67,8 +67,8 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
     /* Then try with remote */
     if (behavior == GPP_REMOTE_ONLY || behavior == GPP_REMOTE_FIRST) {
 
-        maj = gpm_acquire_cred(&min,
-                               NULL, 0, NULL, cred_usage,
+        maj = gpm_acquire_cred(&min, NULL,
+                               NULL, 0, NULL, cred_usage, false,
                                &cred->remote, NULL, NULL);
 
         if (maj == GSS_S_COMPLETE || behavior == GPP_REMOTE_ONLY) {

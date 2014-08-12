@@ -192,9 +192,31 @@ static void free_cred_store_elements(gss_key_value_set_desc *cs)
     safefree(cs->elements);
 }
 
-static bool try_impersonate(struct gp_service *svc,
-                            gss_cred_usage_t cred_usage)
+int gp_get_acquire_type(struct gssx_arg_acquire_cred *arg)
 {
+    struct gssx_option *val = NULL;
+
+    gp_options_find(val, arg->options,
+                    ACQUIRE_TYPE_OPTION, sizeof(ACQUIRE_TYPE_OPTION));
+    if (val) {
+        if (gp_option_value_match(val, ACQUIRE_IMPERSONATE_NAME,
+                                  sizeof(ACQUIRE_IMPERSONATE_NAME))) {
+            return ACQ_IMPNAME;
+        } else {
+            return -1;
+        }
+    }
+
+    return ACQ_NORMAL;
+}
+
+static bool try_impersonate(struct gp_service *svc,
+                            gss_cred_usage_t cred_usage,
+                            enum gp_aqcuire_cred_type acquire_type)
+{
+    if (acquire_type == ACQ_IMPNAME) {
+        return true;
+    }
     if (!svc->impersonate) {
         return false;
     }
@@ -276,7 +298,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
 
     /* impersonation case (only for initiation) */
     if (user_requested) {
-        if (try_impersonate(svc, *cred_usage)) {
+        if (try_impersonate(svc, *cred_usage, ACQ_NORMAL)) {
             /* When impersonating we want to use the service keytab to
              * acquire initial credential ... */
             use_service_keytab = true;
@@ -394,6 +416,7 @@ done:
 
 uint32_t gp_add_krb5_creds(uint32_t *min,
                            struct gp_call_ctx *gpcall,
+                           enum gp_aqcuire_cred_type acquire_type,
                            gss_cred_id_t in_cred,
                            gssx_name *desired_name,
                            gss_cred_usage_t cred_usage,
@@ -409,7 +432,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     uint32_t discard;
     gss_name_t req_name = GSS_C_NO_NAME;
     gss_OID_set_desc desired_mechs = { 1, &gp_mech_krb5 };
-    gss_key_value_set_desc cred_store;
+    gss_key_value_set_desc cred_store = { 0 };
     gss_cred_id_t impersonator_cred = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t user_cred = GSS_C_NO_CREDENTIAL;
     gss_ctx_id_t initiator_context = GSS_C_NO_CONTEXT;
@@ -417,6 +440,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     gss_name_t target_name = GSS_C_NO_NAME;
     gss_buffer_desc init_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc accept_token = GSS_C_EMPTY_BUFFER;
+    gss_cred_id_t input_cred;
 
     if (!min || !output_cred_handle) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -428,7 +452,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         *actual_mechs = GSS_C_NO_OID_SET;
     }
 
-    if (in_cred != GSS_C_NO_CREDENTIAL) {
+    if (in_cred != GSS_C_NO_CREDENTIAL && acquire_type != ACQ_IMPNAME) {
         /* we can't yet handle adding to an existing credential due to
          * the way gss_krb5_import_cred works. This limitation should
          * be removed by adding a gssapi extension that superceedes this
@@ -436,14 +460,18 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         return GSS_S_CRED_UNAVAIL;
     }
 
-    ret_min = gp_get_cred_environment(gpcall, desired_name, &req_name,
-                                      &cred_usage, &cred_store);
+    if (acquire_type == ACQ_NORMAL) {
+        ret_min = gp_get_cred_environment(gpcall, desired_name, &req_name,
+                                          &cred_usage, &cred_store);
+    } else if (desired_name) {
+        ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &req_name);
+    }
     if (ret_min) {
         ret_maj = GSS_S_CRED_UNAVAIL;
         goto done;
     }
 
-    if (!try_impersonate(gpcall->service, cred_usage)) {
+    if (!try_impersonate(gpcall->service, cred_usage, acquire_type)) {
         ret_maj = gss_acquire_cred_from(&ret_min, req_name, GSS_C_INDEFINITE,
                                         &desired_mechs, cred_usage,
                                         &cred_store, output_cred_handle,
@@ -452,22 +480,35 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
             goto done;
         }
     } else { /* impersonation */
-        ret_maj = gss_acquire_cred_from(&ret_min, GSS_C_NO_NAME,
-                                        GSS_C_INDEFINITE,
-                                        &desired_mechs, GSS_C_BOTH,
-                                        &cred_store, &impersonator_cred,
-                                        NULL, NULL);
-        if (ret_maj) {
+        switch (acquire_type) {
+        case ACQ_NORMAL:
+            ret_maj = gss_acquire_cred_from(&ret_min, GSS_C_NO_NAME,
+                                            GSS_C_INDEFINITE,
+                                            &desired_mechs, GSS_C_BOTH,
+                                            &cred_store, &impersonator_cred,
+                                            NULL, NULL);
+            if (ret_maj) {
+                goto done;
+            }
+            input_cred = impersonator_cred;
+            break;
+        case ACQ_IMPNAME:
+            input_cred = in_cred;
+            break;
+        default:
+            ret_maj = GSS_S_FAILURE;
+            ret_min = EFAULT;
             goto done;
         }
-        ret_maj = gss_inquire_cred(&ret_min, impersonator_cred,
+
+        ret_maj = gss_inquire_cred(&ret_min, input_cred,
                                    &target_name, NULL, NULL, NULL);
         if (ret_maj) {
             goto done;
         }
 
         ret_maj = gss_acquire_cred_impersonate_name(&ret_min,
-                                                    impersonator_cred,
+                                                    input_cred,
                                                     req_name,
                                                     GSS_C_INDEFINITE,
                                                     &desired_mechs,
@@ -477,6 +518,14 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         if (ret_maj) {
             goto done;
         }
+
+        if (acquire_type == ACQ_IMPNAME) {
+            /* we are done here */
+            *output_cred_handle = user_cred;
+            user_cred = GSS_C_NO_CREDENTIAL;
+            goto done;
+        }
+
         /* now acquire credentials for impersonated user to self */
         ret_maj = gss_init_sec_context(&ret_min, user_cred, &initiator_context,
                                        target_name, &gp_mech_krb5,
@@ -488,9 +537,9 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         if (ret_maj) {
             goto done;
         }
-        /* accept context to be able to store delgated credentials */
+        /* accept context to be able to store delegated credentials */
         ret_maj = gss_accept_sec_context(&ret_min, &acceptor_context,
-                                         impersonator_cred, &init_token,
+                                         input_cred, &init_token,
                                          GSS_C_NO_CHANNEL_BINDINGS,
                                          NULL, NULL, &accept_token,
                                          NULL, NULL, output_cred_handle);
@@ -530,6 +579,7 @@ done:
     gss_delete_sec_context(&discard, &initiator_context, NULL);
     gss_release_buffer(&discard, &init_token);
     gss_release_buffer(&discard, &accept_token);
+    gss_release_name(&discard, &req_name);
     *min = ret_min;
 
     return ret_maj;

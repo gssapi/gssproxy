@@ -12,8 +12,16 @@ struct gp_call_ctx;
 bool gp_creds_allowed_mech(struct gp_call_ctx *gpcall, gss_OID desired_mech);
 uint32_t gp_get_supported_mechs(uint32_t *min, gss_OID_set *set);
 
+struct gssx_arg_acquire_cred;
+enum gp_aqcuire_cred_type {
+    ACQ_NORMAL = 0,
+    ACQ_IMPNAME = 1,
+};
+int gp_get_acquire_type(struct gssx_arg_acquire_cred *arg);
+
 uint32_t gp_add_krb5_creds(uint32_t *min,
                            struct gp_call_ctx *gpcall,
+                           enum gp_aqcuire_cred_type acquire_type,
                            gss_cred_id_t in_cred,
                            gssx_name *desired_name,
                            gss_cred_usage_t cred_usage,

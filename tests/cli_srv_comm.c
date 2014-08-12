@@ -457,10 +457,11 @@ void *server_thread(void *pvt)
     }
 
     ret_maj = gpm_acquire_cred(&ret_min,
-                               NULL,
+                               NULL, NULL,
                                GSS_C_INDEFINITE,
                                mech_set,
                                GSS_C_ACCEPT,
+                               false,
                                &cred_handle,
                                NULL,
                                NULL);

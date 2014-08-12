@@ -53,10 +53,12 @@ OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
                                  gss_buffer_t output_token);
 
 OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
+                           gssx_cred *imp_cred_handle,
                            gssx_name *desired_name,
                            OM_uint32 time_req,
                            const gss_OID_set desired_mechs,
                            gss_cred_usage_t cred_usage,
+                           bool impersonate,
                            gssx_cred **output_cred_handle,
                            gss_OID_set *actual_mechs,
                            OM_uint32 *time_rec);

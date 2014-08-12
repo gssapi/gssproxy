@@ -84,7 +84,7 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
     if (!isca->cred_handle) {
         if (gss_oid_equal(mech_type, gss_mech_krb5)) {
             ret_maj = gp_add_krb5_creds(&ret_min, gpcall,
-                                        NULL, NULL,
+                                        ACQ_NORMAL, NULL, NULL,
                                         GSS_C_INITIATE,
                                         time_req, 0, &ich,
                                         NULL, NULL, NULL);
