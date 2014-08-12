@@ -89,4 +89,29 @@ union gp_rpc_res {
     gssx_res_wrap_size_limit wrap_size_limit;
 };
 
+#define gpopt_string_match(buf, val, len) \
+    (len == (buf)->octet_string_len && \
+     strncmp((val), (buf)->octet_string_val, \
+                    (buf)->octet_string_len) == 0)
+
+#define gp_option_name_match(opt, val, len) \
+    gpopt_string_match(&((opt)->option), val, len)
+
+#define gp_option_value_match(opt, val, len) \
+    gpopt_string_match(&((opt)->value), val, len)
+
+#define gp_options_find(res, opts, name, len) \
+do { \
+    struct gssx_option *_v; \
+    int _o; \
+    res = NULL; \
+    for (_o = 0; _o < opts.options_len; _o++) { \
+        _v = &opts.options_val[_o]; \
+        if (gp_option_name_match(_v, name, len)) { \
+            res = _v; \
+            break; \
+        } \
+    } \
+} while(0)
+
 #endif /* _GP_COMMON_H_ */
