@@ -114,4 +114,7 @@ do { \
     } \
 } while(0)
 
+#define ACQUIRE_TYPE_OPTION         "acquire_type"
+#define ACQUIRE_IMPERSONATE_NAME    "impersonate_name"
+
 #endif /* _GP_COMMON_H_ */

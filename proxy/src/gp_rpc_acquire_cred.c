@@ -18,6 +18,7 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
     gss_cred_usage_t cred_usage;
     gss_cred_id_t out_cred = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t *add_out_cred = NULL;
+    int acquire_type = ACQ_NORMAL;
     int ret;
     int i;
 
@@ -30,6 +31,13 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
         ret_maj = gp_import_gssx_cred(&ret_min, gpcall,
                                       aca->input_cred_handle, &in_cred);
         if (ret_maj) {
+            goto done;
+        }
+
+        acquire_type = gp_get_acquire_type(aca);
+        if (acquire_type == -1) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = EINVAL;
             goto done;
         }
     }
@@ -93,6 +101,7 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
         if (gss_oid_equal(desired_mech, gss_mech_krb5)) {
             ret_maj = gp_add_krb5_creds(&ret_min,
                                         gpcall,
+                                        acquire_type,
                                         in_cred,
                                         aca->desired_name,
                                         cred_usage,

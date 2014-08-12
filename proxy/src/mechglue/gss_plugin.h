@@ -102,6 +102,16 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
                                           gss_OID_set *actual_mechs,
                                           OM_uint32 *time_rec);
 
+OM_uint32 gssi_acquire_cred_impersonate_name(OM_uint32 *minor_status,
+                                             gss_cred_id_t *imp_cred_handle,
+                                             const gss_name_t desired_name,
+                                             OM_uint32 time_req,
+                                             const gss_OID_set desired_mechs,
+                                             gss_cred_usage_t cred_usage,
+                                             gss_cred_id_t *output_cred_handle,
+                                             gss_OID_set *actual_mechs,
+                                             OM_uint32 *time_rec);
+
 OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
                                enum gpp_behavior behavior,
                                struct gpp_name_handle *name,

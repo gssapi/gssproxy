@@ -56,7 +56,7 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
 
     if (ach == GSS_C_NO_CREDENTIAL) {
         ret_maj = gp_add_krb5_creds(&ret_min, gpcall,
-                                    NULL, NULL,
+                                    ACQ_NORMAL, NULL, NULL,
                                     GSS_C_ACCEPT,
                                     0, 0,
                                     &ach,

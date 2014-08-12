@@ -45,10 +45,12 @@ static int gpmint_cred_to_actual_mechs(gssx_cred *c, gss_OID_set *a)
 }
 
 OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
+                           gssx_cred *in_cred_handle,
                            gssx_name *desired_name,
                            OM_uint32 time_req,
                            const gss_OID_set desired_mechs,
                            gss_cred_usage_t cred_usage,
+                           bool impersonate,
                            gssx_cred **output_cred_handle,
                            gss_OID_set *actual_mechs,
                            OM_uint32 *time_rec)
@@ -72,6 +74,7 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
 
     /* ignore call_ctx for now */
 
+    arg->input_cred_handle = in_cred_handle;
     arg->desired_name = desired_name;
 
     if (desired_mechs) {
@@ -84,6 +87,33 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     }
     arg->time_req = time_req;
     arg->cred_usage = gp_conv_cred_usage_to_gssx(cred_usage);
+
+    /* impersonate calls use input cred and a special option */
+    if (impersonate) {
+        gssx_option *opt;
+        arg->options.options_val = calloc(1, sizeof(gssx_option));
+        if (!arg->options.options_val) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
+            goto done;
+        }
+        arg->options.options_len = 1;
+        opt = &arg->options.options_val[0];
+        opt->option.octet_string_val = strdup(ACQUIRE_TYPE_OPTION);
+        if (!opt->option.octet_string_val) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
+            goto done;
+        }
+        opt->option.octet_string_len = sizeof(ACQUIRE_TYPE_OPTION);
+        opt->value.octet_string_val = strdup(ACQUIRE_IMPERSONATE_NAME);
+        if (!opt->value.octet_string_val) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
+            goto done;
+        }
+        opt->value.octet_string_len = sizeof(ACQUIRE_IMPERSONATE_NAME);
+    }
 
     /* execute proxy request */
     ret = gpm_make_call(GSSX_ACQUIRE_CRED, &uarg, &ures);
@@ -133,8 +163,9 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
     ret_min = 0;
 
 done:
-    /* desired_name is passed in, don't let gpm_free_xdrs free it */
+    /* don't let gpm_free_xdrs free variables passed in */
     arg->desired_name = NULL;
+    arg->input_cred_handle = NULL;
     gpm_free_xdrs(GSSX_ACQUIRE_CRED, &uarg, &ures);
     *minor_status = ret_min;
     return ret_maj;
