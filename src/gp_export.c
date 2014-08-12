@@ -372,21 +372,16 @@ enum exp_ctx_types {
 int gp_get_exported_context_type(struct gssx_call_ctx *ctx)
 {
 
-    struct gssx_option *val;
-    int i;
+    struct gssx_option *val = NULL;
 
-    for (i = 0; i < ctx->options.options_len; i++) {
-        val = &ctx->options.options_val[i];
-        if (val->option.octet_string_len == sizeof(EXP_CTX_TYPE_OPTION) &&
-            strncmp(EXP_CTX_TYPE_OPTION,
-                        val->option.octet_string_val,
-                        val->option.octet_string_len) == 0) {
-            if (strncmp(LINUX_LUCID_V1,
-                        val->value.octet_string_val,
-                        val->value.octet_string_len) == 0) {
-                return EXP_CTX_LINUX_LUCID_V1;
-            }
-            return -1;
+    gp_options_find(val, ctx->options,
+                    EXP_CTX_TYPE_OPTION, sizeof(EXP_CTX_TYPE_OPTION));
+    if (val) {
+        if (gp_option_value_match(val, LINUX_LUCID_V1,
+                                  sizeof(LINUX_LUCID_V1))) {
+            return EXP_CTX_LINUX_LUCID_V1;
+        } else {
+            return EXP_CTX_PARTIAL;
         }
     }
 
@@ -661,22 +656,16 @@ enum exp_creds_types {
 int gp_get_export_creds_type(struct gssx_call_ctx *ctx)
 {
 
-    struct gssx_option *val;
-    int i;
+    struct gssx_option *val = NULL;
 
-    for (i = 0; i < ctx->options.options_len; i++) {
-        val = &ctx->options.options_val[i];
-        if (val->option.octet_string_len == sizeof(EXP_CREDS_TYPE_OPTION) &&
-            strncmp(EXP_CREDS_TYPE_OPTION,
-                        val->option.octet_string_val,
-                        val->option.octet_string_len) == 0) {
-            if (strncmp(LINUX_CREDS_V1,
-                        val->value.octet_string_val,
-                        val->value.octet_string_len) == 0) {
-                return EXP_CREDS_LINUX_V1;
-            }
-            return -1;
+    gp_options_find(val, ctx->options,
+                    EXP_CTX_TYPE_OPTION, sizeof(EXP_CTX_TYPE_OPTION));
+    if (val) {
+        if (gp_option_value_match(val, LINUX_CREDS_V1,
+                                  sizeof(LINUX_CREDS_V1))) {
+            return EXP_CREDS_LINUX_V1;
         }
+        return -1;
     }
 
     return EXP_CREDS_NO_CREDS;
