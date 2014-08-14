@@ -1,4 +1,4 @@
-SUBDIRS =
+SUBDIRS = tests
 #SUBDIRS += po
 
 if HAVE_MANPAGES
@@ -263,6 +263,7 @@ clean-local:
 CLEANFILES = *.X */*.X */*/*.X
 
 tests: all $(check_PROGRAMS)
+	./tests/runtests.py
 
 # RPM-related tasks
 
