@@ -101,7 +101,8 @@ struct gp_call_ctx {
 };
 
 /* from gp_config.c */
-struct gp_config *read_config(char *config_file, int opt_daemonize);
+struct gp_config *read_config(char *config_file, char *socket_name,
+                              int opt_daemonize);
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
 void free_config(struct gp_config **config);
 

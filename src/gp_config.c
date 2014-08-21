@@ -481,8 +481,10 @@ done:
     return ret;
 }
 
-struct gp_config *read_config(char *config_file, int opt_daemonize)
+struct gp_config *read_config(char *config_file, char *socket_name,
+                              int opt_daemonize)
 {
+    const char *socket = GP_SOCKET_NAME;
     struct gp_config *cfg;
     int ret;
 
@@ -505,7 +507,9 @@ struct gp_config *read_config(char *config_file, int opt_daemonize)
         }
     }
 
-    cfg->socket_name = strdup(GP_SOCKET_NAME);
+    if (socket_name) socket = socket_name;
+
+    cfg->socket_name = strdup(socket);
     if (cfg->socket_name == NULL) {
         ret = ENOMEM;
         goto done;

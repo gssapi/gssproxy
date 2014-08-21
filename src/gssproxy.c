@@ -36,6 +36,7 @@ int main(int argc, const char *argv[])
     int opt_interactive = 0;
     int opt_version = 0;
     char *opt_config_file = NULL;
+    char *opt_config_socket = NULL;
     int opt_debug = 0;
     verto_ctx *vctx;
     verto_ev *ev;
@@ -54,6 +55,8 @@ int main(int argc, const char *argv[])
          _("Run interactive (not a daemon)"), NULL}, \
         {"config", 'c', POPT_ARG_STRING, &opt_config_file, 0, \
          _("Specify a non-default config file"), NULL}, \
+        {"socket", 's', POPT_ARG_STRING, &opt_config_socket, 0, \
+         _("Specify a custom default socket"), NULL}, \
         {"debug", 'd', POPT_ARG_NONE, &opt_debug, 0, \
          _("Enable debugging"), NULL}, \
          {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
@@ -93,7 +96,9 @@ int main(int argc, const char *argv[])
 
     gpctx = calloc(1, sizeof(struct gssproxy_ctx));
 
-    gpctx->config = read_config(opt_config_file, opt_daemon);
+    gpctx->config = read_config(opt_config_file,
+                                opt_config_socket,
+                                opt_daemon);
     if (!gpctx->config) {
         exit(EXIT_FAILURE);
     }

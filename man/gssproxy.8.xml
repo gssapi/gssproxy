@@ -85,6 +85,17 @@
             </varlistentry>
             <varlistentry>
                 <term>
+                    <option>-s</option>,<option>--socket</option>
+                </term>
+                <listitem>
+                    <para>
+                        Specify a custom default socket name. This socket will be used
+                        by all sections that do not define an explicit socket.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
                     <option>-d</option>,<option>--debug</option>
                 </term>
                 <listitem>
