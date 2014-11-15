@@ -87,6 +87,7 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
     int ret;
     int i, count = 0;
     const char **array = NULL;
+    const char **t_array;
 
     if (!values || !num_values) {
         return EINVAL;
@@ -144,11 +145,12 @@ int gp_dinglibs_get_string_array(struct gp_ini_context *ctx,
             goto done;
         }
 
-        array = realloc(array, (count+1) * sizeof(char *));
-        if (array == NULL) {
+        t_array = realloc(array, (count+1) * sizeof(char *));
+        if (t_array == NULL) {
             ret = ENOMEM;
             goto done;
         }
+        array = t_array;
 
         array[count] = strdup(value);
         if (array[count] == NULL) {
