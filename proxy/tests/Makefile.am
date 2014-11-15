@@ -19,4 +19,7 @@ check_PROGRAMS = \
 
 noinst_PROGRAMS = $(check_PROGRAMS)
 
+noinst_HEADERS = \
+    t_utils.h
+
 all: $(check_PROGRAMS)
