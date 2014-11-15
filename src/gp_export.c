@@ -699,7 +699,7 @@ int gp_get_export_creds_type(struct gssx_call_ctx *ctx)
 }
 
 #define CREDS_BUF_MAX (NGROUPS_MAX * sizeof(int32_t))
-#define CREDS_HDR (3 * sizeof(int32_t)) /* uid, gid, count */
+#define CREDS_HDR (3 * sizeof(uint32_t)) /* uid, gid, count */
 
 static uint32_t gp_export_creds_enoent(uint32_t *min, gss_buffer_t buf)
 {
