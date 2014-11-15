@@ -264,7 +264,7 @@ clean-local:
 CLEANFILES = *.X */*.X */*/*.X
 
 tests: all $(check_PROGRAMS)
-	./tests/runtests.py
+	$(srcdir)/tests/runtests.py
 
 # RPM-related tasks
 
@@ -320,4 +320,4 @@ endif
 ####################
 
 test_proxymech:
-	TMPDIR=tests/scripts/ ./tests/scripts/dlopen.sh ./.libs/proxymech.so || exit 1
+	TMPDIR=tests/scripts/ $(srcdir)/tests/scripts/dlopen.sh ./.libs/proxymech.so || exit 1
