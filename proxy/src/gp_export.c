@@ -262,7 +262,7 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
             ret_min = ret;
             goto done;
         }
-        el->cred_usage = gp_conv_gssx_to_cred_usage(cred_usage);
+        el->cred_usage = gp_conv_cred_usage_to_gssx(cred_usage);
 
         el->initiator_time_rec = initiator_lifetime;
         el->acceptor_time_rec = acceptor_lifetime;
