@@ -318,7 +318,7 @@ static int gp_rpc_encode_reply(XDR *xdr_reply_ctx,
 
     if (!xdrok) {
         return gp_rpc_encode_reply_header(xdr_reply_ctx, xid, EINVAL,
-                                          GP_RPC_SYSTEM_ERR, 0);
+                                          GP_RPC_SYSTEM_ERR, GP_RPC_RPC_MISMATCH);
     }
 
     return 0;
@@ -377,8 +377,8 @@ int gp_rpc_process_call(struct gp_call_ctx *gpcall,
 {
     XDR xdr_call_ctx;
     XDR xdr_reply_ctx;
-    gp_rpc_accept_status acc = 0;
-    gp_rpc_reject_status rej = 0;
+    gp_rpc_accept_status acc = GP_RPC_SUCCESS;
+    gp_rpc_reject_status rej = GP_RPC_RPC_MISMATCH;
     char reply_buffer[MAX_RPC_SIZE];
     union gp_rpc_arg arg;
     union gp_rpc_res res;
