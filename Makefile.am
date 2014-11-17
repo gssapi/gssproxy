@@ -1,4 +1,4 @@
-SUBDIRS = tests
+SUBDIRS = . tests
 #SUBDIRS += po
 
 if HAVE_MANPAGES
