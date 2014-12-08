@@ -24,8 +24,8 @@
 */
 
 #include "config.h"
-#include <gssapi/gssapi.h>
 #include "gp_debug.h"
+#include "gp_log.h"
 
 /* global debug switch */
 int gp_debug;
@@ -38,25 +38,9 @@ void gp_debug_enable(void)
 
 void gp_log_failure(gss_OID mech, uint32_t maj, uint32_t min)
 {
-    uint32_t msgctx;
-    uint32_t discard;
-    gss_buffer_desc tmp;
+    char buf[MAX_LOG_LINE];
 
-    fprintf(stderr, "Failed with:");
+    gp_fmt_status(mech, maj, min, buf, MAX_LOG_LINE);
 
-    if (mech != GSS_C_NO_OID) {
-        gss_oid_to_str(&discard, mech, &tmp);
-        fprintf(stderr, " (OID: %s)", (char *)tmp.value);
-        gss_release_buffer(&discard, &tmp);
-    }
-
-    msgctx = 0;
-    gss_display_status(&discard, maj, GSS_C_GSS_CODE, mech, &msgctx, &tmp);
-    fprintf(stderr, " %s,", (char *)tmp.value);
-    gss_release_buffer(&discard, &tmp);
-
-    msgctx = 0;
-    gss_display_status(&discard, min, GSS_C_MECH_CODE, mech, &msgctx, &tmp);
-    fprintf(stderr, " %s\n", (char *)tmp.value);
-    gss_release_buffer(&discard, &tmp);
+    fprintf(stderr, "Failed with: %s\n", buf);
 }

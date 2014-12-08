@@ -182,6 +182,7 @@ proxymech_la_LDFLAGS = \
 cli_srv_comm_SOURCES = \
     src/gp_conv.c \
     src/gp_debug.c \
+    src/gp_log.c \
     $(GP_RPCGEN_OBJ) \
     $(GP_RPCCLI_OBJ) \
     tests/cli_srv_comm.c
