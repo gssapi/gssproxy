@@ -263,7 +263,8 @@ def setup_gssapi_env(testdir, wrapenv):
 def run_interposetest(testdir, env):
     testlog = os.path.join(testdir, 'tests.log')
 
-    ienv = {"KRB5CCNAME": os.path.join(testdir, 'interpose_ccache')}
+    ienv = {"KRB5CCNAME": os.path.join(testdir, 'interpose_ccache'),
+            "KRB5_KTNAME": os.path.join(testdir, SVC_KTNAME)}
     ienv.update(env)
     usr_keytab = os.path.join(testdir, USR_KTNAME)
     with (open(testlog, 'a')) as logfile:
@@ -393,7 +394,7 @@ if __name__ == '__main__':
 
         keysenv = setup_keys(testdir, kdcenv)
 
-        gssapienv = setup_gssapi_env(testdir, keysenv)
+        gssapienv = setup_gssapi_env(testdir, kdcenv)
 
         run_interposetest(testdir, gssapienv)
 
