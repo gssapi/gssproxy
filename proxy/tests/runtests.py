@@ -297,8 +297,7 @@ GSSPROXY_CONF_TEMPLATE = '''
 '''
 
 
-def setup_gssproxy(testdir, env):
-    testlog = os.path.join(testdir, 'tests.log')
+def setup_gssproxy(testdir, logfile, env):
 
     gssproxy = os.path.join(testdir, 'gssproxy')
     if os.path.exists(gssproxy):
@@ -318,19 +317,17 @@ def setup_gssproxy(testdir, env):
     with open(conf, 'w+') as f:
         f.write(text)
 
-    with (open(testlog, 'a')) as logfile:
-        gproc = subprocess.Popen(["./gssproxy", "-i", "-d",
-                                  "-s", socket, "-c", conf],
-                                 stdout=logfile, stderr=logfile,
-                                 env=env, preexec_fn=os.setsid)
+    gproc = subprocess.Popen(["./gssproxy", "-i", "-d",
+                              "-s", socket, "-c", conf],
+                             stdout=logfile, stderr=logfile,
+                             env=env, preexec_fn=os.setsid)
 
     return gproc, socket
 
 
-def run_basic_test(testdir, env):
+def run_basic_test(testdir, logfile, env):
 
     print "STARTING BASIC init/Accept tests"
-    testlog = os.path.join(testdir, 'tests.log')
 
     svc_name = "host@%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
@@ -348,13 +345,13 @@ def run_basic_test(testdir, env):
     pipe0 = os.pipe()
     pipe1 = os.pipe()
 
-    with (open(testlog, 'a')) as logfile:
-        p1 = subprocess.Popen(["./tests/t_init", svc_name],
-                              stdin=pipe0[0], stdout=pipe1[1],
-                              stderr=logfile, env=clienv, preexec_fn=os.setsid)
-        p2 = subprocess.Popen(["./tests/t_accept"],
-                              stdin=pipe1[0], stdout=pipe0[1],
-                              stderr=logfile, env=clienv, preexec_fn=os.setsid)
+    p1 = subprocess.Popen(["./tests/t_init", svc_name],
+                          stdin=pipe0[0], stdout=pipe1[1],
+                          stderr=logfile, env=clienv, preexec_fn=os.setsid)
+    p2 = subprocess.Popen(["./tests/t_accept"],
+                          stdin=pipe1[0], stdout=pipe0[1],
+                          stderr=logfile, env=svcenv, preexec_fn=os.setsid)
+
     p1.wait()
     if p1.returncode != 0:
         print >> sys.stderr, "FAILED: Init test"
@@ -380,6 +377,8 @@ if __name__ == '__main__':
 
     processes = dict()
 
+    testlog = os.path.join(testdir, 'tests.log')
+
     try:
         wrapenv = setup_wrappers(testdir)
 
@@ -392,10 +391,11 @@ if __name__ == '__main__':
 
         run_interposetest(testdir, gssapienv)
 
-        gproc, gpsocket = setup_gssproxy(testdir, keysenv)
-        processes['GSS-Proxy(%d)' % gproc.pid] = gproc
-        gssapienv['GSSPROXY_SOCKET'] = gpsocket
-        run_basic_test(testdir, gssapienv)
+        with (open(testlog, 'a')) as logfile:
+            gproc, gpsocket = setup_gssproxy(testdir, logfile, keysenv)
+            processes['GSS-Proxy(%d)' % gproc.pid] = gproc
+            gssapienv['GSSPROXY_SOCKET'] = gpsocket
+            run_basic_test(testdir, logfile, gssapienv)
 
     finally:
         for name in processes:
