@@ -338,9 +338,9 @@ def run_basic_test(testdir, logfile, env):
     cli_keytab = os.path.join(testdir, USR_KTNAME)
     cli_ccache = os.path.join(testdir, 't_basic_ccname')
     clienv = {'GSS_USE_PROXY': 'yes',
-              'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST',
-              'KRB5CCNAME': cli_ccache,
-              'KRB5_CLIENT_KTNAME': cli_keytab}
+              'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
+              #'KRB5CCNAME': cli_ccache,
+              #'KRB5_CLIENT_KTNAME': cli_keytab}
     clienv.update(env)
 
     pipe0 = os.pipe()
@@ -400,6 +400,7 @@ if __name__ == '__main__':
 
         with (open(testlog, 'a')) as logfile:
             gproc, gpsocket = setup_gssproxy(testdir, logfile, keysenv)
+            time.sleep(2) #Give time to gssproxy to fully start up
             processes['GSS-Proxy(%d)' % gproc.pid] = gproc
             gssapienv['GSSPROXY_SOCKET'] = gpsocket
             run_basic_test(testdir, logfile, gssapienv)
