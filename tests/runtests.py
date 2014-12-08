@@ -355,13 +355,19 @@ def run_basic_test(testdir, logfile, env):
     p1.wait()
     if p1.returncode != 0:
         print >> sys.stderr, "FAILED: Init test"
-        os.killpg(p2.pid, signal.SIGTERM)
+        try:
+            os.killpg(p2.pid, signal.SIGTERM)
+        except OSError:
+            pass
     else:
         print >> sys.stderr, "SUCCESS: Init test"
     p2.wait()
     if p2.returncode != 0:
         print >> sys.stderr, "FAILED: Accept test"
-        os.killpg(p1.pid, signal.SIGTERM)
+        try:
+            os.killpg(p1.pid, signal.SIGTERM)
+        except OSError:
+            pass
     else:
         print >> sys.stderr, "SUCCESS: Accept test"
 
