@@ -536,6 +536,8 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
 
 done:
     if (ret_maj) {
+        gp_log_status(&gp_mech_krb5, ret_maj, ret_min);
+
         if (*output_cred_handle) {
             gss_release_cred(&discard, output_cred_handle);
         }
