@@ -113,6 +113,7 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     int ret;
     krb5_data data_in;
     krb5_enc_data enc_handle;
+    size_t cipherlen;
 
     data_in.length = len;
     data_in.data = buf;
@@ -122,11 +123,12 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     ret = krb5_c_encrypt_length(context,
                                 GP_CREDS_HANDLE_KEY_ENCTYPE,
                                 data_in.length,
-                                (size_t *)&enc_handle.ciphertext.length);
+                                &cipherlen);
     if (ret) {
         goto done;
     }
 
+    enc_handle.ciphertext.length = cipherlen;
     enc_handle.ciphertext.data = malloc(enc_handle.ciphertext.length);
     if (!enc_handle.ciphertext.data) {
         ret = ENOMEM;
