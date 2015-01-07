@@ -48,9 +48,9 @@
 #define SELINUX_CTX void *
 #define SEC_CTX void *
 
-void *SELINUX_context_new(const char *str) { return NULL; }
-#define SELINUX_context_free(x) (x) = NULL;
-const char *SELINUX_context_dummy_get(void *) { return NULL; }
+#define SELINUX_context_new(x) NULL
+#define SELINUX_context_free(x) (x) = NULL
+#define SELINUX_context_dummy_get(x) "<SELinux not compiled in>"
 #define SELINUX_context_str SELINUX_context_dummy_get
 #define SELINUX_context_type_get SELINUX_context_dummy_get
 #define SELINUX_context_user_get SELINUX_context_dummy_get
@@ -58,13 +58,12 @@ const char *SELINUX_context_dummy_get(void *) { return NULL; }
 #define SELINUX_context_range_get SELINUX_context_dummy_get
 
 #include <errno.h>
-int SELINUX_getpeercon(int fd, SEC_CTX *con)
-{
-    *con = NULL;
-    errno = ENOTSUP;
-    return -1;
-}
-#define SELINUX_freecon(x) (x) = NULL;
+#define SELINUX_getpeercon(x, y) -1; do { \
+    *(y) = NULL; \
+    errno = ENOTSUP; \
+} while(0)
+
+#define SELINUX_freecon(x) (x) = NULL
 
 #endif /* done HAVE_SELINUX */
 
