@@ -23,6 +23,7 @@ localedir = @localedir@
 ccpath = @ccpath@
 initdir = @initdir@
 systemdunitdir = @systemdunitdir@
+examplesdir= @datarootdir@/examples
 logpath = @logpath@
 pubconfpath = @pubconfpath@
 pkgconfigdir = $(libdir)/pkgconfig
@@ -221,11 +222,33 @@ endif
 #######################
 
 dist_init_SCRIPTS =
-dist_systemdunit_DATA =
-if HAVE_SYSTEMD_UNIT
-    dist_systemdunit_DATA += \
-        systemd/gssproxy.service
-endif
+
+edit_cmd = $(SED) \
+    -e 's|@sbindir[@]|$(sbindir)|g' \
+    -e 's|@localstatedir[@]|$(localstatedir)|g' \
+    -e 's|@libdir[@]|$(libdir)|g' \
+    -e 's|@gpstatedir[@]|$(prefix)|g'
+
+replace_script = \
+    @rm -f $@ $@.tmp; \
+    srcdir=''; \
+        test -f ./$@.in || srcdir=$(srcdir)/; \
+        $(edit_cmd) $${srcdir}$@.in >$@.tmp; \
+    mv $@.tmp $@
+
+EXTRA_DIST = \
+    systemd/gssproxy.service.in \
+    examples/gssproxy.conf.in \
+    examples/mech.in
+
+systemd/gssproxy.service: systemd/gssproxy.service.in Makefile
+	$(replace_script)
+
+examples/gssproxy.conf: examples/gssproxy.conf.in Makefile
+	$(replace_script)
+
+examples/mech: examples/mech.in Makefile
+	$(replace_script)
 
 installgsspdirs::
 	mkdir -p \
@@ -255,6 +278,11 @@ if HAVE_SYSTEMD_UNIT
 	mkdir -p $(DESTDIR)$(systemdunitdir)
 else
 	mkdir -p $(DESTDIR)$(initdir)
+endif
+
+install-data-hook: systemd/gssproxy.service examples/mech examples/gssproxy.conf
+if HAVE_SYSTEMD_UNIT
+	cp systemd/gssproxy.service $(DESTDIR)$(systemdunitdir)
 endif
 
 clean-local:
