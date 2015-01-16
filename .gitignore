@@ -42,3 +42,13 @@ interposetest
 gssproxy.service
 t_accept
 t_init
+ar-lib
+compile
+config.guess
+config.rpath
+config.sub
+depcomp
+install-sh
+ltmain.sh
+missing
+mkinstalldirs

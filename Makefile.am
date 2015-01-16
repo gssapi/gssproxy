@@ -78,8 +78,6 @@ AM_CPPFLAGS = \
     -DSYSCONFDIR=\"$(sysconfdir)\" \
     -DLOCALEDIR=\"$(localedir)\"
 
-EXTRA_DIST = build/config.rpath
-
 GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS) $(GSSAPI_LIBS) $(GSSRPC_LIBS)
 
 if BUILD_SELINUX
