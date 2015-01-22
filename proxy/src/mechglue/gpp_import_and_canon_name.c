@@ -33,6 +33,11 @@ OM_uint32 gssi_display_name(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     OM_uint32 maj, min = 0;
 
+    output_name_buffer->length = 0;
+    output_name_buffer->value = NULL;
+    if (output_name_type)
+        *output_name_type = GSS_C_NO_OID;
+
     GSSI_TRACE();
 
     name = (struct gpp_name_handle *)input_name;
