@@ -138,7 +138,12 @@ OM_uint32 gssi_accept_sec_context(OM_uint32 *minor_status,
 done:
     *minor_status = gpp_map_error(min);
     if (maj != GSS_S_COMPLETE && maj != GSS_S_CONTINUE_NEEDED) {
-        free(ctx_handle);
+        if (ctx_handle &&
+            ctx_handle->local == GSS_C_NO_CONTEXT &&
+            ctx_handle->remote == NULL) {
+            free(ctx_handle);
+            ctx_handle = NULL;
+        }
         free(deleg_cred);
         free(name);
     } else {
@@ -148,8 +153,11 @@ done:
         if (delegated_cred_handle) {
             *delegated_cred_handle = (gss_cred_id_t)deleg_cred;
         }
-        *context_handle = (gss_ctx_id_t)ctx_handle;
     }
+    /* always replace the provided context handle to avoid
+     * dangling pointers when a context has been passed in */
+    *context_handle = (gss_ctx_id_t)ctx_handle;
+
     if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
         (void)gssi_release_cred(&min, (gss_cred_id_t *)&cred_handle);
     }

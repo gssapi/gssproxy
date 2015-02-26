@@ -91,35 +91,18 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
 
     GSSI_TRACE();
 
+    *minor_status = 0;
+
     if (target_name == GSS_C_NO_NAME) {
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
 
+    if (mech_type == GSS_C_NO_OID || gpp_is_special_oid(mech_type)) {
+        return GSS_S_BAD_MECH;
+    }
+
     tmaj = GSS_S_COMPLETE;
     tmin = 0;
-
-    if (mech_type == GSS_C_NO_OID || gpp_is_special_oid(mech_type)) {
-        maj = GSS_S_BAD_MECH;
-        min = 0;
-        goto done;
-    }
-
-    if (claimant_cred_handle != GSS_C_NO_CREDENTIAL) {
-        cred_handle = (struct gpp_cred_handle *)claimant_cred_handle;
-        if (cred_handle->local) {
-            /* ok this means a previous call decided to short circuit to the
-             * local mech, so let's just re-enter the mechglue here, as we
-             * have no way to export creds yet. */
-            behavior = GPP_LOCAL_ONLY;
-        }
-    } else {
-        cred_handle =  calloc(1, sizeof(struct gpp_cred_handle));
-        if (!cred_handle) {
-            maj = GSS_S_FAILURE;
-            min = ENOMEM;
-            goto done;
-        }
-    }
 
     if (*context_handle) {
         ctx_handle = (struct gpp_context_handle *)*context_handle;
@@ -135,6 +118,23 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
     } else {
         ctx_handle = calloc(1, sizeof(struct gpp_context_handle));
         if (!ctx_handle) {
+            maj = GSS_S_FAILURE;
+            min = ENOMEM;
+            goto done;
+        }
+    }
+
+    if (claimant_cred_handle != GSS_C_NO_CREDENTIAL) {
+        cred_handle = (struct gpp_cred_handle *)claimant_cred_handle;
+        if (cred_handle->local) {
+            /* ok this means a previous call decided to short circuit to the
+             * local mech, so let's just re-enter the mechglue here, as we
+             * have no way to export creds yet. */
+            behavior = GPP_LOCAL_ONLY;
+        }
+    } else {
+        cred_handle =  calloc(1, sizeof(struct gpp_cred_handle));
+        if (!cred_handle) {
             maj = GSS_S_FAILURE;
             min = ENOMEM;
             goto done;
@@ -205,11 +205,18 @@ done:
         min = tmin;
     }
     if (maj != GSS_S_COMPLETE && maj != GSS_S_CONTINUE_NEEDED) {
-        free(ctx_handle);
+        if (ctx_handle &&
+            ctx_handle->local == GSS_C_NO_CONTEXT &&
+            ctx_handle->remote == NULL) {
+            free(ctx_handle);
+            ctx_handle = NULL;
+        }
         *minor_status = gpp_map_error(min);
-    } else {
-        *context_handle = (gss_ctx_id_t)ctx_handle;
     }
+    /* always replace the provided context handle to avoid
+     * dangling pointers when a context has been passed in */
+    *context_handle = (gss_ctx_id_t)ctx_handle;
+
     if (claimant_cred_handle == GSS_C_NO_CREDENTIAL) {
         free(cred_handle);
     }
