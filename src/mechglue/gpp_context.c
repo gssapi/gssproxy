@@ -364,6 +364,11 @@ OM_uint32 gssi_delete_sec_context(OM_uint32 *minor_status,
 
     *context_handle = GSS_C_NO_CONTEXT;
 
+    if (ctx == NULL) {
+        *minor_status = 0;
+        return GSS_S_COMPLETE;
+    }
+
     if (ctx->local) {
         maj = gss_delete_sec_context(&min, &ctx->local, output_token);
         if (maj != GSS_S_COMPLETE) {

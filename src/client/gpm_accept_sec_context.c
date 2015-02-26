@@ -116,12 +116,6 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         goto done;
     }
 
-    /* replace old ctx handle if any */
-    if (*context_handle) {
-        xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
-        free(*context_handle);
-    }
-    *context_handle = ctx;
     if (mech_type) {
         *mech_type = mech;
     }
@@ -157,6 +151,7 @@ done:
     arg->context_handle = NULL;
     arg->cred_handle = NULL;
     gpm_free_xdrs(GSSX_ACCEPT_SEC_CONTEXT, &uarg, &ures);
+
     if (ret) {
         if (ctx) {
             xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ctx);
@@ -177,6 +172,13 @@ done:
         *minor_status = ret;
         return GSS_S_FAILURE;
     }
+
+    /* always replace old ctx handle and set new */
+    if (*context_handle) {
+        xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
+        free(*context_handle);
+    }
+    *context_handle = ctx;
 
     return ret_maj;
 }

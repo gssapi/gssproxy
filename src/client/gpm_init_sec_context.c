@@ -137,12 +137,6 @@ done:
     gpm_free_xdrs(GSSX_INIT_SEC_CONTEXT, &uarg, &ures);
 
     if (ret_maj == GSS_S_COMPLETE || ret_maj == GSS_S_CONTINUE_NEEDED) {
-        /* replace old ctx handle if any */
-        if (*context_handle) {
-            xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
-            free(*context_handle);
-        }
-        *context_handle = ctx;
         if (actual_mech_type) {
             *actual_mech_type = mech;
         }
@@ -170,6 +164,13 @@ done:
             free(outbuf);
         }
     }
+
+    /* always replace old ctx handle and set new */
+    if (*context_handle) {
+        xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
+        free(*context_handle);
+    }
+    *context_handle = ctx;
 
     *minor_status = ret_min;
     return ret_maj;
