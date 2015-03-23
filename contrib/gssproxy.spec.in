@@ -59,7 +59,7 @@ A proxy for GSSAPI credential handling
 autoreconf -f -i
 %configure \
     --with-pubconf-path=%{pubconfpath} \
-    --with-init-dir=%{_initrddir} \
+    --with-initscript=systemd \
     --disable-static \
     --disable-rpath
 
