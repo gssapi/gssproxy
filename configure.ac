@@ -124,12 +124,13 @@ LIBS="$PTHREAD_CFLAGS $CFLAGS"
 CC="$PTHREAD_CC"
 
 AC_CHECK_HEADERS([gssapi/gssapi.h],,[AC_MSG_ERROR([Could not find GSSAPI headers])])
-AC_PATH_PROG(KRB5_CONFIG, krb5-config, failed)
-if test x$KRB5_CONFIG = xfailed; then
+PKG_CHECK_MODULES([KRB5_GSSAPI], [krb5-gssapi >= 1.12.0],
+                  [have_krb5_gssapi=1], [have_krb5_gssapi=])
+if test x$have_krb5_gssapi = x; then
     AC_MSG_ERROR([Could not find GSSAPI development libraries])
 else
-    GSSAPI_CFLAGS="`$KRB5_CONFIG --cflags gssapi`"
-    GSSAPI_LIBS="`$KRB5_CONFIG --libs gssapi`"
+    GSSAPI_CFLAGS="`$PKG_CONFIG --cflags krb5-gssapi`"
+    GSSAPI_LIBS="`$PKG_CONFIG --libs krb5-gssapi`"
 fi
 AC_CHECK_LIB(gssapi_krb5, gss_import_cred,,
              [AC_MSG_ERROR([GSSAPI library does not support gss_import_cred])],
