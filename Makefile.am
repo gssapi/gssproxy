@@ -221,6 +221,13 @@ endif
 #######################
 
 dist_init_SCRIPTS =
+systemdunit_DATA =
+if HAVE_SYSTEMD_UNIT
+    systemdunit_DATA += \
+        systemd/gssproxy.service
+endif
+
+noinst_DATA = examples/gssproxy.conf examples/mech
 
 edit_cmd = $(SED) \
     -e 's|@sbindir[@]|$(sbindir)|g' \
@@ -241,12 +248,15 @@ EXTRA_DIST = \
     examples/mech.in
 
 systemd/gssproxy.service: systemd/gssproxy.service.in Makefile
+	@$(MKDIR_P) systemd/
 	$(replace_script)
 
 examples/gssproxy.conf: examples/gssproxy.conf.in Makefile
+	@$(MKDIR_P) examples/
 	$(replace_script)
 
 examples/mech: examples/mech.in Makefile
+	@$(MKDIR_P) examples/
 	$(replace_script)
 
 installgsspdirs::
@@ -279,15 +289,12 @@ else
 	mkdir -p $(DESTDIR)$(initdir)
 endif
 
-install-data-hook: systemd/gssproxy.service examples/mech examples/gssproxy.conf
-if HAVE_SYSTEMD_UNIT
-	cp systemd/gssproxy.service $(DESTDIR)$(systemdunitdir)
-endif
-
 clean-local:
 	rm -Rf doc
 
-CLEANFILES = *.X */*.X */*/*.X
+CLEANFILES = *.X */*.X */*/*.X \
+    examples/mech \
+    examples/gssproxy.conf
 
 tests: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py
