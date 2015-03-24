@@ -70,7 +70,6 @@ WITH_GPP_DEFAULT_BEHAVIOR
 
 m4_include([external/pkg.m4])
 m4_include([external/libpopt.m4])
-m4_include([external/krb5.m4])
 m4_include([external/docbook.m4])
 m4_include([external/sizes.m4])
 m4_include([external/selinux.m4])
@@ -127,8 +126,10 @@ AC_CHECK_HEADERS([gssapi/gssapi.h],,[AC_MSG_ERROR([Could not find GSSAPI headers
 PKG_CHECK_MODULES([KRB5_GSSAPI], [krb5-gssapi >= 1.12.0],
                   [have_krb5_gssapi=1], [have_krb5_gssapi=])
 if test x$have_krb5_gssapi = x; then
-    AC_MSG_ERROR([Could not find GSSAPI development libraries])
+    AC_MSG_ERROR([Could not find Krb5 / GSSAPI development libraries])
 else
+    KRB5_CFLAGS="`$PKG_CONFIG --cflags krb5`"
+    KRB5_LIBS="`$PKG_CONFIG --libs krb5`"
     GSSAPI_CFLAGS="`$PKG_CONFIG --cflags krb5-gssapi`"
     GSSAPI_LIBS="`$PKG_CONFIG --libs krb5-gssapi`"
 fi
@@ -139,6 +140,8 @@ AC_CHECK_LIB(gssapi_krb5, gss_export_cred,,
              [AC_MSG_ERROR([GSSAPI library does not support gss_export_cred])],
              [$GSSAPI_LIBS])
 
+AC_SUBST([KRB5_CFLAGS])
+AC_SUBST([KRB5_LIBS])
 AC_SUBST([GSSAPI_CFLAGS])
 AC_SUBST([GSSAPI_LIBS])
 
