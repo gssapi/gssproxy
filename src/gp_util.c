@@ -31,6 +31,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include "gp_common.h"
+
 bool gp_same(const char *a, const char *b)
 {
     if ((a == b) || strcmp(a, b) == 0) {
