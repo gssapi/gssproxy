@@ -49,7 +49,8 @@ int gp_import_and_canon_name(struct gp_call_ctx *gpcall,
 
     if (icna->input_name.display_name.octet_string_len == 0 &&
         icna->input_name.exported_name.octet_string_len == 0) {
-        ret = EINVAL;
+        ret_maj = GSS_S_FAILURE;
+        ret_min = EINVAL;
         goto done;
     }
 
