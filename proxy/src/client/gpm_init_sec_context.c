@@ -154,6 +154,7 @@ done:
         if (ctx) {
             xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ctx);
             free(ctx);
+            ctx = NULL;
         }
         if (mech) {
             free(mech->elements);
