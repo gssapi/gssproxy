@@ -63,7 +63,7 @@ static void gpm_init_once(void)
     pthread_mutexattr_destroy(&attr);
 }
 
-static int get_pipe_name(struct gpm_ctx *gpmctx, char *name)
+static int get_pipe_name(char *name)
 {
     const char *socket;
     int ret;
@@ -88,7 +88,7 @@ static int gpm_open_socket(struct gpm_ctx *gpmctx)
     int ret;
     int fd = -1;
 
-    ret = get_pipe_name(gpmctx, name);
+    ret = get_pipe_name(name);
     if (ret) {
         return ret;
     }
