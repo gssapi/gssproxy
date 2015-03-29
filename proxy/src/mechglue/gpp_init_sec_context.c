@@ -110,10 +110,6 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
             /* ok this means a previous call decided to use the local mech,
              * so let's just re-enter the mechglue here and keep at it */
             behavior = GPP_LOCAL_ONLY;
-        } else if (behavior == GPP_LOCAL_ONLY) {
-            maj = GSS_S_DEFECTIVE_CREDENTIAL;
-            min = 0;
-            goto done;
         }
     } else {
         ctx_handle = calloc(1, sizeof(struct gpp_context_handle));
@@ -131,6 +127,10 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
              * local mech, so let's just re-enter the mechglue here, as we
              * have no way to export creds yet. */
             behavior = GPP_LOCAL_ONLY;
+        } else if (behavior == GPP_LOCAL_ONLY) {
+            maj = GSS_S_DEFECTIVE_CREDENTIAL;
+            min = 0;
+            goto done;
         }
     } else {
         cred_handle =  calloc(1, sizeof(struct gpp_cred_handle));
@@ -142,7 +142,9 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
     }
 
     name = (struct gpp_name_handle *)target_name;
-    behavior = gpp_get_behavior();
+    if (behavior == GPP_UNINITIALIZED) {
+        behavior = gpp_get_behavior();
+    }
 
     /* See if we should try local first */
     if (behavior == GPP_LOCAL_ONLY || behavior == GPP_LOCAL_FIRST) {
