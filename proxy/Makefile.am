@@ -234,7 +234,7 @@ edit_cmd = $(SED) \
     -e 's|@sbindir[@]|$(sbindir)|g' \
     -e 's|@localstatedir[@]|$(localstatedir)|g' \
     -e 's|@libdir[@]|$(libdir)|g' \
-    -e 's|@gpstatedir[@]|$(prefix)|g'
+    -e 's|@gpclidir[@]|$(gpclidir)|g'
 
 replace_script = \
     @rm -f $@ $@.tmp; \
