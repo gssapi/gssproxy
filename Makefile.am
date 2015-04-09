@@ -36,10 +36,12 @@ if WANT_AUX_INFO
     AM_CFLAGS += -aux-info $@.X
 endif
 if HAVE_GCC
+# -fstrict-aliasing is needed so that -W*strict-aliasing works
+# properly
     AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
                  -Wcast-qual -Wcast-align -Wwrite-strings \
-                 -Werror-implicit-function-declaration \
-                 -fno-strict-aliasing
+                 -fstrict-aliasing -Wstrict-aliasing -Werror=strict-aliasing \
+                 -Werror-implicit-function-declaration
 endif
 
 dist_pkgconfig_DATA =
