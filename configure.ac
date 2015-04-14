@@ -82,14 +82,6 @@ if test x$have_libverto = x; then
     AC_MSG_ERROR([Could not find VERTO headers])
 fi
 
-#Check for iniparser
-have_iniparser=
-AC_CHECK_HEADERS([iniparser.h],
-    [AC_CHECK_LIB(iniparser, iniparser_set, [ have_iniparser=1 ],
-    [AC_MSG_ERROR([Iniparser library must support iniparser_set])])],
-    [AC_MSG_WARN([Could not find Iniparser headers])]
-)
-
 #Check for libini_config
 PKG_CHECK_MODULES([LIBINI_CONFIG], [ini_config >= 1.0.0], [have_libini_config=1], [have_libini_config=])
 if test x$have_libini_config = x; then
@@ -106,11 +98,8 @@ if test x$have_libini_config = x1; then
     AC_DEFINE([WITH_DINGLIBS], [1], [Using ini_config])
     INI_CFLAGS="$INI_CONFIG_CFLAGS"
     INI_LIBS="$INI_CONFIG_LIBS"
-elif test x$have_iniparser = x1; then
-    AC_DEFINE([WITH_INIPARSER], [1], [Using iniparser])
-    INI_LIBS="-liniparser"
 else
-    AC_MSG_ERROR([Neither iniparser nor ini_config development packages available])
+    AC_MSG_ERROR([ini_config development packages not available])
 fi
 
 AC_SUBST(INI_LIBS)
