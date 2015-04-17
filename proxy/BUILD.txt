@@ -1,10 +1,11 @@
 
 First off, run:
-# autoreconf -f -i
+$ autoreconf -f -i
 
-Then the usual ./configure and make
+Then the usual $ ./configure # and $ make #
 
-In order to build gss-proxy the following development packages are needed:
+In order to build gss-proxy the following development packages are needed
+additionally to a ISO C compiler:
 
     autoconf
     automake
@@ -12,7 +13,7 @@ In order to build gss-proxy the following development packages are needed:
     doxygen
     findutils
     gettext-devel
-    iniparser-devel or libini_config-devel (preferred)
+    libini_config-devel
     keyutils-libs-devel
     krb5-devel
     libselinux-devel
@@ -21,8 +22,16 @@ In order to build gss-proxy the following development packages are needed:
     libxml2
     libxslt
     m4
+    make
     pkgconfig
     popt-devel
+
+For testing via $ make tests # you additionally need these three
+packages:
+
+    krb5-server
+    nss_wrapper
+    socket_wrapper
 
 NOTE:
 The minimum supported Kerberos version is MIT Kerberos 1.11.2 as it includes
@@ -37,4 +46,3 @@ simply allows combining two [4][5] features introduced in MIT 1.11
 [3] https://github.com/krb5/krb5/commit/38cc076579888695a5820ceb44fe43020f5b61e1
 [4] http://k5wiki.kerberos.org/wiki/Projects/Credential_Store_extensions
 [5] http://k5wiki.kerberos.org/wiki/Projects/Keytab_initiation
-
