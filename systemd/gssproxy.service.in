@@ -6,6 +6,7 @@ Before=nfs-secure.service nfs-secure-server.service
 Requires=proc-fs-nfsd.mount
 
 [Service]
+Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
 ExecStart=@sbindir@/gssproxy -D
 # These two should be used with traditional UNIX forking daemons
 # consult systemd.service(5) for more details
