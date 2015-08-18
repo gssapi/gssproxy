@@ -74,6 +74,7 @@ install -d -m755 %{buildroot}%{_sysconfdir}/gssproxy
 install -m644 examples/gssproxy.conf %{buildroot}%{_sysconfdir}/gssproxy/gssproxy.conf
 mkdir -p %{buildroot}%{_sysconfdir}/gss/mech.d
 install -m644 examples/mech %{buildroot}%{_sysconfdir}/gss/mech.d/gssproxy.conf
+mkdir -p %{buildroot}/var/lib/gssproxy/rcache
 
 %clean
 rm -rf %{buildroot}
@@ -88,6 +89,7 @@ rm -rf %{buildroot}
 %attr(700,root,root) %dir %{gpstatedir}/clients
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
 %attr(0644,root,root) %config(noreplace) /%{_sysconfdir}/gss/mech.d/gssproxy.conf
+%attr(700,root,root) %dir /var/lib/gssproxy/rcache
 %{_libdir}/gssproxy/proxymech.so
 %{_mandir}/man5/gssproxy.conf.5*
 %{_mandir}/man8/gssproxy.8*
