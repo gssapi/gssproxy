@@ -132,7 +132,6 @@ dist_noinst_HEADERS = \
     src/gp_export.h \
     src/gp_conv.h \
     src/gp_config.h \
-    src/gp_config_dinglibs.h \
     src/gp_debug.h \
     src/gp_rpc_creds.h \
     src/gp_selinux.h \
@@ -145,7 +144,6 @@ dist_noinst_HEADERS = \
 
 gssproxy_SOURCES = \
     src/gp_config.c \
-    src/gp_config_dinglibs.c \
     src/gp_init.c \
     src/gp_socket.c \
     src/gp_workers.c \

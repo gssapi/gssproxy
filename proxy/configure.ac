@@ -95,7 +95,6 @@ else
 fi
 
 if test x$have_libini_config = x1; then
-    AC_DEFINE([WITH_DINGLIBS], [1], [Using ini_config])
     INI_CFLAGS="$INI_CONFIG_CFLAGS"
     INI_LIBS="$INI_CONFIG_LIBS"
 else
