@@ -35,6 +35,8 @@
 
 #include <gssapi/gssapi.h>
 
+#include <ini_configobj.h>
+
 struct gp_flag_def {
     const char *name;
     uint32_t value;
@@ -583,13 +585,62 @@ void free_config(struct gp_config **cfg)
     *cfg = NULL;
 }
 
-#ifdef WITH_DINGLIBS
-#include "gp_config_dinglibs.h"
-
 int gp_config_init(const char *config_file,
                    struct gp_ini_context *ctx)
 {
-    return gp_dinglibs_init(config_file, ctx);
+    struct ini_cfgobj *ini_config = NULL;
+    struct ini_cfgfile *file_ctx = NULL;
+    int ret;
+
+    if (!ctx) {
+        return EINVAL;
+    }
+
+    ret = ini_config_create(&ini_config);
+    if (ret) {
+        return ENOENT;
+    }
+
+    ret = ini_config_file_open(config_file,
+                               0, /* metadata_flags, FIXME */
+                               &file_ctx);
+    if (ret) {
+        GPDEBUG("Failed to open config file: %d (%s)\n",
+            ret, gp_strerror(ret));
+        ini_config_destroy(ini_config);
+        return ret;
+    }
+
+    ret = ini_config_parse(file_ctx,
+                           INI_STOP_ON_ANY, /* error_level */
+                           /* Merge section but allow duplicates */
+                           INI_MS_MERGE |
+                           INI_MV1S_ALLOW |
+                           INI_MV2S_ALLOW,
+                           INI_PARSE_NOWRAP, /* parse_flags */
+                           ini_config);
+    if (ret) {
+        char **errors = NULL;
+        /* we had a parsing failure */
+        GPDEBUG("Failed to parse config file: %d (%s)\n",
+            ret, gp_strerror(ret));
+        if (ini_config_error_count(ini_config)) {
+            ini_config_get_errors(ini_config, &errors);
+            if (errors) {
+                ini_config_print_errors(stderr, errors);
+                ini_config_free_errors(errors);
+            }
+        }
+        ini_config_file_destroy(file_ctx);
+        ini_config_destroy(ini_config);
+        return ret;
+    }
+
+    ini_config_file_destroy(file_ctx);
+
+    ctx->private_data = ini_config;
+
+    return 0;
 }
 
 int gp_config_get_string(struct gp_ini_context *ctx,
@@ -597,7 +648,37 @@ int gp_config_get_string(struct gp_ini_context *ctx,
                          const char *keyname,
                          const char **value)
 {
-    return gp_dinglibs_get_string(ctx, secname, keyname, value);
+    struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
+    struct value_obj *vo = NULL;
+    int ret;
+    const char *val;
+
+    if (!value) {
+        return -1;
+    }
+
+    *value = NULL;
+
+    ret = ini_get_config_valueobj(secname,
+                                  keyname,
+                                  ini_config,
+                                  INI_GET_FIRST_VALUE,
+                                  &vo);
+    if (ret) {
+        return ret;
+    }
+    if (!vo) {
+        return ENOENT;
+    }
+
+    val = ini_get_const_string_config_value(vo, &ret);
+    if (ret) {
+        return ret;
+    }
+
+    *value = val;
+
+    return 0;
 }
 
 int gp_config_get_string_array(struct gp_ini_context *ctx,
@@ -606,8 +687,100 @@ int gp_config_get_string_array(struct gp_ini_context *ctx,
                                int *num_values,
                                const char ***values)
 {
-    return gp_dinglibs_get_string_array(ctx, secname, keyname,
-                                        num_values, values);
+    struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
+    struct value_obj *vo = NULL;
+    const char *value;
+    int ret;
+    int i, count = 0;
+    const char **array = NULL;
+    const char **t_array;
+
+    if (!values || !num_values) {
+        return EINVAL;
+    }
+
+    *num_values = 0;
+    *values = NULL;
+
+    ret = ini_get_config_valueobj(secname,
+                                  keyname,
+                                  ini_config,
+                                  INI_GET_FIRST_VALUE,
+                                  &vo);
+    if (ret) {
+        return ret;
+    }
+    if (!vo) {
+        return ENOENT;
+    }
+
+    value = ini_get_const_string_config_value(vo, &ret);
+    if (ret) {
+        return ret;
+    }
+
+    array = calloc(1, sizeof(char *));
+    if (array == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    array[count] = strdup(value);
+    if (array[count] == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    count++;
+
+    do {
+        ret = ini_get_config_valueobj(secname,
+                                      keyname,
+                                      ini_config,
+                                      INI_GET_NEXT_VALUE,
+                                      &vo);
+        if (ret) {
+            goto done;
+        }
+        if (!vo) {
+            break;
+        }
+
+        value = ini_get_const_string_config_value(vo, &ret);
+        if (ret) {
+            goto done;
+        }
+
+        t_array = realloc(array, (count+1) * sizeof(char *));
+        if (t_array == NULL) {
+            ret = ENOMEM;
+            goto done;
+        }
+        array = t_array;
+
+        array[count] = strdup(value);
+        if (array[count] == NULL) {
+            ret = ENOMEM;
+            goto done;
+        }
+
+        count++;
+
+    } while (1);
+
+    *num_values = count;
+    *values = array;
+
+    ret = 0;
+
+done:
+    if (ret && array) {
+        for (i = 0; i < count; i++) {
+            safefree(array[i]);
+        }
+        safefree(array);
+    }
+    return ret;
 }
 
 int gp_config_get_int(struct gp_ini_context *ctx,
@@ -615,23 +788,98 @@ int gp_config_get_int(struct gp_ini_context *ctx,
                       const char *keyname,
                       int *value)
 {
-    return gp_dinglibs_get_int(ctx, secname, keyname, value);
+    struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
+    struct value_obj *vo = NULL;
+    int ret;
+    int val;
+
+    if (!value) {
+        return EINVAL;
+    }
+
+    *value = -1;
+
+    ret = ini_get_config_valueobj(secname,
+                                  keyname,
+                                  ini_config,
+                                  INI_GET_FIRST_VALUE,
+                                  &vo);
+
+    if (ret) {
+        return ret;
+    }
+    if (!vo) {
+        return ENOENT;
+    }
+
+    val = ini_get_int_config_value(vo,
+                                   0, /* strict */
+                                   0, /* default */
+                                   &ret);
+    if (ret) {
+        return ret;
+    }
+
+    *value = val;
+
+    return 0;
 }
 
 int gp_config_get_nsec(struct gp_ini_context *ctx)
 {
-    return gp_dinglibs_get_nsec(ctx);
+    struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
+    char **list = NULL;
+    int count;
+    int error;
+
+    list = ini_get_section_list(ini_config, &count, &error);
+    if (error) {
+        return 0;
+    }
+
+    ini_free_section_list(list);
+
+    return count;
 }
 
 char *gp_config_get_secname(struct gp_ini_context *ctx,
                             int i)
 {
-    return gp_dinglibs_get_secname(ctx, i);
+    struct ini_cfgobj *ini_config = (struct ini_cfgobj *)ctx->private_data;
+    char **list = NULL;
+    int count;
+    int error;
+    char *secname;
+
+    list = ini_get_section_list(ini_config, &count, &error);
+    if (error) {
+        return NULL;
+    }
+
+    if (i >= count) {
+        return NULL;
+    }
+
+    secname = strdup(list[i]);
+    ini_free_section_list(list);
+    if (!secname) {
+        return NULL;
+    }
+
+    return secname;
 }
 
 int gp_config_close(struct gp_ini_context *ctx)
 {
-    return gp_dinglibs_close(ctx);
-}
+    struct ini_cfgobj *ini_config = NULL;
 
-#endif /* WITH_DINGLIBS */
+    if (!ctx) {
+        return 0;
+    }
+
+    ini_config = (struct ini_cfgobj *)ctx->private_data;
+
+    ini_config_destroy(ini_config);
+
+    return 0;
+}
