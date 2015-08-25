@@ -31,7 +31,7 @@ struct gp_ini_context {
     void *private_data;
 };
 
-int gp_config_init(const char *config_file,
+int gp_config_init(const char *config_file, const char *config_dir,
                    struct gp_ini_context *ctx);
 int gp_config_get_string(struct gp_ini_context *ctx,
                          const char *secname,

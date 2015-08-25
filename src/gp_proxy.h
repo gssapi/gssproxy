@@ -68,6 +68,7 @@ struct gp_service {
 
 struct gp_config {
     char *config_file;      /* gssproxy configuration file */
+    char *config_dir;       /* gssproxy configuration directory */
     bool daemonize;         /* let gssproxy daemonize */
     char *socket_name;      /* the socket name to use for */
     int num_workers;        /* number of worker threads */
@@ -101,8 +102,8 @@ struct gp_call_ctx {
 };
 
 /* from gp_config.c */
-struct gp_config *read_config(char *config_file, char *socket_name,
-                              int opt_daemonize);
+struct gp_config *read_config(char *config_file, char *config_dir,
+                              char *socket_name, int opt_daemonize);
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
 void free_config(struct gp_config **config);
 
