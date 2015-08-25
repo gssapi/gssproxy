@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pwd.h>
 #include "gp_proxy.h"
 #include "gp_config.h"
 #include "gp_selinux.h"
@@ -247,18 +248,33 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 goto done;
             }
 
+            /* euid can be a string or an int */
             ret = gp_config_get_int(ctx, secname, "euid", &valnum);
             if (ret != 0) {
-                /* if euid is missing or there is an error retrieving it
-                 * return an error and end. This is a fatal condition. */
-                if (ret == ENOENT) {
-                    GPERROR("Option 'euid' is missing from [%s].\n", secname);
-                    ret = EINVAL;
+                ret = gp_config_get_string(ctx, secname, "euid", &value);
+                if (ret == 0) {
+                    struct passwd *eu_passwd; /* static; do not free */
+
+                    errno = 0; /* needs to be 0; otherwise it won't be set */
+                    eu_passwd = getpwnam(value);
+                    if (!eu_passwd) {
+                        ret = errno;
+                    } else {
+                        valnum = eu_passwd->pw_uid;
+                    }
                 }
-                gp_service_free(cfg->svcs[n]);
-                cfg->num_svcs--;
-                safefree(secname);
-                goto done;
+                if (ret != 0) {
+                    /* if euid is missing or there is an error retrieving it
+                     * return an error and end. This is a fatal condition. */
+                    if (ret == ENOENT) {
+                        GPERROR("Option 'euid' is missing from [%s].\n", secname);
+                        ret = EINVAL;
+                    }
+                    gp_service_free(cfg->svcs[n]);
+                    cfg->num_svcs--;
+                    safefree(secname);
+                    goto done;
+                }
             }
             cfg->svcs[n]->euid = valnum;
 
