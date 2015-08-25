@@ -427,6 +427,7 @@ done:
 }
 
 static int gp_init_ini_context(const char *config_file,
+                               const char *config_dir,
                                struct gp_ini_context **ctxp)
 {
     struct gp_ini_context *ctx;
@@ -441,7 +442,7 @@ static int gp_init_ini_context(const char *config_file,
         return ENOENT;
     }
 
-    ret = gp_config_init(config_file, ctx);
+    ret = gp_config_init(config_file, config_dir, ctx);
 
     if (ret) {
         free(ctx);
@@ -457,7 +458,7 @@ int load_config(struct gp_config *cfg)
     const char *tmpstr;
     int ret;
 
-    ret = gp_init_ini_context(cfg->config_file, &ctx);
+    ret = gp_init_ini_context(cfg->config_file, cfg->config_dir, &ctx);
     if (ret) {
         return ret;
     }
@@ -499,10 +500,11 @@ done:
     return ret;
 }
 
-struct gp_config *read_config(char *config_file, char *socket_name,
-                              int opt_daemonize)
+struct gp_config *read_config(char *config_file, char *config_dir,
+                              char *socket_name, int opt_daemonize)
 {
     const char *socket = GP_SOCKET_NAME;
+    const char *dir = PUBCONF_PATH;
     struct gp_config *cfg;
     int ret;
 
@@ -514,15 +516,22 @@ struct gp_config *read_config(char *config_file, char *socket_name,
     if (config_file) {
         cfg->config_file = strdup(config_file);
         if (!cfg->config_file) {
-            free(cfg);
-            return NULL;
+            ret = ENOMEM;
+            goto done;
         }
     } else {
         ret = asprintf(&cfg->config_file, "%s/gssproxy.conf", PUBCONF_PATH);
         if (ret == -1) {
-            free(cfg);
-            return NULL;
+            goto done;
         }
+    }
+
+    if (config_dir) dir = config_dir;
+
+    cfg->config_dir = strdup(dir);
+    if (!cfg->config_dir) {
+        ret = ENOMEM;
+        goto done;
     }
 
     if (socket_name) socket = socket_name;
@@ -546,12 +555,14 @@ struct gp_config *read_config(char *config_file, char *socket_name,
 
     ret = load_config(cfg);
     if (ret) {
-        GPDEBUG("Config file not found!\n");
+        GPDEBUG("Config file(s) not found!\n");
     }
 
 done:
     if (ret) {
+        /* recursively frees cfg */
         free_config(&cfg);
+        return NULL;
     }
 
     return cfg;
@@ -585,45 +596,34 @@ void free_config(struct gp_config **cfg)
     *cfg = NULL;
 }
 
-int gp_config_init(const char *config_file,
-                   struct gp_ini_context *ctx)
+static int gp_config_from_file(const char *config_file,
+                               struct gp_ini_context *ctx,
+                               struct ini_cfgobj *ini_config,
+                               const uint32_t collision_flags)
 {
-    struct ini_cfgobj *ini_config = NULL;
     struct ini_cfgfile *file_ctx = NULL;
     int ret;
-
-    if (!ctx) {
-        return EINVAL;
-    }
-
-    ret = ini_config_create(&ini_config);
-    if (ret) {
-        return ENOENT;
-    }
 
     ret = ini_config_file_open(config_file,
                                0, /* metadata_flags, FIXME */
                                &file_ctx);
     if (ret) {
         GPDEBUG("Failed to open config file: %d (%s)\n",
-            ret, gp_strerror(ret));
+                ret, gp_strerror(ret));
         ini_config_destroy(ini_config);
         return ret;
     }
 
     ret = ini_config_parse(file_ctx,
                            INI_STOP_ON_ANY, /* error_level */
-                           /* Merge section but allow duplicates */
-                           INI_MS_MERGE |
-                           INI_MV1S_ALLOW |
-                           INI_MV2S_ALLOW,
+                           collision_flags,
                            INI_PARSE_NOWRAP, /* parse_flags */
                            ini_config);
     if (ret) {
         char **errors = NULL;
         /* we had a parsing failure */
         GPDEBUG("Failed to parse config file: %d (%s)\n",
-            ret, gp_strerror(ret));
+                ret, gp_strerror(ret));
         if (ini_config_error_count(ini_config)) {
             ini_config_get_errors(ini_config, &errors);
             if (errors) {
@@ -637,6 +637,106 @@ int gp_config_init(const char *config_file,
     }
 
     ini_config_file_destroy(file_ctx);
+    return 0;
+}
+
+static int gp_config_from_dir(const char *config_dir,
+                              struct gp_ini_context *ctx,
+                              struct ini_cfgobj **ini_config,
+                              const uint32_t collision_flags)
+{
+    struct ini_cfgobj *result_cfg = NULL;
+    struct ref_array *error_list = NULL;
+    int ret;
+
+    const char *patterns[] = {
+        /* match only files starting with "##-" and ending in ".conf" */
+        "^[0-9]\\{2\\}-.\\{1,\\}\\.conf$",
+        NULL,
+    };
+
+    const char *sections[] = {
+        /* match either "gssproxy" or sections that start with "service/" */
+        "^gssproxy$",
+        "^service/.*$",
+        NULL,
+    };
+
+    /* Permission check failures silently skip the file, so they are not
+     * useful to us. */
+    ret = ini_config_augment(*ini_config,
+                             config_dir,
+                             patterns,
+                             sections,
+                             NULL, /* check_perm */
+                             INI_STOP_ON_ANY, /* error_level */
+                             collision_flags,
+                             INI_PARSE_NOWRAP,
+                             /* do not allow colliding sections with the same
+                              * name in different files */
+                             INI_MS_ERROR,
+                             &result_cfg,
+                             &error_list,
+                             NULL);
+    if (ret) {
+        if (error_list) {
+            uint32_t i;
+            uint32_t len = ref_array_getlen(error_list, &i);
+            for (i = 0; i < len; i++) {
+                GPDEBUG("Error when reading config directory: %s\n",
+                        (const char *) ref_array_get(error_list, i, NULL));
+            }
+            ref_array_destroy(error_list);
+        } else {
+            GPDEBUG("Error when reading config directory number: %d\n", ret);
+        }
+        return ret;
+    }
+
+    /* if we read no new files, result_cfg will be NULL */
+    if (result_cfg) {
+        ini_config_destroy(*ini_config);
+        *ini_config = result_cfg;
+    }
+    return 0;
+}
+
+int gp_config_init(const char *config_file, const char *config_dir,
+                   struct gp_ini_context *ctx)
+{
+    struct ini_cfgobj *ini_config = NULL;
+    int ret;
+
+    /* Within a single file, merge all collisions */
+    const uint32_t collision_flags =
+      INI_MS_MERGE | INI_MV1S_ALLOW | INI_MV2S_ALLOW;
+
+    if (!ctx) {
+        return EINVAL;
+    }
+
+    ret = ini_config_create(&ini_config);
+    if (ret) {
+        return ENOENT;
+    }
+
+    if (config_file) {
+        ret = gp_config_from_file(config_file, ctx, ini_config,
+                                  collision_flags);
+        if (ret == ENOENT) {
+            GPDEBUG("Expected config file %s but did not find it.\n",
+                    config_file);
+        } else if (ret) {
+            return ret;
+        }
+    }
+    if (config_dir) {
+        ret = gp_config_from_dir(config_dir, ctx, &ini_config,
+                                 collision_flags);
+        if (ret) {
+            return ret;
+        }
+    }
 
     ctx->private_data = ini_config;
 
