@@ -25,19 +25,26 @@
             Optional configuration directives for the gssproxy daemon.
         </para>
         <para>
-            The gssproxy.conf file is a classic ini-style configuration file.
+            GSS-Proxy conf files are classic ini-style configuration files.
             Each option consist of a key = value pair.
             Any characters behind '#' will be treated as comments and will be ignored.
             Boolean parameters accept "1", "true", "yes" and "on" as
             positive values. All other values will be considered as negative
             values.
         </para>
+        <para>
+            GSS-Proxy conf files must either be named "gssproxy.conf", or be
+            of the form "##-foo.conf" (that is, start with two numbers
+            followed by a dash, and end in ".conf").  Files not conforming to
+            this will be ignored unless specifically requested through command
+            line parameters.
+        </para>
     </refsect1>
 
     <refsect1 id='sections'>
         <title>SECTIONS</title>
         <para>
-            A section in the gssproxy.conf file is identified by the sectionname in square brackets ([sectionname]).
+            A section in a GSS-Proxy conf file is identified by the sectionname in square brackets ([sectionname]).
         </para>
         <para>
             There is one special section for global gssproxy settings, called
@@ -152,9 +159,11 @@
                     </varlistentry>
 
                 <varlistentry>
-                    <term>euid (integer)</term>
+                    <term>euid (integer or string)</term>
                     <listitem>
-                        <para>The numeric effective uid of a running process, required to identify a service.</para>
+                        <para>Either the numeric (e.g., 48) or symbolic (e.g.,
+                            apache) effective uid of a running process,
+			    required to identify a service.</para>
                         <para>The "euid" parameter is imperative, any section
                             without it will be discarded.</para>
                         <para>Default: euid =</para>
