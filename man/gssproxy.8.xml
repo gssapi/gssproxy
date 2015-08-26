@@ -72,9 +72,33 @@
                 </term>
                 <listitem>
                     <para>
-                        Specify a non-default config file. The default is
-                        <filename>/etc/gssproxy/gssproxy.conf</filename>. For reference
-                        on the config file syntax and options, consult the
+                        Specify a config file to use as the main config file
+                        (read before the rest of the config directory).  The
+                        default is to use the file
+                        <filename>/etc/gssproxy/gssproxy.conf</filename>.
+                        For reference on the config file syntax and options,
+                        consult the
+                        <citerefentry>
+                            <refentrytitle>gssproxy.conf</refentrytitle>
+                            <manvolnum>5</manvolnum>
+                        </citerefentry>
+                        manual page.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>-C</option>,<option>--configdir</option>
+                </term>
+                <listitem>
+                    <para>
+                        Specify a non-default config dir.  Files named of the
+                        form "##-foo.conf" (that is, beginning with two digits
+                        and a dash, and ending in ".conf") will be read in
+                        numeric order from this directory, in addition to the
+                        config file itself.  The default is
+                        <filename>/etc/gssproxy</filename>. For reference on
+                        the config file syntax and options, consult the
                         <citerefentry>
                             <refentrytitle>gssproxy.conf</refentrytitle>
                             <manvolnum>5</manvolnum>
