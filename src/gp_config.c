@@ -206,6 +206,48 @@ static int setup_service_creds_handle(struct gp_service *svc)
     return 0;
 }
 
+static int check_services(const struct gp_config *cfg)
+{
+    int i, j;
+    struct gp_service *isvc, *jsvc;
+    const char *isock, *jsock;
+    int ret = 0;
+
+    /* [gssproxy] section does not get placed in svcs */
+    for (i = 0; i < cfg->num_svcs; i++) {
+        isvc = cfg->svcs[i];
+        isock = isvc->socket;
+        if (!isock) {
+            isock = GP_SOCKET_NAME;
+        }
+
+        for (j = 0; j < i; j++) {
+            jsvc = cfg->svcs[j];
+            jsock = jsvc->socket;
+            if (!jsock) {
+                jsock = GP_SOCKET_NAME;
+            }
+
+            if (!gp_same(isock, jsock) ||
+                !gp_selinux_ctx_equal(isvc->selinux_ctx, jsvc->selinux_ctx)) {
+                continue;
+            }
+
+            if (jsvc->any_uid) {
+                ret = 1;
+                GPERROR("%s sets allow_any_uid with the same socket and "
+                        "selinux_context as %s!\n", jsvc->name, isvc->name);
+            } else if (jsvc->euid == isvc->euid) {
+                ret = 1;
+                GPERROR("socket, selinux_context, and euid for %s and %s "
+                        "should not match!\n", isvc->name, jsvc->name);
+            }
+        }
+    }
+
+    return ret;
+}
+
 static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
 {
     int num_sec;
@@ -419,7 +461,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
         return ENOENT;
     }
 
-    ret = 0;
+    ret = check_services(cfg);
 
 done:
     safefree(secname);
