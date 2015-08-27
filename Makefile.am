@@ -225,7 +225,12 @@ if HAVE_SYSTEMD_UNIT
         systemd/gssproxy.service
 endif
 
-noinst_DATA = examples/gssproxy.conf examples/mech
+noinst_DATA = \
+    examples/gssproxy.conf \
+    examples/24-nfs-server.conf \
+    examples/80-httpd.conf \
+    examples/99-nfs-client.conf \
+    examples/mech
 
 edit_cmd = $(SED) \
     -e 's|@sbindir[@]|$(sbindir)|g' \
@@ -243,13 +248,16 @@ replace_script = \
 EXTRA_DIST = \
     systemd/gssproxy.service.in \
     examples/gssproxy.conf.in \
+    examples/24-nfs-server.conf.in \
+    examples/80-httpd.conf.in \
+    examples/99-nfs-client.conf.in \
     examples/mech.in
 
 systemd/gssproxy.service: systemd/gssproxy.service.in Makefile
 	@$(MKDIR_P) systemd/
 	$(replace_script)
 
-examples/gssproxy.conf: examples/gssproxy.conf.in Makefile
+examples/%.conf: examples/%.conf.in Makefile
 	@$(MKDIR_P) examples/
 	$(replace_script)
 
@@ -292,7 +300,10 @@ clean-local:
 
 CLEANFILES = *.X */*.X */*/*.X \
     examples/mech \
-    examples/gssproxy.conf
+    examples/gssproxy.conf \
+    examples/24-nfs-server.conf \
+    examples/80-httpd.conf \
+    examples/99-nfs-client.conf.in
 
 tests: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py
