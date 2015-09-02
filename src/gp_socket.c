@@ -62,10 +62,40 @@ struct gp_buffer {
     size_t pos;
 };
 
-bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx)
+bool gp_selinux_ctx_equal(SELINUX_CTX ctx1, SELINUX_CTX ctx2)
 {
     const char *ra, *rb;
 
+    if (ctx1 == ctx2) {
+        return true;
+    }
+    if (ctx1 == NULL || ctx2 == NULL) {
+        return false;
+    }
+
+    if (strcmp(SELINUX_context_user_get(ctx1),
+               SELINUX_context_user_get(ctx2)) != 0) {
+        return false;
+    }
+    if (strcmp(SELINUX_context_role_get(ctx1),
+               SELINUX_context_role_get(ctx2)) != 0) {
+        return false;
+    }
+    if (strcmp(SELINUX_context_type_get(ctx1),
+               SELINUX_context_type_get(ctx2)) != 0) {
+        return false;
+    }
+    ra = SELINUX_context_range_get(ctx1);
+    rb = SELINUX_context_range_get(ctx2);
+    if (ra && rb && (strcmp(ra, rb) != 0)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx)
+{
     if (ctx == NULL) {
         return true;
     }
@@ -75,25 +105,7 @@ bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx)
         return false;
     }
 
-    if (strcmp(SELINUX_context_user_get(ctx),
-               SELINUX_context_user_get(conn->selinux_ctx)) != 0) {
-        return false;
-    }
-    if (strcmp(SELINUX_context_role_get(ctx),
-               SELINUX_context_role_get(conn->selinux_ctx)) != 0) {
-        return false;
-    }
-    if (strcmp(SELINUX_context_type_get(ctx),
-               SELINUX_context_type_get(conn->selinux_ctx)) != 0) {
-        return false;
-    }
-    ra = SELINUX_context_range_get(ctx);
-    rb = SELINUX_context_range_get(conn->selinux_ctx);
-    if (ra && rb && (strcmp(ra, rb) != 0)) {
-        return false;
-    }
-
-    return true;
+    return gp_selinux_ctx_equal(ctx, conn->selinux_ctx);
 }
 
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn)
