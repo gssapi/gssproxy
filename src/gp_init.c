@@ -102,12 +102,6 @@ static void break_loop(verto_ctx *vctx, verto_ev *ev)
     verto_break(vctx);
 }
 
-static void reload_conf(verto_ctx *vctx, verto_ev *ev)
-{
-    GPDEBUG("Reloading configuration after receiving a signal\n");
-    /* TODO */
-}
-
 verto_ctx *init_event_loop(void)
 {
     verto_ctx *vctx;
@@ -136,16 +130,12 @@ verto_ctx *init_event_loop(void)
         verto_free(vctx);
         return NULL;
     }
-    ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, reload_conf, SIGHUP);
-    if (!ev) {
-        verto_free(vctx);
-        return NULL;
-    }
     ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, VERTO_SIG_IGN, SIGPIPE);
     if (!ev) {
         verto_free(vctx);
         return NULL;
     }
+    /* SIGHUP handler added in main */
 
     return vctx;
 }
