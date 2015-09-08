@@ -41,6 +41,8 @@ struct gp_service {
     struct gp_cred_krb5 krb5;
 
     struct gp_creds_handle *creds_handle;
+
+    verto_ev *ev;
 };
 
 struct gp_config {
@@ -62,6 +64,7 @@ struct gssproxy_ctx {
     struct gp_config *config;
     struct gp_workers *workers;
     verto_ctx *vctx;
+    verto_ev *sock_ev;      /* default socket event */
 };
 
 struct gp_sock_ctx {
@@ -94,6 +97,7 @@ void write_pid(void);
 int drop_privs(struct gp_config *cfg);
 
 /* from gp_socket.c */
+void free_unix_socket(verto_ctx *ctx, verto_ev *ev);
 struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
                                      const char *file_name);
 void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);

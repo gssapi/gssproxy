@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 the GSS-PROXY contributors, see COPYING for license */
+/* Copyright (C) 2011,2015 the GSS-PROXY contributors, see COPYING for license */
 
 #include "config.h"
 #include <stdlib.h>
@@ -144,6 +144,13 @@ static int set_fd_flags(int fd, int flags)
         return errno;
     }
     return 0;
+}
+
+void free_unix_socket(verto_ctx *ctx, verto_ev *ev)
+{
+    struct gp_sock_ctx *sock_ctx = NULL;
+    sock_ctx = verto_get_private(ev);
+    free(sock_ctx);
 }
 
 struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
