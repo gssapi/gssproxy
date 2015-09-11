@@ -70,13 +70,6 @@ int main(int argc, const char *argv[])
         return 1;
     }
 
-    if (opt_config_file && opt_config_dir) {
-        fprintf(stderr, "Option -C|--configdir is not allowed together with"
-                        " -c|--config\n");
-        poptPrintUsage(pc, stderr, 0);
-        return 1;
-    }
-
     if (opt_interactive) {
         opt_daemon = 2;
     }
