@@ -280,6 +280,9 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                     eu_passwd = getpwnam(value);
                     if (!eu_passwd) {
                         ret = errno;
+                        if (ret == 0) { /* not that it gets set anyway... */
+                            ret = ENOENT;
+                        }
                     } else {
                         valnum = eu_passwd->pw_uid;
                     }
