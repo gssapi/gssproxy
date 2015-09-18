@@ -216,10 +216,19 @@ def setup_gssapi_env(testdir, wrapenv):
     os.symlink(libgssapi_dir, GSSAPI_SYMLINK_DIR)
     os.makedirs(libgssapi_mechd_dir)
 
+    lib = None
+    try:
+        libs = subprocess.check_output(['pkg-config', '--libs-only-L', 'krb5-gssapi'])
+    except:
+        raise ValueError('libgssapi not available')
+
     # find them all and get the longest name in the hopes
     # we hit /usr/lib64/libgssapi_krb5.so.2.2 in preference
-    libs = glob.glob("/usr/lib*/libgssapi*.so*")
-    lib = None
+    if libs is not None and libs.startswith("-L"):
+        libs = glob.glob(libs[2:].strip() + "/libgssapi*.so*")
+    else:
+        libs = glob.glob("/usr/lib*/libgssapi*.so*")
+
     lib_len = 0
     for l in libs:
         if len(l) > lib_len:
