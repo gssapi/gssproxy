@@ -1,7 +1,8 @@
-#!/usr/bin/python
-# copyright (C) 2014 - GSS-Proxy contributors, see COPYING for the license.
+#!/usr/bin/python3
+# copyright (C) 2014.2015 - GSS-Proxy contributors, see COPYING for the license.
 
 import argparse
+import binascii
 import glob
 import os
 import shutil
@@ -218,7 +219,8 @@ def setup_gssapi_env(testdir, wrapenv):
 
     lib = None
     try:
-        libs = subprocess.check_output(['pkg-config', '--libs-only-L', 'krb5-gssapi'])
+        libs = subprocess.check_output(
+            ['pkg-config', '--libs-only-L', 'krb5-gssapi']).decode("utf-8")
     except:
         raise ValueError('libgssapi not available')
 
@@ -242,9 +244,12 @@ def setup_gssapi_env(testdir, wrapenv):
 
     # horrible, horrible hack to load our own configuration later
     with open(lib, 'rb') as f:
-        data = f.read()
+        data = binascii.hexlify(f.read())
     with open(libgssapi_lib, 'wb') as f:
-        f.write(data.replace('/etc/gss/mech.d', libgssapi_mechd_dir))
+        data = data.replace(binascii.hexlify(b'/etc/gss/mech.d'),
+                            binascii.hexlify(
+                                libgssapi_mechd_dir.encode("utf-8")))
+        f.write(binascii.unhexlify(data))
 
     shutil.copy('.libs/proxymech.so', libgssapi_dir)
     proxymech = os.path.join(libgssapi_dir, 'proxymech.so')
@@ -337,7 +342,7 @@ def setup_gssproxy(testdir, logfile, env):
 
 def run_basic_test(testdir, logfile, env):
 
-    print "STARTING BASIC init/Accept tests"
+    print("STARTING BASIC init/Accept tests")
 
     svc_name = "host@%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
@@ -364,22 +369,22 @@ def run_basic_test(testdir, logfile, env):
 
     p1.wait()
     if p1.returncode != 0:
-        print >> sys.stderr, "FAILED: Init test"
+        print("FAILED: Init test", file=sys.stderr)
         try:
             os.killpg(p2.pid, signal.SIGTERM)
         except OSError:
             pass
     else:
-        print >> sys.stderr, "SUCCESS: Init test"
+        print("SUCCESS: Init test", file=sys.stderr)
     p2.wait()
     if p2.returncode != 0:
-        print >> sys.stderr, "FAILED: Accept test"
+        print("FAILED: Accept test", file=sys.stderr)
         try:
             os.killpg(p1.pid, signal.SIGTERM)
         except OSError:
             pass
     else:
-        print >> sys.stderr, "SUCCESS: Accept test"
+        print("SUCCESS: Accept test", file=sys.stderr)
 
 
 if __name__ == '__main__':
@@ -416,5 +421,5 @@ if __name__ == '__main__':
 
     finally:
         for name in processes:
-            print "Killing %s" % name
+            print("Killing %s" % name)
             os.killpg(processes[name].pid, signal.SIGTERM)
