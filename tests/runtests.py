@@ -311,6 +311,38 @@ GSSPROXY_CONF_TEMPLATE = '''
   euid = ${UIDNUMBER}
 '''
 
+# Contains a garbage service entry
+GSSPROXY_CONF_MINIMAL_TEMPLATE = '''
+[gssproxy]
+
+[service/dontuse]
+  mechs = krb5
+  cred_store = keytab:${GSSPROXY_KEYTAB}
+  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
+  cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
+  trusted = yes
+  euid = nobody
+'''
+
+GSSPROXY_CONF_SOCKET_TEMPLATE = GSSPROXY_CONF_TEMPLATE + '''
+  socket = ${SECOND_SOCKET}
+'''
+
+def update_gssproxy_conf(testdir, env, template):
+    gssproxy = os.path.join(testdir, 'gssproxy')
+    ccache = os.path.join(gssproxy, 'gpccache')
+    ckeytab = os.path.join(testdir, USR_KTNAME)
+    conf = os.path.join(gssproxy, 'gp.conf')
+    socket2 = os.path.join(gssproxy, 'gp.sock2')
+
+    t = Template(template)
+    text = t.substitute({'GSSPROXY_KEYTAB': env['KRB5_KTNAME'],
+                         'GSSPROXY_CLIENT_CCACHE': ccache,
+                         'GSSPROXY_CLIENT_KEYTAB': ckeytab,
+                         'UIDNUMBER': os.getuid(),
+                         'SECOND_SOCKET': socket2})
+    with open(conf, 'w+') as f:
+        f.write(text)
 
 def setup_gssproxy(testdir, logfile, env):
 
@@ -319,19 +351,10 @@ def setup_gssproxy(testdir, logfile, env):
         shutil.rmtree(gssproxy)
     os.makedirs(gssproxy)
 
+    update_gssproxy_conf(testdir, env, GSSPROXY_CONF_TEMPLATE)
+
     socket = os.path.join(gssproxy, 'gp.sock')
-    ccache = os.path.join(gssproxy, 'gpccache')
-    ckeytab = os.path.join(testdir, USR_KTNAME)
-
     conf = os.path.join(gssproxy, 'gp.conf')
-    t = Template(GSSPROXY_CONF_TEMPLATE)
-    text = t.substitute({'GSSPROXY_KEYTAB': env['KRB5_KTNAME'],
-                         'GSSPROXY_CLIENT_CCACHE': ccache,
-                         'GSSPROXY_CLIENT_KEYTAB': ckeytab,
-                         'UIDNUMBER': os.getuid()})
-    with open(conf, 'w+') as f:
-        f.write(text)
-
     gproc = subprocess.Popen(["./gssproxy", "-i", "-d",
                               "-s", socket, "-c", conf],
                              stdout=logfile, stderr=logfile,
@@ -340,7 +363,7 @@ def setup_gssproxy(testdir, logfile, env):
     return gproc, socket
 
 
-def run_basic_test(testdir, logfile, env):
+def run_basic_test(testdir, logfile, env, expected_failure=False):
 
     print("STARTING BASIC init/Accept tests")
 
@@ -367,24 +390,36 @@ def run_basic_test(testdir, logfile, env):
                           stdin=pipe1[0], stdout=pipe0[1],
                           stderr=logfile, env=svcenv, preexec_fn=os.setsid)
 
-    p1.wait()
-    if p1.returncode != 0:
-        print("FAILED: Init test", file=sys.stderr)
+    try:
+        p1.wait(1)
+    except subprocess.TimeoutExpired:
+        # p1.returncode is set to None here
+        pass
+    if p1.returncode != 0 and not expected_failure:
+        print("FAILED: Init test returned %s" % str(p1.returncode),
+              file=sys.stderr)
         try:
             os.killpg(p2.pid, signal.SIGTERM)
         except OSError:
             pass
     else:
-        print("SUCCESS: Init test", file=sys.stderr)
-    p2.wait()
-    if p2.returncode != 0:
-        print("FAILED: Accept test", file=sys.stderr)
+        print("SUCCESS: Init test returned %s" % str(p1.returncode),
+              file=sys.stderr)
+    try:
+        p2.wait(1)
+    except subprocess.TimeoutExpired:
+        # p2.returncode is set to None here
+        pass
+    if p2.returncode != 0 and not expected_failure:
+        print("FAILED: Accept test returned %s" % str(p2.returncode),
+              file=sys.stderr)
         try:
             os.killpg(p1.pid, signal.SIGTERM)
         except OSError:
             pass
     else:
-        print("SUCCESS: Accept test", file=sys.stderr)
+        print("SUCCESS: Accept test returned %s" % str(p2.returncode),
+              file=sys.stderr)
 
 
 if __name__ == '__main__':
@@ -419,6 +454,29 @@ if __name__ == '__main__':
             gssapienv['GSSPROXY_SOCKET'] = gpsocket
             run_basic_test(testdir, logfile, gssapienv)
 
+            print("Testing basic SIGHUP with no change", file=sys.stderr)
+            os.kill(gproc.pid, signal.SIGHUP)
+            time.sleep(1) #Let gssproxy reload everything
+            run_basic_test(testdir, logfile, gssapienv)
+
+            print("Testing SIGHUP with dropped service", file=sys.stderr)
+            update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_MINIMAL_TEMPLATE)
+            os.kill(gproc.pid, signal.SIGHUP)
+            time.sleep(1) #Let gssproxy reload everything
+            run_basic_test(testdir, logfile, gssapienv, True)
+
+            print("Testing SIGHUP with new service", file=sys.stderr)
+            update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_TEMPLATE)
+            os.kill(gproc.pid, signal.SIGHUP)
+            time.sleep(1) #Let gssproxy reload everything
+            run_basic_test(testdir, logfile, gssapienv)
+
+            print("Testing SIGHUP with change of socket", file=sys.stderr)
+            update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_SOCKET_TEMPLATE)
+            gssapienv['GSSPROXY_SOCKET'] += "2"
+            os.kill(gproc.pid, signal.SIGHUP)
+            time.sleep(1) #Let gssproxy reload everything
+            run_basic_test(testdir, logfile, gssapienv)
     finally:
         for name in processes:
             print("Killing %s" % name)
