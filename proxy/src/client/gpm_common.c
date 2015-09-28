@@ -160,8 +160,8 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
 
     retry = false;
     do {
-        ret = 0;
         do {
+            ret = 0;
             wn = send(gpmctx->fd, &size, sizeof(uint32_t), MSG_NOSIGNAL);
             if (wn == -1) {
                 ret = errno;
@@ -216,8 +216,8 @@ static int gpm_recv_buffer(struct gpm_ctx *gpmctx,
     size_t pos;
     int ret;
 
-    ret = 0;
     do {
+        ret = 0;
         rn = read(gpmctx->fd, &size, sizeof(uint32_t));
         if (rn == -1) {
             ret = errno;
