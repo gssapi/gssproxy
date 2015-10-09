@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 the GSS-PROXY contributors, see COPYING for license */
+/* Copyright (C) 2011,2015 the GSS-PROXY contributors, see COPYING for license */
 
 #include <stdlib.h>
 #include <sys/types.h>
@@ -161,26 +161,29 @@ void init_proc_nfsd(struct gp_config *cfg)
     fd = open(LINUX_PROC_USE_GSS_PROXY_FILE, O_RDWR);
     if (fd == -1) {
         ret = errno;
-        GPDEBUG("Failed to open %s: %d (%s)\n",
+        fprintf(stderr, "GSS-Proxy is not supported by this kernel since "
+                "file %s could not be found: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
                 ret, gp_strerror(ret));
-        return;
+        exit(1);
     }
 
     ret = write(fd, buf, 1);
     if (ret != 1) {
         ret = errno;
-        GPDEBUG("Failed to write to %s: %d (%s)\n",
+        fprintf(stderr, "Failed to write to %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
                 ret, gp_strerror(ret));
+        exit(1);
     }
 
     ret = close(fd);
     if (ret == -1) {
         ret = errno;
-        GPDEBUG("Failed to close %s: %d (%s)\n",
+        fprintf(stderr, "Failed to close %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE,
                 ret, gp_strerror(ret));
+        exit(1);
     }
 }
 
