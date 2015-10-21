@@ -454,6 +454,7 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     sockgrab = false;
 
     /* decode header */
+    memset(&msg, 0, sizeof(gp_rpc_msg));
     xdrok = xdr_gp_rpc_msg(&xdr_reply_ctx, &msg);
     if (!xdrok) {
         ret = EINVAL;
