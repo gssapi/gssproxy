@@ -130,9 +130,7 @@ static int gpm_grab_sock(struct gpm_ctx *gpmctx)
         ret = gpm_open_socket(gpmctx);
     }
 
-    if (ret) {
-        pthread_mutex_unlock(&gpmctx->lock);
-    }
+    pthread_mutex_unlock(&gpmctx->lock);
     return ret;
 }
 
