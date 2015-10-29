@@ -74,11 +74,13 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         }
     }
 
-    if (res->context_handle) {
-        ctx = res->context_handle;
-        /* we are stealing the delegated creds on success, so we do not want
-        * it to be freed by xdr_free */
-        res->context_handle = NULL;
+    ctx = res->context_handle;
+    /* we are stealing the delegated creds on success, so we do not want
+     * it to be freed by xdr_free */
+    res->context_handle = NULL;
+    if (ctx == NULL) {
+        ret = EINVAL;
+        goto done;
     }
 
     if (src_name) {
