@@ -151,6 +151,21 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
             }
         }
 
+        if (!cred_handle->remote) {
+            struct gpp_cred_handle *r_creds;
+
+            maj = gppint_get_def_creds(&min,
+                                       GPP_REMOTE_ONLY,
+                                       GSS_C_NO_NAME,
+                                       GSS_C_INITIATE,
+                                       &r_creds);
+            if (maj == GSS_S_COMPLETE) {
+                /* steal result */
+                cred_handle->remote = r_creds->remote;
+                free(r_creds);
+            }
+        }
+
         maj = gpm_init_sec_context(&min,
                                    cred_handle->remote,
                                    &ctx_handle->remote,
