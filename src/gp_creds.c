@@ -414,6 +414,91 @@ done:
     return ret;
 }
 
+uint32_t gp_check_cred(uint32_t *min,
+                       gss_cred_id_t in_cred,
+                       gssx_name *desired_name,
+                       gss_cred_usage_t cred_usage)
+{
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    uint32_t discard;
+    uint32_t i;
+    gss_name_t req_name = GSS_C_NO_NAME;
+    gss_name_t check_name = GSS_C_NO_NAME;
+    gss_OID_set mechanisms = GSS_C_NO_OID_SET;
+    gss_cred_usage_t usage;
+    uint32_t lifetime;
+    int present = 0;
+
+    ret_maj = gss_inquire_cred(&ret_min, in_cred,
+                               desired_name?&check_name:NULL,
+                               &lifetime, &usage, &mechanisms);
+    if (ret_maj) {
+        goto done;
+    }
+
+    for (i = 0; i < mechanisms->count; i++) {
+        present = gss_oid_equal(&mechanisms->elements[i], gss_mech_krb5);
+        if (present) break;
+    }
+    if (!present) {
+        ret_maj = GSS_S_CRED_UNAVAIL;
+        goto done;
+    }
+
+    if (desired_name) {
+        int equal;
+        ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &req_name);
+        if (ret_maj) {
+            goto done;
+        }
+        ret_maj = gss_compare_name(&ret_min, req_name, check_name, &equal);
+        if (ret_maj) {
+            goto done;
+        }
+        if (!equal) {
+            ret_maj = GSS_S_CRED_UNAVAIL;
+            goto done;
+        }
+    }
+
+    switch (cred_usage) {
+    case GSS_C_ACCEPT:
+        if (usage == GSS_C_INITIATE) {
+            ret_maj = GSS_S_NO_CRED;
+            goto done;
+        }
+        break;
+    case GSS_C_INITIATE:
+        if (usage == GSS_C_ACCEPT) {
+            ret_maj = GSS_S_NO_CRED;
+            goto done;
+        }
+        break;
+    case GSS_C_BOTH:
+        if (usage != GSS_C_BOTH) {
+            ret_maj = GSS_S_NO_CRED;
+            goto done;
+        }
+        break;
+    }
+
+    if (lifetime == 0) {
+        ret_maj = GSS_S_CREDENTIALS_EXPIRED;
+    } else {
+        ret_maj = GSS_S_COMPLETE;
+    }
+
+done:
+    gss_release_oid_set(&discard, &mechanisms);
+    gss_release_name(&discard, &check_name);
+    gss_release_name(&discard, &req_name);
+
+    *min = ret_min;
+    return ret_maj;
+}
+
+
 uint32_t gp_add_krb5_creds(uint32_t *min,
                            struct gp_call_ctx *gpcall,
                            enum gp_aqcuire_cred_type acquire_type,
@@ -453,11 +538,20 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     }
 
     if (in_cred != GSS_C_NO_CREDENTIAL && acquire_type != ACQ_IMPNAME) {
-        /* we can't yet handle adding to an existing credential due to
-         * the way gss_krb5_import_cred works. This limitation should
+        /* NOTE: we can't yet handle adding to an existing credential due
+         * to the way gss_krb5_import_cred works. This limitation should
          * be removed by adding a gssapi extension that superceedes this
          * function completely */
-        return GSS_S_CRED_UNAVAIL;
+
+        /* just check if it is a valid krb5 cred */
+        ret_maj = gp_check_cred(&ret_min, in_cred, desired_name, cred_usage);
+        if (ret_maj == GSS_S_COMPLETE) {
+            return GSS_S_COMPLETE;
+        } else if (ret_maj != GSS_S_CREDENTIALS_EXPIRED &&
+                   ret_maj != GSS_S_NO_CRED) {
+            *min = ret_min;
+            return GSS_S_CRED_UNAVAIL;
+        }
     }
 
     if (acquire_type == ACQ_NORMAL) {

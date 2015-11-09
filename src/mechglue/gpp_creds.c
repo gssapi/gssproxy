@@ -1,7 +1,124 @@
-/* Copyright (C) 2012 the GSS-PROXY contributors, see COPYING for license */
+/* Copyright (C) 2015 the GSS-PROXY contributors, see COPYING for license */
 
 #include "gss_plugin.h"
 #include <gssapi/gssapi_krb5.h>
+
+#define GPKRB_SRV_NAME "Encrypted/Credentials/v1@X-GSSPROXY:"
+#define GPKRB_MAX_CRED_SIZE 1024 * 512
+
+uint32_t gpp_store_remote_creds(uint32_t *min, gssx_cred *creds)
+{
+    krb5_context ctx = NULL;
+    krb5_ccache ccache = NULL;
+    krb5_creds cred;
+    krb5_error_code ret;
+    XDR xdrctx;
+    bool xdrok;
+
+    *min = 0;
+
+    if (creds == NULL) return GSS_S_CALL_INACCESSIBLE_READ;
+
+    memset(&cred, 0, sizeof(cred));
+
+    ret = krb5_init_context(&ctx);
+    if (ret) return ret;
+
+    ret = krb5_cc_default(ctx, &ccache);
+    if (ret) goto done;
+
+    ret = krb5_parse_name(ctx,
+                          creds->desired_name.display_name.octet_string_val,
+                          &cred.client);
+    if (ret) goto done;
+
+    ret = krb5_parse_name(ctx, GPKRB_SRV_NAME, &cred.server);
+    if (ret) goto done;
+
+    cred.ticket.data = malloc(GPKRB_MAX_CRED_SIZE);
+    xdrmem_create(&xdrctx, cred.ticket.data, GPKRB_MAX_CRED_SIZE, XDR_ENCODE);
+    xdrok = xdr_gssx_cred(&xdrctx, creds);
+    if (!xdrok) {
+        ret = ENOSPC;
+        goto done;
+    }
+    cred.ticket.length = xdr_getpos(&xdrctx);
+
+    ret = krb5_cc_store_cred(ctx, ccache, &cred);
+
+    if (ret == KRB5_FCC_NOFILE) {
+        /* If a ccache does not exit, try to create one */
+        ret = krb5_cc_initialize(ctx, ccache, cred.client);
+        if (ret) goto done;
+
+        /* and try again to store the cred */
+        ret = krb5_cc_store_cred(ctx, ccache, &cred);
+    }
+
+done:
+    if (ctx) {
+        krb5_free_cred_contents(ctx, &cred);
+        if (ccache) krb5_cc_close(ctx, ccache);
+        krb5_free_context(ctx);
+    }
+    *min = ret;
+    return ret ? GSS_S_FAILURE : GSS_S_COMPLETE;
+}
+
+static uint32_t retrieve_remote_creds(uint32_t *min, gssx_name *name,
+                      gssx_cred *creds)
+{
+    krb5_context ctx = NULL;
+    krb5_ccache ccache = NULL;
+    krb5_creds cred;
+    krb5_creds icred;
+    krb5_error_code ret;
+    XDR xdrctx;
+    bool xdrok;
+
+    memset(&cred, 0, sizeof(krb5_creds));
+    memset(&icred, 0, sizeof(krb5_creds));
+
+    ret = krb5_init_context(&ctx);
+    if (ret) goto done;
+
+    ret = krb5_cc_default(ctx, &ccache);
+    if (ret) goto done;
+
+    if (name) {
+        ret = krb5_parse_name(ctx,
+                              name->display_name.octet_string_val,
+                              &icred.client);
+    } else {
+        ret = krb5_cc_get_principal(ctx, ccache, &icred.client);
+    }
+    if (ret) goto done;
+
+    ret = krb5_parse_name(ctx, GPKRB_SRV_NAME, &icred.server);
+    if (ret) goto done;
+
+    ret = krb5_cc_retrieve_cred(ctx, ccache, 0, &icred, &cred);
+    if (ret) goto done;
+
+    xdrmem_create(&xdrctx, cred.ticket.data, cred.ticket.length, XDR_DECODE);
+    xdrok = xdr_gssx_cred(&xdrctx, creds);
+
+    if (xdrok) {
+        ret = 0;
+    } else {
+        ret = EIO;
+    }
+
+done:
+    if (ctx) {
+        krb5_free_cred_contents(ctx, &cred);
+        krb5_free_cred_contents(ctx, &icred);
+        if (ccache) krb5_cc_close(ctx, ccache);
+        krb5_free_context(ctx);
+    }
+    *min = ret;
+    return ret ? GSS_S_FAILURE : GSS_S_COMPLETE;
+}
 
 static OM_uint32 get_local_def_creds(OM_uint32 *minor_status,
                                      struct gpp_name_handle *name,
@@ -66,10 +183,20 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
 
     /* Then try with remote */
     if (behavior == GPP_REMOTE_ONLY || behavior == GPP_REMOTE_FIRST) {
+        gssx_cred remote = {0};
+        gssx_cred *premote = NULL;
 
-        maj = gpm_acquire_cred(&min, NULL,
+        /* We intentionally ignore failures as finding creds is optional */
+        maj = retrieve_remote_creds(&min, name ? name->remote : NULL, &remote);
+        if (maj == GSS_S_COMPLETE) {
+            premote = &remote;
+        }
+
+        maj = gpm_acquire_cred(&min, premote,
                                NULL, 0, NULL, cred_usage, false,
                                &cred->remote, NULL, NULL);
+
+        xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&remote);
 
         if (maj == GSS_S_COMPLETE || behavior == GPP_REMOTE_ONLY) {
             goto done;
@@ -379,16 +506,16 @@ OM_uint32 gssi_store_cred(OM_uint32 *minor_status,
     }
     cred = (struct gpp_cred_handle *)input_cred_handle;
 
-    /* NOTE: For now we can do this only for local credentials */
-    if (!cred->local) {
-        return GSS_S_UNAVAILABLE;
+    if (cred->remote) {
+        maj = gpp_store_remote_creds(&min, cred->remote);
+        goto done;
     }
 
     maj = gss_store_cred(&min, cred->local, input_usage,
                          gpp_special_mech(desired_mech),
                          overwrite_cred, default_cred,
                          elements_stored, cred_usage_stored);
-
+done:
     *minor_status = gpp_map_error(min);
     return maj;
 }
