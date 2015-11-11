@@ -42,6 +42,7 @@ interposetest
 gssproxy.service
 t_accept
 t_acquire
+t_impersonate
 t_init
 ar-lib
 compile

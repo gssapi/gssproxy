@@ -13,6 +13,13 @@ t_accept_SOURCES = \
 t_accept_LDADD = \
     $(GSSAPI_LIBS)
 
+t_impersonate_SOURCES = \
+    t_utils.c \
+    t_impersonate.c
+
+t_impersonate_LDADD = \
+    $(GSSAPI_LIBS)
+
 t_init_SOURCES = \
     t_utils.c \
     t_init.c
@@ -22,6 +29,7 @@ t_init_LDADD = \
 
 check_PROGRAMS = \
     t_acquire \
+    t_impersonate \
     t_accept \
     t_init
 

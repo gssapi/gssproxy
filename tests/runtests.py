@@ -498,6 +498,38 @@ def run_acquire_test(testdir, env, expected_failure=False):
                       "Acquire test returned %s" % str(p1.returncode))
 
 
+def run_impersonate_test(testdir, env, expected_failure=False):
+
+    logfile = open(os.path.join(testdir, 'testimpersonate.log'), 'a')
+
+    svc_name = "host@%s" % WRAP_HOSTNAME
+    svc_keytab = os.path.join(testdir, SVC_KTNAME)
+    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_impersonate_ccache'),
+               'KRB5_KTNAME': svc_keytab,
+               'KRB5_TRACE': os.path.join(testdir, 't_impersonate_trace.log'),
+               'GSS_USE_PROXY': 'yes',
+               'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
+    testenv.update(env)
+
+    cmd = ["./tests/t_impersonate", USR_NAME, svc_name]
+    print("[COMMAND]\n%s\n[ENVIRONMENT]\n%s\n" % (cmd, env), file=logfile)
+    logfile.flush()
+
+    p1 = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile,
+                          env=testenv, preexec_fn=os.setsid)
+    try:
+        p1.wait(30)
+    except subprocess.TimeoutExpired:
+        # p1.returncode is set to None here
+        pass
+    if p1.returncode != 0 and not expected_failure:
+        print_failure("SUCCESS" if p1.returncode == 0 else "FAILED",
+                      "Impersonate test returned %s" % str(p1.returncode))
+    else:
+        print_success("SUCCESS" if p1.returncode == 0 else "FAILED",
+                      "Impersonate test returned %s" % str(p1.returncode))
+
+
 if __name__ == '__main__':
 
     args = parse_args()
@@ -528,8 +560,13 @@ if __name__ == '__main__':
             time.sleep(5) #Give time to gssproxy to fully start up
             processes['GSS-Proxy(%d)' % gproc.pid] = gproc
             gssapienv['GSSPROXY_SOCKET'] = gpsocket
+
             print("Testing basic acquire creds", file=sys.stderr)
             run_acquire_test(testdir, gssapienv)
+
+            print("Testing impersonate creds", file=sys.stderr)
+            run_impersonate_test(testdir, gssapienv)
+
             print("Testing basic init/accept context", file=sys.stderr)
             run_basic_test(testdir, gssapienv)
 
