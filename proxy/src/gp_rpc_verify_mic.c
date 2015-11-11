@@ -21,6 +21,8 @@ int gp_verify_mic(struct gp_call_ctx *gpcall,
     vma = &arg->verify_mic;
     vmr = &res->verify_mic;
 
+    GPRPCDEBUG(gssx_arg_verify_mic, vma);
+
     exp_ctx_type = gp_get_exported_context_type(&vma->call_ctx);
     if (exp_ctx_type == -1) {
         ret_maj = GSS_S_FAILURE;
@@ -76,5 +78,6 @@ done:
                                  ret_maj, ret_min,
                                  GSS_C_NO_OID,
                                  &vmr->status);
+    GPRPCDEBUG(gssx_res_verify_mic, vmr);
     return ret;
 }

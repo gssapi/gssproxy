@@ -24,6 +24,8 @@ int gp_import_and_canon_name(struct gp_call_ctx *gpcall,
     icna = &arg->import_and_canon_name;
     icnr = &res->import_and_canon_name;
 
+    GPRPCDEBUG(gssx_arg_import_and_canon_name, icna);
+
     if (icna->input_name.display_name.octet_string_len == 0 &&
         icna->input_name.exported_name.octet_string_len == 0) {
         ret_maj = GSS_S_FAILURE;
@@ -65,6 +67,7 @@ done:
     ret = gp_conv_status_to_gssx(&icna->call_ctx,
                                  ret_maj, ret_min, mech,
                                  &icnr->status);
+    GPRPCDEBUG(gssx_res_import_and_canon_name, icnr);
 
     gss_release_oid(&ret_min, &mech);
     gss_release_name(&ret_min, &import_name);

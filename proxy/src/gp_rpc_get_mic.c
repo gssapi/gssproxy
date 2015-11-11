@@ -20,6 +20,8 @@ int gp_get_mic(struct gp_call_ctx *gpcall,
     gma = &arg->get_mic;
     gmr = &res->get_mic;
 
+    GPRPCDEBUG(gssx_arg_get_mic, gma);
+
     exp_ctx_type = gp_get_exported_context_type(&gma->call_ctx);
     if (exp_ctx_type == -1) {
         ret_maj = GSS_S_FAILURE;
@@ -79,6 +81,7 @@ int gp_get_mic(struct gp_call_ctx *gpcall,
 done:
     ret = gp_conv_status_to_gssx(&gma->call_ctx, ret_maj, ret_min,
                                  GSS_C_NO_OID, &gmr->status);
+    GPRPCDEBUG(gssx_res_get_mic, gmr);
     gss_release_buffer(&ret_min, &message_token);
     return ret;
 }

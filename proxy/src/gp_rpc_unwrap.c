@@ -22,6 +22,8 @@ int gp_unwrap(struct gp_call_ctx *gpcall,
     uwa = &arg->unwrap;
     uwr = &res->unwrap;
 
+    GPRPCDEBUG(gssx_arg_unwrap, uwa);
+
     exp_ctx_type = gp_get_exported_context_type(&uwa->call_ctx);
     if (exp_ctx_type == -1) {
         ret_maj = GSS_S_FAILURE;
@@ -108,6 +110,7 @@ done:
                                  ret_maj, ret_min,
                                  GSS_C_NO_OID,
                                  &uwr->status);
+    GPRPCDEBUG(gssx_res_unwrap, uwr);
     gss_release_buffer(&ret_min, &output_message_buffer);
     return ret;
 }

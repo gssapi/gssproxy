@@ -31,6 +31,8 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
     isca = &arg->init_sec_context;
     iscr = &res->init_sec_context;
 
+    GPRPCDEBUG(gssx_arg_init_sec_context, isca);
+
     exp_ctx_type = gp_get_exported_context_type(&isca->call_ctx);
     if (exp_ctx_type == -1) {
         ret_maj = GSS_S_FAILURE;
@@ -159,6 +161,9 @@ done:
     ret = gp_conv_status_to_gssx(&isca->call_ctx,
                                  ret_maj, ret_min, mech_type,
                                  &iscr->status);
+
+    GPRPCDEBUG(gssx_res_init_sec_context, iscr);
+
     gss_release_name(&ret_min, &target_name);
     gss_release_oid(&ret_min, &mech_type);
     gss_release_cred(&ret_min, &ich);
