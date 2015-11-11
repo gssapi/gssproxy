@@ -24,6 +24,8 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
     aca = &arg->acquire_cred;
     acr = &res->acquire_cred;
 
+    GPRPCDEBUG(gssx_arg_acquire_cred, aca);
+
     if (aca->input_cred_handle) {
         ret_maj = gp_import_gssx_cred(&ret_min, gpcall,
                                       aca->input_cred_handle, &in_cred);
@@ -136,6 +138,8 @@ done:
     ret = gp_conv_status_to_gssx(&aca->call_ctx,
                                  ret_maj, ret_min, desired_mech,
                                  &acr->status);
+
+    GPRPCDEBUG(gssx_res_acquire_cred, acr);
 
     gss_release_cred(&ret_min, &out_cred);
     gss_release_oid_set(&ret_min, &use_mechs);

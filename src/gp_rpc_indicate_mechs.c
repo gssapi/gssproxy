@@ -31,6 +31,8 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall,
     ima = &arg->indicate_mechs;
     imr = &res->indicate_mechs;
 
+    GPRPCDEBUG(gssx_arg_indicate_mechs, ima);
+
     /* get all mechs */
     ret_maj = gss_indicate_mechs(&ret_min, &mech_set);
     if (ret_maj) {
@@ -252,6 +254,7 @@ done:
     ret = gp_conv_status_to_gssx(&ima->call_ctx,
                                  ret_maj, ret_min, GSS_C_NO_OID,
                                  &imr->status);
+    GPRPCDEBUG(gssx_res_indicate_mechs, imr);
 
     gss_release_buffer(&ret_min, &long_desc);
     gss_release_buffer(&ret_min, &short_desc);

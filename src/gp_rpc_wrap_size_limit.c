@@ -19,6 +19,8 @@ int gp_wrap_size_limit(struct gp_call_ctx *gpcall,
     wsla = &arg->wrap_size_limit;
     wslr = &res->wrap_size_limit;
 
+    GPRPCDEBUG(gssx_arg_wrap_size_limit, wsla);
+
     exp_ctx_type = gp_get_exported_context_type(&wsla->call_ctx);
     if (exp_ctx_type == -1) {
         ret_maj = GSS_S_FAILURE;
@@ -53,5 +55,6 @@ done:
                                  ret_maj, ret_min,
                                  GSS_C_NO_OID,
                                  &wslr->status);
+    GPRPCDEBUG(gssx_res_wrap_size_limit, wslr);
     return ret;
 }

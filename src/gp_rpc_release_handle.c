@@ -15,6 +15,8 @@ int gp_release_handle(struct gp_call_ctx *gpcall,
     rha = &arg->release_handle;
     rhr = &res->release_handle;
 
+    GPRPCDEBUG(gssx_arg_release_handle, rha);
+
     switch (rha->cred_handle.handle_type) {
     case GSSX_C_HANDLE_SEC_CTX:
         /* We do not need release for any security
@@ -36,6 +38,7 @@ int gp_release_handle(struct gp_call_ctx *gpcall,
     ret = gp_conv_status_to_gssx(&rha->call_ctx,
                                  ret_maj, ret_min, GSS_C_NO_OID,
                                  &rhr->status);
+    GPRPCDEBUG(gssx_res_release_handle, rhr);
 
     return ret;
 }

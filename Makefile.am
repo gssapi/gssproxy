@@ -148,6 +148,7 @@ gssproxy_SOURCES = \
     src/gp_workers.c \
     src/gp_creds.c \
     $(GP_RPCGEN_OBJ) \
+    src/gp_rpc_debug.c \
     src/gp_rpc_process.c \
     src/gp_conv.c \
     src/gp_export.c \

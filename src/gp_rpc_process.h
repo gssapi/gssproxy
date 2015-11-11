@@ -15,6 +15,7 @@
 #include "rpcgen/gss_proxy.h"
 #include "rpcgen/gp_rpc.h"
 #include "gp_rpc_creds.h"
+#include "gp_rpc_debug.h"
 
 struct gssproxy_ctx;
 struct gp_service;
