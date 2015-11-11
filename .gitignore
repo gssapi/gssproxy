@@ -41,6 +41,7 @@ gssproxy.spec
 interposetest
 gssproxy.service
 t_accept
+t_acquire
 t_init
 ar-lib
 compile
@@ -54,3 +55,4 @@ missing
 mkinstalldirs
 proxy/examples/*.conf
 proxy/examples/mech
+scratchdir/
