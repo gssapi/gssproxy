@@ -313,9 +313,10 @@ static const char *gp_rpc_procname(uint32_t proc)
 static int gp_rpc_execute(struct gp_call_ctx *gpcall, uint32_t proc,
                           union gp_rpc_arg *arg, union gp_rpc_res *res)
 {
-    GPDEBUG("gp_rpc_execute: executing %d (%s) for service \"%s\", euid: %d, socket: %s\n",
-        proc, gp_rpc_procname(proc), gpcall->service->name,
-        gp_conn_get_uid(gpcall->connection), gpcall->service->socket);
+    GPDEBUG("gp_rpc_execute: executing %d (%s) for service \"%s\", euid: %d,"
+            "socket: %s\n", proc, gp_rpc_procname(proc),
+            gpcall->service->name, gp_conn_get_uid(gpcall->connection),
+            gpcall->service->socket);
 
     return gp_xdr_set[proc].exec_fn(gpcall, arg, res);
 }

@@ -478,6 +478,7 @@ int load_config(struct gp_config *cfg)
 {
     struct gp_ini_context *ctx;
     const char *tmpstr;
+    int tmpint = 0;
     int ret;
 
     ret = gp_init_ini_context(cfg->config_file, cfg->config_dir, &ctx);
@@ -488,8 +489,15 @@ int load_config(struct gp_config *cfg)
     ret = gp_config_get_string(ctx, "gssproxy", "debug", &tmpstr);
     if (ret == 0) {
         if (gp_boolean_is_true(tmpstr)) {
-            gp_debug_enable();
+            gp_debug_enable(1);
         }
+    } else if (ret != ENOENT) {
+        goto done;
+    }
+
+    ret = gp_config_get_int(ctx, "gssproxy", "debug_level", &tmpint);
+    if (ret == 0) {
+        gp_debug_enable(tmpint);
     } else if (ret != ENOENT) {
         goto done;
     }

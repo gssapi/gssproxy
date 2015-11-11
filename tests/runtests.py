@@ -301,6 +301,7 @@ def run_interposetest(testdir, env):
 
 GSSPROXY_CONF_TEMPLATE = '''
 [gssproxy]
+  debug_level = 2
 
 [service/test]
   mechs = krb5

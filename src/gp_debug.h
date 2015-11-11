@@ -4,15 +4,25 @@
 #define _GP_DEBUG_H_
 
 #include <gssapi/gssapi.h>
+#include <stdarg.h>
 #include <stdio.h>
+#include <time.h>
 
 extern int gp_debug;
 
-void gp_debug_enable(void);
+void gp_debug_enable(int);
+void gp_debug_printf(const char *format, ...);
+void gp_debug_time_printf(const char *format, ...);
 
 #define GPDEBUG(...) do { \
     if (gp_debug) { \
-        fprintf(stderr, __VA_ARGS__); \
+        gp_debug_time_printf(__VA_ARGS__); \
+    } \
+} while(0)
+
+#define GPDEBUGN(lvl, ...) do { \
+    if (lvl <= gp_debug) { \
+        gp_debug_time_printf(__VA_ARGS__); \
     } \
 } while(0)
 
