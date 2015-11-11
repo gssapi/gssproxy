@@ -93,7 +93,8 @@ void t_log_failure(gss_OID mech, uint32_t maj, uint32_t min)
     gss_release_buffer(&discard, &tmp);
 }
 
-int t_string_to_name(const char *string, gss_name_t *name)
+int t_string_to_name(const char *string, gss_name_t *name,
+                     gss_OID type)
 {
     gss_buffer_desc target_buf;
     uint32_t ret_maj;
@@ -102,8 +103,7 @@ int t_string_to_name(const char *string, gss_name_t *name)
     target_buf.value = strdup(string);
     target_buf.length = strlen(string) + 1;
 
-    ret_maj = gss_import_name(&ret_min, &target_buf,
-                              GSS_C_NT_HOSTBASED_SERVICE, name);
+    ret_maj = gss_import_name(&ret_min, &target_buf, type, name);
     free(target_buf.value);
     return ret_maj;
 }

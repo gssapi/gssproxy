@@ -1,4 +1,11 @@
 
+t_acquire_SOURCES = \
+    t_utils.c \
+    t_acquire.c
+
+t_acquire_LDADD = \
+    $(GSSAPI_LIBS)
+
 t_accept_SOURCES = \
     t_utils.c \
     t_accept.c
@@ -14,6 +21,7 @@ t_init_LDADD = \
     $(GSSAPI_LIBS)
 
 check_PROGRAMS = \
+    t_acquire \
     t_accept \
     t_init
 

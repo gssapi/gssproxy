@@ -15,7 +15,7 @@ int main(int argc, const char *argv[])
     uint32_t ret_min;
     int ret = -1;
 
-    ret = t_string_to_name(argv[1], &name);
+    ret = t_string_to_name(argv[1], &name, GSS_C_NT_HOSTBASED_SERVICE);
     if (ret) {
         DEBUG(argv[0], "Failed to import server name from argv[1]\n");
         ret = -1;
