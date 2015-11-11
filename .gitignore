@@ -52,3 +52,5 @@ install-sh
 ltmain.sh
 missing
 mkinstalldirs
+proxy/examples/*.conf
+proxy/examples/mech

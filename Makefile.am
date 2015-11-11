@@ -303,7 +303,7 @@ CLEANFILES = *.X */*.X */*/*.X \
     examples/gssproxy.conf \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
-    examples/99-nfs-client.conf.in
+    examples/99-nfs-client.conf
 
 tests: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py
