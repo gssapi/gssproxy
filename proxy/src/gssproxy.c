@@ -149,6 +149,7 @@ int main(int argc, const char *argv[])
     int opt_interactive = 0;
     int opt_version = 0;
     int opt_debug = 0;
+    int opt_debug_level = 0;
     verto_ctx *vctx;
     verto_ev *ev;
     int wait_fd;
@@ -168,8 +169,10 @@ int main(int argc, const char *argv[])
          _("Specify a custom default socket"), NULL}, \
         {"debug", 'd', POPT_ARG_NONE, &opt_debug, 0, \
          _("Enable debugging"), NULL}, \
-         {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
-          _("Print version number and exit"), NULL }, \
+        {"debug-level", '\0', POPT_ARG_INT, &opt_debug_level, 0, \
+         _("Set debugging level"), NULL}, \
+        {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
+         _("Print version number and exit"), NULL }, \
         POPT_TABLEEND
     };
 
@@ -189,8 +192,8 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    if (opt_debug) {
-        gp_debug_enable();
+    if (opt_debug || opt_debug_level > 0) {
+        gp_debug_enable(opt_debug_level);
     }
 
     if (opt_daemon && opt_interactive) {
