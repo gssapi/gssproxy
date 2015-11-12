@@ -186,11 +186,13 @@ cli_srv_comm_SOURCES = \
     src/gp_log.c \
     $(GP_RPCGEN_OBJ) \
     $(GP_RPCCLI_OBJ) \
+    tests/t_utils.c \
     tests/cli_srv_comm.c
 
 interposetest_SOURCES = \
     src/gp_log.c \
     src/gp_debug.c \
+    tests/t_utils.c \
     tests/interposetest.c
 
 gssproxy_LDADD = \

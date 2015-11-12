@@ -14,10 +14,10 @@
 
 #define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 
-#define DEBUG(name, ...) do { \
+#define DEBUG(...) do { \
     char msg[4096]; \
     snprintf(msg, 4096, __VA_ARGS__); \
-    fprintf(stderr, "%s[%s:%d]: %s", name, __FUNCTION__, __LINE__, msg); \
+    fprintf(stderr, "%s[%s:%d]: %s", argv[0], __FUNCTION__, __LINE__, msg); \
     fflush(stderr); \
 } while(0);
 
