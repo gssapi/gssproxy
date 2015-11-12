@@ -17,7 +17,7 @@ int main(int argc, const char *argv[])
 
     ret = t_string_to_name(argv[1], &name, GSS_C_NT_HOSTBASED_SERVICE);
     if (ret) {
-        DEBUG(argv[0], "Failed to import server name from argv[1]\n");
+        DEBUG("Failed to import server name from argv[1]\n");
         ret = -1;
         goto done;
     }
@@ -36,7 +36,7 @@ int main(int argc, const char *argv[])
                                    NULL,
                                    NULL);
     if (ret_maj != GSS_S_CONTINUE_NEEDED) {
-        DEBUG(argv[0], "gss_init_sec_context() failed\n");
+        DEBUG("gss_init_sec_context() failed\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;
@@ -44,21 +44,21 @@ int main(int argc, const char *argv[])
 
     /* We get stuff from stdin and spit it out on stderr */
     if (!out_token.length) {
-        DEBUG(argv[0], "No output token ?");
+        DEBUG("No output token ?");
         ret = -1;
         goto done;
     }
 
     ret = t_send_buffer(STDOUT_FD, out_token.value, out_token.length);
     if (ret) {
-        DEBUG(argv[0], "Failed to send data to server!\n");
+        DEBUG("Failed to send data to server!\n");
         ret = -1;
         goto done;
     }
 
     ret = t_recv_buffer(STDIN_FD, buffer, &buflen);
     if (ret != 0) {
-        DEBUG(argv[0], "Failed to read token from STDIN\n");
+        DEBUG("Failed to read token from STDIN\n");
         ret = -1;
         goto done;
     }
@@ -80,7 +80,7 @@ int main(int argc, const char *argv[])
                                    NULL,
                                    NULL);
     if (ret_maj) {
-        DEBUG(argv[0], "Error initializing context\n");
+        DEBUG("Error initializing context\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;

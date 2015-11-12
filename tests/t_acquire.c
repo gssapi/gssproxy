@@ -25,7 +25,7 @@ int main(int argc, const char *argv[])
     ret = t_string_to_name(argv[1], &target_name,
                            GSS_C_NT_HOSTBASED_SERVICE);
     if (ret) {
-        DEBUG(argv[0], "Failed to import server name from argv[1]\n");
+        DEBUG("Failed to import server name from argv[1]\n");
         ret = -1;
         goto done;
     }
@@ -38,7 +38,7 @@ int main(int argc, const char *argv[])
                                &cred_handle,
                                NULL, NULL);
     if (ret_maj != GSS_S_COMPLETE) {
-        DEBUG(argv[0], "gss_acquire_cred() failed\n");
+        DEBUG("gss_acquire_cred() failed\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;
@@ -47,7 +47,7 @@ int main(int argc, const char *argv[])
     ret_maj = gss_store_cred(&ret_min, cred_handle, GSS_C_INITIATE,
                              GSS_C_NULL_OID, 1, 1, NULL, NULL);
     if (ret_maj) {
-        DEBUG(argv[0], "Error saving credentials\n");
+        DEBUG("Error saving credentials\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;
@@ -69,7 +69,7 @@ int main(int argc, const char *argv[])
                                    NULL,
                                    NULL);
     if (ret_maj != GSS_S_CONTINUE_NEEDED) {
-        DEBUG(argv[0], "gss_init_sec_context() failed\n");
+        DEBUG("gss_init_sec_context() failed\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;
@@ -77,7 +77,7 @@ int main(int argc, const char *argv[])
 
     /* We get stuff from stdin and spit it out on stderr */
     if (!out_token.length) {
-        DEBUG(argv[0], "No output token ?");
+        DEBUG("No output token ?");
         ret = -1;
         goto done;
     }
@@ -96,14 +96,14 @@ int main(int argc, const char *argv[])
                                      NULL,
                                      NULL);
     if (ret_maj) {
-        DEBUG(argv[0], "Error accepting context\n");
+        DEBUG("Error accepting context\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;
     }
 
     if (!in_token.length) {
-        DEBUG(argv[0], "No output token ?");
+        DEBUG("No output token ?");
         ret = -1;
         goto done;
     }
@@ -124,7 +124,7 @@ int main(int argc, const char *argv[])
                                    NULL,
                                    NULL);
     if (ret_maj) {
-        DEBUG(argv[0], "Error initializing context\n");
+        DEBUG("Error initializing context\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;

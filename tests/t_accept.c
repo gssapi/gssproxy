@@ -17,7 +17,7 @@ int main(int argc, const char *argv[])
     /* We get stuff from stdin and spit it out on stderr */
     ret = t_recv_buffer(STDIN_FD, buffer, &buflen);
     if (ret != 0) {
-        DEBUG(argv[0], "Failed to read token from STDIN\n");
+        DEBUG("Failed to read token from STDIN\n");
         ret = -1;
         goto done;
     }
@@ -37,21 +37,21 @@ int main(int argc, const char *argv[])
                                      NULL,
                                      NULL);
     if (ret_maj) {
-        DEBUG(argv[0], "Error accepting context\n");
+        DEBUG("Error accepting context\n");
         t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         ret = -1;
         goto done;
     }
 
     if (!out_token.length) {
-        DEBUG(argv[0], "No output token ?");
+        DEBUG("No output token ?");
         ret = -1;
         goto done;
     }
 
     ret = t_send_buffer(STDOUT_FD, out_token.value, out_token.length);
     if (ret) {
-        DEBUG(argv[0], "Failed to send data to client!\n");
+        DEBUG("Failed to send data to client!\n");
         ret = -1;
         goto done;
     }
