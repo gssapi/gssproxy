@@ -32,7 +32,7 @@ void gpm_save_internal_status(uint32_t err, char *err_str)
 
 #define STD_MAJ_ERROR_STR "Internal gssproxy error"
     status.major_status = GSS_S_FAILURE;
-    status.major_status_string.utf8string_val = STD_MAJ_ERROR_STR;
+    status.major_status_string.utf8string_val = strdup(STD_MAJ_ERROR_STR);
     status.major_status_string.utf8string_len = sizeof(STD_MAJ_ERROR_STR);
     status.minor_status = err;
     status.minor_status_string.utf8string_val = err_str;
