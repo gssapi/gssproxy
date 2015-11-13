@@ -138,7 +138,7 @@ void run_client(struct aproc *data)
     gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gss_buffer_desc msg_buf = GSS_C_EMPTY_BUFFER;
-    char *message = "SECRET";
+    const char *message = "SECRET";
     int ret = -1;
     gss_iov_buffer_desc iov[2] = { { 0, { 0, NULL } }, { 0, { 0, NULL } } };
     int sealed;
@@ -235,7 +235,7 @@ void run_client(struct aproc *data)
 
     /* test encryption */
     msg_buf.length = strlen(message) + 1;
-    msg_buf.value = (void *)message;
+    msg_buf.value = discard_const(message);
     ret_maj = gss_wrap(&ret_min, ctx, 1, 0, &msg_buf, NULL, &out_token);
     if (ret_maj != GSS_S_COMPLETE) {
         DEBUG("Failed to wrap message.\n");
@@ -420,7 +420,8 @@ void run_server(struct aproc *data)
         goto done;
     }
     ret_maj = gss_canonicalize_name(&ret_min, target_name,
-                                    gss_mech_krb5, &canon_name);
+                                    discard_const(gss_mech_krb5),
+                                    &canon_name);
     if (ret_maj) {
         DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
@@ -592,7 +593,7 @@ void run_server(struct aproc *data)
 
     gss_release_buffer(&ret_min, &out_token);
 
-    in_token.value = message;
+    in_token.value = discard_const(message);
     in_token.length = strlen(message);
 
     ret_maj = gss_get_mic(&ret_min, context_handle, 0, &in_token, &out_token);
