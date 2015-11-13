@@ -16,7 +16,8 @@
 #define GSS_MECH_KRB5_OID_LENGTH 9
 #define GSS_MECH_KRB5_OID "\052\206\110\206\367\022\001\002\002"
 
-gss_OID_desc gp_mech_krb5 = { GSS_MECH_KRB5_OID_LENGTH, GSS_MECH_KRB5_OID };
+gss_OID_desc gp_mech_krb5 = { GSS_MECH_KRB5_OID_LENGTH,
+                              discard_const(GSS_MECH_KRB5_OID) };
 
 struct supported_mechs_map {
     int internal_id;
