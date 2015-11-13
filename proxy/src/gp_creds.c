@@ -291,7 +291,9 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         }
     } else {
         /* No name provided */
-        if (svc->euid != target_uid) {
+        if (svc->trusted && (svc->euid == target_uid)) {
+            use_service_keytab = true;
+        } else if (svc->euid != target_uid) {
             user_requested = true;
         }
     }
