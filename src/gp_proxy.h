@@ -11,6 +11,7 @@
 #include "gp_selinux.h"
 
 #define _(STRING) gettext(STRING)
+#define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 
 #define LINUX_PROC_USE_GSS_PROXY_FILE "/proc/net/rpc/use-gss-proxy"
 
