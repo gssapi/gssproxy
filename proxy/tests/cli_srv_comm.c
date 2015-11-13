@@ -217,7 +217,7 @@ void *client_thread(void *pvt)
 
     gss_release_buffer(&ret_min, &out_token);
 
-    in_token.value = CLI_MSG;
+    in_token.value = discard_const(CLI_MSG);
     in_token.length = strlen(in_token.value) + 1;
 
     ret_maj = gpm_wrap(&ret_min,
@@ -316,7 +316,8 @@ void *server_thread(void *pvt)
         goto done;
     }
     ret_maj = gpm_canonicalize_name(&ret_min, target_name,
-                                    gss_mech_krb5, &canon_name);
+                                    discard_const(gss_mech_krb5),
+                                    &canon_name);
     if (ret_maj) {
         DEBUG("gssproxy returned an error: %d\n", ret_maj);
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
