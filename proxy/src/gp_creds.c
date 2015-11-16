@@ -522,6 +522,7 @@ done:
             gss_release_oid_set(&discard, actual_mechs);
         }
     }
+    free_cred_store_elements(&cred_store);
     gss_release_cred(&discard, &impersonator_cred);
     gss_release_cred(&discard, &user_cred);
     gss_release_name(&discard, &target_name);

@@ -483,6 +483,7 @@ uint32_t gp_conv_gssx_to_name(uint32_t *min, gssx_name *in, gss_name_t *out)
 done:
     *min = ret_min;
     gss_release_buffer(&ret_min, input_name);
+    free(input_name);
     gss_release_oid(&ret_min, &name_type);
     return ret_maj;
 }

@@ -162,5 +162,6 @@ done:
     gss_release_name(&ret_min, &target_name);
     gss_release_oid(&ret_min, &mech_type);
     gss_release_cred(&ret_min, &ich);
+    gss_release_buffer(&ret_min, &obuf);
     return ret;
 }

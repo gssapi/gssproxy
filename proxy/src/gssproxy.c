@@ -257,6 +257,7 @@ int main(int argc, const char *argv[])
     }
 
     verto_run(vctx);
+    verto_free(vctx);
 
     gp_workers_free(gpctx->workers);
 
