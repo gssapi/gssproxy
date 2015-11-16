@@ -605,6 +605,7 @@ void free_config(struct gp_config **cfg)
     }
 
     free(config->config_file);
+    free(config->config_dir);
     free(config->socket_name);
     free(config->proxy_user);
 
@@ -719,6 +720,9 @@ static int gp_config_from_dir(const char *config_dir,
     if (result_cfg) {
         ini_config_destroy(*ini_config);
         *ini_config = result_cfg;
+    }
+    if (error_list) {
+        ref_array_destroy(error_list);
     }
     return 0;
 }
