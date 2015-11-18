@@ -53,7 +53,7 @@ def print_warning(key, text, io=sys.stderr):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='GSS-Proxy Tests Environment')
-    parser.add_argument('--path', default='%s/scratchdir' % os.getcwd(),
+    parser.add_argument('--path', default='%s/testdir' % os.getcwd(),
                         help="Directory in which tests are run")
 
     return vars(parser.parse_args())
@@ -144,7 +144,7 @@ KDC_CONF_TEMPLATE = '''
 def setup_kdc(testdir, wrapenv):
 
     # setup kerberos environment
-    testlog = os.path.join(testdir, 'kerb.log')
+    testlog = os.path.join(testdir, 'kkrb5kdc.log')
     krb5conf = os.path.join(testdir, 'krb5.conf')
     kdcconf = os.path.join(testdir, 'kdc.conf')
     kdcdir = os.path.join(testdir, 'kdc')
@@ -210,7 +210,7 @@ USR2_PWD = "usrpwd"
 
 def setup_keys(tesdir, env):
 
-    testlog = os.path.join(testdir, 'kerb.log')
+    testlog = os.path.join(testdir, 'kerbsetup.log')
 
     svc_name = "host/%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
@@ -255,7 +255,7 @@ def setup_gssapi_env(testdir, wrapenv):
         shutil.rmtree(libgssapi_dir)
     os.makedirs(libgssapi_dir)
 
-    if os.path.exists(GSSAPI_SYMLINK_DIR):
+    if os.path.lexists(GSSAPI_SYMLINK_DIR):
         os.unlink(GSSAPI_SYMLINK_DIR)
     os.symlink(libgssapi_dir, GSSAPI_SYMLINK_DIR)
     os.makedirs(libgssapi_mechd_dir)
@@ -409,17 +409,17 @@ def setup_gssproxy(testdir, logfile, env):
 
 def run_basic_test(testdir, env, expected_failure=False):
 
-    logfile = open(os.path.join(testdir, 'testinitaccept.log'), 'a')
+    logfile = open(os.path.join(testdir, 't_init_accept.log'), 'a')
 
     svc_name = "host@%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
     svcenv = {'KRB5_KTNAME': svc_keytab,
-              'KRB5CCNAME': os.path.join(testdir, 't_accept_ccache'),
-              'KRB5_TRACE': os.path.join(testdir, 't_accept_trace.log')}
+              'KRB5CCNAME': os.path.join(testdir, 't_accept.ccache'),
+              'KRB5_TRACE': os.path.join(testdir, 't_accept.trace')}
     svcenv.update(env)
 
-    clienv = {'KRB5CCNAME': os.path.join(testdir, 't_init_ccache'),
-              'KRB5_TRACE': os.path.join(testdir, 't_init_trace.log'),
+    clienv = {'KRB5CCNAME': os.path.join(testdir, 't_init.ccache'),
+              'KRB5_TRACE': os.path.join(testdir, 't_init.trace'),
               'GSS_USE_PROXY': 'yes',
               'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     clienv.update(env)
@@ -468,13 +468,13 @@ def run_basic_test(testdir, env, expected_failure=False):
 
 def run_acquire_test(testdir, env, expected_failure=False):
 
-    logfile = open(os.path.join(testdir, 'testacquire.log'), 'a')
+    logfile = open(os.path.join(testdir, 't_acquire.log'), 'a')
 
     svc_name = "host@%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
-    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_acquire_ccache'),
+    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_acquire.ccache'),
                'KRB5_KTNAME': svc_keytab,
-               'KRB5_TRACE': os.path.join(testdir, 't_acquire_trace.log'),
+               'KRB5_TRACE': os.path.join(testdir, 't_acquire.trace'),
                'GSS_USE_PROXY': 'yes',
                'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     testenv.update(env)
@@ -500,13 +500,13 @@ def run_acquire_test(testdir, env, expected_failure=False):
 
 def run_impersonate_test(testdir, env, expected_failure=False):
 
-    logfile = open(os.path.join(testdir, 'testimpersonate.log'), 'a')
+    logfile = open(os.path.join(testdir, 't_impersonate.log'), 'a')
 
     svc_name = "host@%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
-    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_impersonate_ccache'),
+    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_impersonate.ccache'),
                'KRB5_KTNAME': svc_keytab,
-               'KRB5_TRACE': os.path.join(testdir, 't_impersonate_trace.log'),
+               'KRB5_TRACE': os.path.join(testdir, 't_impersonate.trace'),
                'GSS_USE_PROXY': 'yes',
                'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     testenv.update(env)
@@ -541,8 +541,6 @@ if __name__ == '__main__':
 
     processes = dict()
 
-    testlog = os.path.join(testdir, 'tests.log')
-
     try:
         wrapenv = setup_wrappers(testdir)
 
@@ -555,7 +553,8 @@ if __name__ == '__main__':
 
         run_interposetest(testdir, gssapienv)
 
-        with (open(testlog, 'a')) as logfile:
+        gssproxylog = os.path.join(testdir, 'gssproxy.log')
+        with (open(gssproxylog, 'a')) as logfile:
             gproc, gpsocket = setup_gssproxy(testdir, logfile, keysenv)
             time.sleep(5) #Give time to gssproxy to fully start up
             processes['GSS-Proxy(%d)' % gproc.pid] = gproc
