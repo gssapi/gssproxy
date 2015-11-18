@@ -56,4 +56,4 @@ missing
 mkinstalldirs
 proxy/examples/*.conf
 proxy/examples/mech
-scratchdir/
+testdir/
