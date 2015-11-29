@@ -399,7 +399,8 @@ def setup_gssproxy(testdir, logfile, env):
 
     socket = os.path.join(gssproxy, 'gp.sock')
     conf = os.path.join(gssproxy, 'gp.conf')
-    gproc = subprocess.Popen(["./gssproxy", "-i", "-d",
+    gproc = subprocess.Popen(["valgrind", "--track-origins=yes",
+                              "./gssproxy", "-i", "-d",
                               "-s", socket, "-c", conf],
                              stdout=logfile, stderr=logfile,
                              env=env, preexec_fn=os.setsid)
