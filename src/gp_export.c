@@ -174,8 +174,8 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     uint32_t lifetime;
     gss_cred_usage_t cred_usage;
     gss_OID_set mechanisms = NULL;
-    uint32_t initiator_lifetime;
-    uint32_t acceptor_lifetime;
+    uint32_t initiator_lifetime = 0;
+    uint32_t acceptor_lifetime = 0;
     struct gssx_cred_element *el;
     int ret;
     int i, j;
@@ -195,14 +195,14 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     gss_release_name(&ret_min, &name);
     name = NULL;
 
-    out->elements.elements_len = mechanisms->count;
-    out->elements.elements_val = calloc(out->elements.elements_len,
+    out->elements.elements_val = calloc(mechanisms->count,
                                         sizeof(gssx_cred_element));
     if (!out->elements.elements_val) {
         ret_maj = GSS_S_FAILURE;
         ret_min = ENOMEM;
         goto done;
     }
+    out->elements.elements_len = mechanisms->count;
 
     for (i = 0, j = 0; i < mechanisms->count; i++, j++) {
 
@@ -217,14 +217,10 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
         if (ret_maj) {
             gp_log_failure(&mechanisms->elements[i], ret_maj, ret_min);
 
-            /* temporarily skip any offender */
+            /* skip any offender */
             out->elements.elements_len--;
             j--;
             continue;
-#if 0
-            ret = EINVAL;
-            goto done;
-#endif
         }
 
         ret_maj = gp_conv_name_to_gssx(&ret_min, name, &el->MN);
