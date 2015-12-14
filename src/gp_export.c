@@ -526,14 +526,18 @@ uint32_t gp_export_ctx_id_to_gssx(uint32_t *min, int type, gss_OID mech,
         goto done;
     }
 
-    ret_maj = gp_conv_name_to_gssx(&ret_min, src_name, &out->src_name);
-    if (ret_maj) {
-        goto done;
+    if (src_name != GSS_C_NO_NAME) {
+        ret_maj = gp_conv_name_to_gssx(&ret_min, src_name, &out->src_name);
+        if (ret_maj) {
+            goto done;
+        }
     }
 
-    ret_maj = gp_conv_name_to_gssx(&ret_min, targ_name, &out->targ_name);
-    if (ret_maj) {
-        goto done;
+    if (targ_name != GSS_C_NO_NAME) {
+        ret_maj = gp_conv_name_to_gssx(&ret_min, targ_name, &out->targ_name);
+        if (ret_maj) {
+            goto done;
+        }
     }
 
     out->lifetime = lifetime_rec;
