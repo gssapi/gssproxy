@@ -444,10 +444,6 @@ OM_uint32 gpm_inquire_attrs_for_mech(OM_uint32 *minor_status,
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
     }
-    if (!mech_attrs || !known_mech_attrs) {
-        *minor_status = 0;
-        return GSS_S_CALL_INACCESSIBLE_WRITE;
-    }
 
     ret_min = gpmint_init_global_mechs();
     if (ret_min) {
@@ -459,21 +455,31 @@ OM_uint32 gpm_inquire_attrs_for_mech(OM_uint32 *minor_status,
         if (!gpm_equal_oids(global_mechs.info[i].mech, mech)) {
             continue;
         }
-        ret_maj = gpm_copy_gss_OID_set(&ret_min,
-                                       global_mechs.info[i].mech_attrs,
-                                       mech_attrs);
-        if (ret_maj) {
+
+        if (mech_attrs != NULL) {
+            ret_maj = gpm_copy_gss_OID_set(&ret_min,
+                                           global_mechs.info[i].mech_attrs,
+                                           mech_attrs);
+            if (ret_maj) {
+                *minor_status = ret_min;
+                return ret_maj;
+            }
+        }
+
+        if (known_mech_attrs != NULL) {
+            ret_maj = gpm_copy_gss_OID_set(&ret_min,
+                                           global_mechs.info[i].known_mech_attrs,
+                                           known_mech_attrs);
+            if (ret_maj) {
+                gss_release_oid_set(&discard, known_mech_attrs);
+            }
             *minor_status = ret_min;
             return ret_maj;
         }
-        ret_maj = gpm_copy_gss_OID_set(&ret_min,
-                                       global_mechs.info[i].known_mech_attrs,
-                                       known_mech_attrs);
-        if (ret_maj) {
-            gss_release_oid_set(&discard, known_mech_attrs);
-        }
-        *minor_status = ret_min;
-        return ret_maj;
+
+        /* all requested attributes copied successfully */
+        *minor_status = 0;
+        return GSS_S_COMPLETE;
     }
 
     *minor_status = 0;
