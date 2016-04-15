@@ -325,6 +325,23 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         }
     }
 
+    if (use_service_keytab &&
+        (*requested_name == GSS_C_NO_NAME) && (svc->krb5.principal)) {
+        /* configuration dictates to use a specific name */
+        gss_buffer_desc const_buf;
+        const_buf.value = svc->krb5.principal;
+        const_buf.length = strlen(svc->krb5.principal) + 1;
+
+        ret_maj = gss_import_name(&ret_min, &const_buf,
+                                  discard_const(GSS_KRB5_NT_PRINCIPAL_NAME),
+                                  requested_name);
+        if (ret_maj) {
+            GPERROR("Failed to import krb5_principal name %s\n",
+                    svc->krb5.principal);
+            goto done;
+        }
+    }
+
     if (svc->krb5.cred_store == NULL) {
         return 0;
     }
