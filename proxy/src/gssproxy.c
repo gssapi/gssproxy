@@ -89,8 +89,12 @@ static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
             if (old_config->svcs[i]->ev) {
                 svc = find_service_by_name(gpctx->config,
                                            old_config->svcs[i]->name);
-                if (svc && strcmp(svc->socket,
-                                  old_config->svcs[i]->socket) == 0) {
+                if (svc &&
+                    ((svc->socket == old_config->svcs[i]->socket) ||
+                     ((svc->socket != NULL) &&
+                      (old_config->svcs[i]->socket != NULL) &&
+                      strcmp(svc->socket,
+                             old_config->svcs[i]->socket) == 0))) {
                     svc->ev = old_config->svcs[i]->ev;
                     sock_ctx = verto_get_private(svc->ev);
                     sock_ctx->socket = svc->socket;
