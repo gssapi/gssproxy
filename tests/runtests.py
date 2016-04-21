@@ -207,6 +207,9 @@ SVC_KTNAME = "kdc.gssproxy.keytab"
 KEY_TYPE = "aes256-cts-hmac-sha1-96:normal"
 USR2_NAME = "user2"
 USR2_PWD = "usrpwd"
+MULTI_KTNAME = "multi.gssproxy.keytab"
+MULTI_UPN = "multi$"
+MULTI_SVC = "multi/%s" % WRAP_HOSTNAME
 
 def setup_keys(tesdir, env):
 
@@ -233,11 +236,31 @@ def setup_keys(tesdir, env):
     with (open(testlog, 'a')) as logfile:
         kadmin_local(cmd, env, logfile)
 
-    keys_env = { "KRB5_KTNAME": svc_keytab}
+    keys_env = {"client_keytab": usr_keytab,
+                "KRB5_KTNAME": svc_keytab}
     keys_env.update(env)
 
     return keys_env
 
+def setup_multi_keys(testdir, env):
+
+    testlog = os.path.join(testdir, 'kerbsetup.log')
+    keytab = os.path.join(testdir, MULTI_KTNAME)
+
+    cmd = "addprinc -randkey -e %s %s" % (KEY_TYPE, MULTI_SVC)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+    cmd = "ktadd -k %s -e %s %s" % (keytab, KEY_TYPE, MULTI_SVC)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+
+    # add a second key using the UPN
+    cmd = "addprinc -randkey -e %s %s" % (KEY_TYPE, MULTI_UPN)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+    cmd = "ktadd -k %s -e %s %s" % (keytab, KEY_TYPE, MULTI_UPN)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
 
 # This is relative to the path where the test binary is being run
 GSSAPI_SYMLINK_DIR = ".test655"
@@ -372,19 +395,36 @@ GSSPROXY_CONF_SOCKET_TEMPLATE = GSSPROXY_CONF_TEMPLATE + '''
   socket = ${SECOND_SOCKET}
 '''
 
+GSSPROXY_MULTI_TEMPLATE = '''
+[gssproxy]
+  debug_level = 2
+
+[service/test]
+  mechs = krb5
+  cred_store = keytab:${GSSPROXY_KEYTAB}
+  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
+  cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
+  krb5_principal = ${GSSPROXY_CLIENT_PRINCIPAL}
+  trusted = yes
+  euid = ${UIDNUMBER}
+'''
+
 def update_gssproxy_conf(testdir, env, template):
     gssproxy = os.path.join(testdir, 'gssproxy')
     ccache = os.path.join(gssproxy, 'gpccache')
-    ckeytab = os.path.join(testdir, USR_KTNAME)
+    ckeytab = env['client_keytab']
     conf = os.path.join(gssproxy, 'gp.conf')
     socket2 = os.path.join(gssproxy, 'gp.sock2')
 
     t = Template(template)
-    text = t.substitute({'GSSPROXY_KEYTAB': env['KRB5_KTNAME'],
-                         'GSSPROXY_CLIENT_CCACHE': ccache,
-                         'GSSPROXY_CLIENT_KEYTAB': ckeytab,
-                         'UIDNUMBER': os.getuid(),
-                         'SECOND_SOCKET': socket2})
+    subs = {'GSSPROXY_KEYTAB': env['KRB5_KTNAME'],
+            'GSSPROXY_CLIENT_CCACHE': ccache,
+            'GSSPROXY_CLIENT_KEYTAB': ckeytab,
+            'UIDNUMBER': os.getuid(),
+            'SECOND_SOCKET': socket2}
+    if 'client_name' in env:
+        subs['GSSPROXY_CLIENT_PRINCIPAL'] = env['client_name']
+    text = t.substitute(subs)
     with open(conf, 'w+') as f:
         f.write(text)
 
@@ -408,19 +448,21 @@ def setup_gssproxy(testdir, logfile, env):
     return gproc, socket
 
 
-def run_basic_test(testdir, env, expected_failure=False):
+def run_basic_test(testdir, env, conf, expected_failure=False):
 
-    logfile = open(os.path.join(testdir, 't_init_accept.log'), 'a')
+    logfile = conf['logfile']
 
-    svc_name = "host@%s" % WRAP_HOSTNAME
-    svc_keytab = os.path.join(testdir, SVC_KTNAME)
-    svcenv = {'KRB5_KTNAME': svc_keytab,
-              'KRB5CCNAME': os.path.join(testdir, 't_accept.ccache'),
-              'KRB5_TRACE': os.path.join(testdir, 't_accept.trace')}
+    svcenv = {'KRB5_KTNAME': conf['keytab'],
+              'KRB5CCNAME': os.path.join(testdir, 't' + conf['prefix'] +
+                                                  '_accept.ccache'),
+              'KRB5_TRACE': os.path.join(testdir, 't' + conf['prefix'] +
+                                                  '_accept.trace')}
     svcenv.update(env)
 
-    clienv = {'KRB5CCNAME': os.path.join(testdir, 't_init.ccache'),
-              'KRB5_TRACE': os.path.join(testdir, 't_init.trace'),
+    clienv = {'KRB5CCNAME': os.path.join(testdir, 't' + conf['prefix'] +
+                                                  '_init.ccache'),
+              'KRB5_TRACE': os.path.join(testdir, 't' + conf['prefix'] +
+                                                  '_init.trace'),
               'GSS_USE_PROXY': 'yes',
               'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     clienv.update(env)
@@ -428,7 +470,7 @@ def run_basic_test(testdir, env, expected_failure=False):
     pipe0 = os.pipe()
     pipe1 = os.pipe()
 
-    p1 = subprocess.Popen(["./tests/t_init", svc_name],
+    p1 = subprocess.Popen(["./tests/t_init", conf['svc_name']],
                           stdin=pipe0[0], stdout=pipe1[1],
                           stderr=logfile, env=clienv, preexec_fn=os.setsid)
     p2 = subprocess.Popen(["./tests/t_accept"],
@@ -467,20 +509,21 @@ def run_basic_test(testdir, env, expected_failure=False):
                       "Accept test returned %s" % str(p2.returncode))
 
 
-def run_acquire_test(testdir, env, expected_failure=False):
+def run_acquire_test(testdir, env, conf, expected_failure=False):
 
-    logfile = open(os.path.join(testdir, 't_acquire.log'), 'a')
+    logfile = conf['logfile']
 
-    svc_name = "host@%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
-    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_acquire.ccache'),
-               'KRB5_KTNAME': svc_keytab,
-               'KRB5_TRACE': os.path.join(testdir, 't_acquire.trace'),
+    testenv = {'KRB5CCNAME': os.path.join(testdir, 't' + conf['prefix'] +
+                                                   '_acquire.ccache'),
+               'KRB5_KTNAME': conf['keytab'],
+               'KRB5_TRACE': os.path.join(testdir, 't' + conf['prefix'] +
+                                                   '_acquire.trace'),
                'GSS_USE_PROXY': 'yes',
                'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     testenv.update(env)
 
-    cmd = ["./tests/t_acquire", svc_name]
+    cmd = ["./tests/t_acquire", conf['svc_name']]
     print("[COMMAND]\n%s\n[ENVIRONMENT]\n%s\n" % (cmd, env), file=logfile)
     logfile.flush()
 
@@ -499,20 +542,20 @@ def run_acquire_test(testdir, env, expected_failure=False):
                       "Acquire test returned %s" % str(p1.returncode))
 
 
-def run_impersonate_test(testdir, env, expected_failure=False):
+def run_impersonate_test(testdir, env, conf, expected_failure=False):
 
-    logfile = open(os.path.join(testdir, 't_impersonate.log'), 'a')
+    logfile = conf['logfile']
 
-    svc_name = "host@%s" % WRAP_HOSTNAME
-    svc_keytab = os.path.join(testdir, SVC_KTNAME)
-    testenv = {'KRB5CCNAME': os.path.join(testdir, 't_impersonate.ccache'),
-               'KRB5_KTNAME': svc_keytab,
-               'KRB5_TRACE': os.path.join(testdir, 't_impersonate.trace'),
+    testenv = {'KRB5CCNAME': os.path.join(testdir, 't' + conf['prefix'] +
+                                                   '_impersonate.ccache'),
+               'KRB5_KTNAME': conf['keytab'],
+               'KRB5_TRACE': os.path.join(testdir, 't' + conf['prefix'] +
+                                                   '_impersonate.trace'),
                'GSS_USE_PROXY': 'yes',
                'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     testenv.update(env)
 
-    cmd = ["./tests/t_impersonate", USR_NAME, svc_name]
+    cmd = ["./tests/t_impersonate", USR_NAME, conf['svc_name']]
     print("[COMMAND]\n%s\n[ENVIRONMENT]\n%s\n" % (cmd, env), file=logfile)
     logfile.flush()
 
@@ -561,38 +604,117 @@ if __name__ == '__main__':
             processes['GSS-Proxy(%d)' % gproc.pid] = gproc
             gssapienv['GSSPROXY_SOCKET'] = gpsocket
 
+            basicconf = {'svc_name': "host@%s" % WRAP_HOSTNAME,
+                         'keytab': os.path.join(testdir, SVC_KTNAME)}
+
+            # Test 01
+            testnum = 1
             print("Testing basic acquire creds", file=sys.stderr)
-            run_acquire_test(testdir, gssapienv)
+            basicconf['logfile'] = \
+                open(os.path.join(testdir,
+                                  '%02d_basic_acquire.log' % testnum), 'a')
+            basicconf['prefix'] = '%02d' % testnum
+            run_acquire_test(testdir, gssapienv, basicconf)
 
+            # Test 02
+            testnum += 1
             print("Testing impersonate creds", file=sys.stderr)
-            run_impersonate_test(testdir, gssapienv)
+            basicconf['logfile'] = \
+                open(os.path.join(testdir, '02_impersonate.log'), 'a')
+            basicconf['prefix'] = '%02d' % testnum
+            run_impersonate_test(testdir, gssapienv, basicconf)
 
+            # Test 03
+            testnum += 1
             print("Testing basic init/accept context", file=sys.stderr)
-            run_basic_test(testdir, gssapienv)
+            basicconf['logfile'] = \
+                open(os.path.join(testdir, '03_basic_exchange.log'), 'a')
+            basicconf['prefix'] = '%02d' % testnum
+            run_basic_test(testdir, gssapienv, basicconf)
+
+            # Test 04 (part 1)
+            testnum += 1
+            basicconf['logfile'] = \
+                open(os.path.join(testdir, '04_sighups.log'), 'a')
 
             print("Testing basic SIGHUP with no change", file=sys.stderr)
+            basicconf['prefix'] = '%02d_1' % testnum
             os.kill(gproc.pid, signal.SIGHUP)
             time.sleep(1) #Let gssproxy reload everything
-            run_basic_test(testdir, gssapienv)
+            run_basic_test(testdir, gssapienv, basicconf)
 
+            # Test 04 (part 2)
             print("Testing SIGHUP with dropped service", file=sys.stderr)
+            basicconf['prefix'] = '%02d_2' % testnum
             update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_MINIMAL_TEMPLATE)
             os.kill(gproc.pid, signal.SIGHUP)
             time.sleep(1) #Let gssproxy reload everything
-            run_basic_test(testdir, gssapienv, True)
+            run_basic_test(testdir, gssapienv, basicconf, True)
 
+            # Test 04 (part 3)
             print("Testing SIGHUP with new service", file=sys.stderr)
+            basicconf['prefix'] = '%02d_3' % testnum
             update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_TEMPLATE)
             os.kill(gproc.pid, signal.SIGHUP)
             time.sleep(1) #Let gssproxy reload everything
-            run_basic_test(testdir, gssapienv)
+            run_basic_test(testdir, gssapienv, basicconf)
 
+            # Test 04 (part 4)
             print("Testing SIGHUP with change of socket", file=sys.stderr)
+            basicconf['prefix'] = '%02d_4' % testnum
             update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_SOCKET_TEMPLATE)
             gssapienv['GSSPROXY_SOCKET'] += "2"
             os.kill(gproc.pid, signal.SIGHUP)
             time.sleep(1) #Let gssproxy reload everything
-            run_basic_test(testdir, gssapienv)
+            run_basic_test(testdir, gssapienv, basicconf)
+
+            # Test 05 (part 1)
+            testnum += 1
+            basicconf['logfile'] = \
+                open(os.path.join(testdir, '05_multiple-keys.log'), 'a')
+            setup_multi_keys(testdir, gssapienv)
+            gssapienv['GSSPROXY_SOCKET'] = gpsocket
+
+            # Q: What are we testing here ?
+            # A: A client calling gss_init_sec_context() w/o explicitly
+            # acquiring credentials before hand. [Note: in this case
+            # gssproxy uses the 'keytab' specified in the store and ignores
+            # the 'client_keytab' one].
+            # A gssproxy configruation where the keytab containes multiple
+            # keys, and a krb5_principal option that sepcify what name we
+            # want to use.
+            # We try both names to make sure we target a specific key and not
+            # just pick up the first in the keytab (which is the normal
+            # behavior).
+
+            print("Testing multiple keys Keytab with first principal",
+                  file=sys.stderr)
+            if os.path.exists(os.path.join(testdir, 'gssproxy', 'gpccache')):
+                os.unlink(os.path.join(testdir, 'gssproxy', 'gpccache'))
+            basicconf['prefix'] = '%02d_1' % testnum
+            p1env = {}
+            p1env.update(keysenv)
+            p1env['client_name'] = MULTI_UPN
+            p1env['KRB5_KTNAME'] = os.path.join(testdir, MULTI_KTNAME)
+            update_gssproxy_conf(testdir, p1env, GSSPROXY_MULTI_TEMPLATE)
+            os.kill(gproc.pid, signal.SIGHUP)
+            time.sleep(1) #Let gssproxy reload everything
+            run_basic_test(testdir, gssapienv, basicconf)
+
+            # Test 04 (part 2)
+            print("Testing multiple keys Keytab with second principal",
+                  file=sys.stderr)
+            if os.path.exists(os.path.join(testdir, 'gssproxy', 'gpccache')):
+                os.unlink(os.path.join(testdir, 'gssproxy', 'gpccache'))
+            basicconf['prefix'] = '%02d_2' % testnum
+            p2env = {}
+            p2env.update(keysenv)
+            p2env['client_name'] = MULTI_SVC
+            p2env['KRB5_KTNAME'] = os.path.join(testdir, MULTI_KTNAME)
+            update_gssproxy_conf(testdir, p2env, GSSPROXY_MULTI_TEMPLATE)
+            os.kill(gproc.pid, signal.SIGHUP)
+            time.sleep(1) #Let gssproxy reload everything
+            run_basic_test(testdir, gssapienv, basicconf)
     finally:
         for name in processes:
             print("Killing %s" % name)
