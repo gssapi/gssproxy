@@ -316,11 +316,12 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             namebuf.length = strlen(str);
             ret_maj = gss_import_name(&ret_min, &namebuf,
                                       GSS_C_NT_USER_NAME, requested_name);
-            safefree(str);
             if (ret_maj) {
                 GPERROR("Failed to import username %s\n", str);
+                safefree(str);
                 return ENOMEM;
             }
+            safefree(str);
         }
     }
 
