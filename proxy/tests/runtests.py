@@ -459,6 +459,12 @@ def run_basic_test(testdir, env, conf, expected_failure=False):
                                                   '_accept.trace')}
     svcenv.update(env)
 
+    client_name = conf.get('client_name', None)
+    if client_name is not None:
+        init_cmd = ["./tests/t_init", conf['svc_name'], client_name]
+    else:
+        init_cmd = ["./tests/t_init", conf['svc_name']]
+
     clienv = {'KRB5CCNAME': os.path.join(testdir, 't' + conf['prefix'] +
                                                   '_init.ccache'),
               'KRB5_TRACE': os.path.join(testdir, 't' + conf['prefix'] +
@@ -467,10 +473,13 @@ def run_basic_test(testdir, env, conf, expected_failure=False):
               'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     clienv.update(env)
 
+    print("[SVCENV]\n%s\n[CLIENV]\n%s\nCLI NAME: %s\n" % (
+          svcenv, clienv, client_name), file=logfile)
+
     pipe0 = os.pipe()
     pipe1 = os.pipe()
 
-    p1 = subprocess.Popen(["./tests/t_init", conf['svc_name']],
+    p1 = subprocess.Popen(init_cmd,
                           stdin=pipe0[0], stdout=pipe1[1],
                           stderr=logfile, env=clienv, preexec_fn=os.setsid)
     p2 = subprocess.Popen(["./tests/t_accept"],
