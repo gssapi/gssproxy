@@ -127,6 +127,7 @@ dist_noinst_HEADERS = \
     src/gp_proxy.h \
     src/client/gssapi_gpm.h \
     src/gp_common.h \
+    src/gp_rpc_debug.h \
     src/gp_log.h \
     src/gp_creds.h \
     src/gp_export.h \
