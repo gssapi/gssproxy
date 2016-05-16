@@ -580,7 +580,9 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     } else if (desired_name) {
         ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &req_name);
     }
-    if (ret_min) {
+    if (ret_maj) {
+        goto done;
+    } else if (ret_min) {
         ret_maj = GSS_S_CRED_UNAVAIL;
         goto done;
     }
