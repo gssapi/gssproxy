@@ -663,7 +663,7 @@ int gp_get_export_creds_type(struct gssx_call_ctx *ctx)
     struct gssx_option *val = NULL;
 
     gp_options_find(val, ctx->options,
-                    EXP_CTX_TYPE_OPTION, sizeof(EXP_CTX_TYPE_OPTION));
+                    EXP_CREDS_TYPE_OPTION, sizeof(EXP_CREDS_TYPE_OPTION));
     if (val) {
         if (gp_option_value_match(val, LINUX_CREDS_V1,
                                   sizeof(LINUX_CREDS_V1))) {
