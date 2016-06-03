@@ -13,6 +13,12 @@
 struct gpm_ctx {
     pthread_mutex_t lock;
     int fd;
+
+    /* these are only meaningful if fd != -1 */
+    pid_t pid;
+    uid_t uid;
+    gid_t gid;
+
     int next_xid;
 };
 
@@ -93,6 +99,9 @@ done:
         }
     }
     gpmctx->fd = fd;
+    gpmctx->pid = getpid();
+    gpmctx->uid = geteuid();
+    gpmctx->gid = getegid();
     return ret;
 }
 
@@ -120,10 +129,23 @@ static void gpm_close_socket(struct gpm_ctx *gpmctx)
 static int gpm_grab_sock(struct gpm_ctx *gpmctx)
 {
     int ret;
+    pid_t p;
+    uid_t u;
+    gid_t g;
 
     ret = pthread_mutex_lock(&gpmctx->lock);
     if (ret) {
         return ret;
+    }
+
+    /* Detect fork / setresuid and friends */
+    p = getpid();
+    u = geteuid();
+    g = getegid();
+
+    if (gpmctx->fd != -1 &&
+        (p != gpmctx->pid || u != gpmctx->uid || g != gpmctx->gid)) {
+        gpm_close_socket(gpmctx);
     }
 
     if (gpmctx->fd == -1) {
