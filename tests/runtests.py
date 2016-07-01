@@ -90,6 +90,131 @@ def setup_wrappers(base):
 
     return wenv
 
+KRB5_CN = "Kerberos"
+KRB5_USER = "cn=root"
+LDAP_DC = "gssproxy"
+LDAP_REALM = "dc=" + LDAP_DC + ",dc=dev"
+LDAP_PW = "root"
+SLAPD_CONF_TEMPLATE = """
+include   ${LDAP_KRB_SCHEMA}
+include   ${SCHEMADIR}/core.schema
+include   ${SCHEMADIR}/cosine.schema
+include   ${SCHEMADIR}/inetorgperson.schema
+include   ${SCHEMADIR}/nis.schema
+
+allow bind_v2
+
+pidfile   ${LDAPDIR}/slapd.pid
+
+database  config
+rootdn    ${KRB5_USER},cn=config
+rootpw    ${LDAP_PW}
+
+moduleload back_mdb
+database  mdb
+suffix    "${LDAP_REALM}"
+rootdn    "${KRB5_USER},${LDAP_REALM}"
+rootpw    ${LDAP_PW}
+
+directory ${LDAPDIR}
+logfile   ${LDAP_LOG}
+"""
+KERBEROS_LDIF_TEMPLATE="""
+dn: ${LDAP_REALM}
+objectClass: domain
+dc: ${LDAP_DC}
+
+dn: cn=${KRB5_CN},${LDAP_REALM}
+objectClass: krbContainer
+cn: ${KRB5_CN}
+"""
+
+def setup_ldap(testdir, wrapenv):
+    # setup ldap environment
+    ldapdir = os.path.join(testdir, "ldap")
+    ldapconf = os.path.join(ldapdir, "slapd.conf")
+    ldif = os.path.join(ldapdir, "k5.ldif")
+    testlog = os.path.join(testdir, "ldap.log")
+    stashfile = os.path.join(testdir, "ldap_passwd")
+    if os.path.exists(ldapdir):
+        shutil.rmtree(ldapdir)
+    os.makedirs(ldapdir)
+
+    # different distros do LDAP naming differently
+    schemadir = None
+    for path in ["/etc/openldap/schema", "/etc/ldap/schema"]:
+        if os.path.exists(path):
+            schemadir = path
+            break
+    if schemadir == None:
+        raise ValueError("Did not find LDAP schemas; is openldap installed?")
+
+    k5schema = None
+    for path in ["/usr/share/doc/krb5-server-ldap/kerberos.schema",
+                 "/usr/share/doc/krb5-kdc-ldap/kerberos.schema.gz"]:
+        if os.path.exists(path):
+            k5schema = path
+            break
+    if k5schema == None:
+        print("Please be sure krb5 ldap packages are installed")
+        raise ValueError("No LDAP kerberos.schema found")
+    elif k5schema.endswith(".gz"):
+        sdata = subprocess.check_output(["zcat", k5schema])
+        k5schema = os.path.join(ldapdir, "kerberos.schema")
+        with open(k5schema, "w") as f:
+            f.write(sdata.decode("UTF-8"))
+
+    t = Template(SLAPD_CONF_TEMPLATE)
+    text = t.substitute({"LDAPDIR": ldapdir,
+                         "LDAP_REALM": LDAP_REALM,
+                         "LDAP_PW": LDAP_PW,
+                         "LDAP_LOG": testlog,
+                         "LDAP_KRB_SCHEMA": k5schema,
+                         "SCHEMADIR": schemadir,
+                         "KRB5_USER": KRB5_USER})
+    with open(ldapconf, "w+") as f:
+        f.write(text)
+
+    t = Template(KERBEROS_LDIF_TEMPLATE)
+    text = t.substitute({"LDAP_REALM": LDAP_REALM,
+                         "LDAP_DC": LDAP_DC,
+                         "KRB5_CN": KRB5_CN})
+    with open(ldif, "w+") as f:
+        f.write(text)
+
+    ldapenv = {'PATH': '/sbin:/bin:/usr/sbin:/usr/bin'}
+    ldapenv.update(wrapenv)
+
+    with open(testlog, "a") as logfile:
+        lsetup = subprocess.Popen(["slapadd", "-f", ldapconf, "-l", ldif],
+                                  stdout=logfile, stderr=logfile,
+                                  env=ldapenv, preexec_fn=os.setsid)
+    lsetup.wait()
+    if lsetup.returncode != 0:
+        raise ValueError("LDAP Setup failed")
+
+    with open(testlog, "a") as logfile:
+        ldapproc = subprocess.Popen(["slapd", "-d", "0", "-f", ldapconf,
+                                     "-h", "ldap://%s" % WRAP_HOSTNAME],
+                                    env=ldapenv, preexec_fn=os.setsid)
+
+    print("Waiting for LDAP server to start...")
+    time.sleep(5)
+
+    with open(testlog, "a") as logfile:
+        ssetup = subprocess.Popen(["kdb5_ldap_util", "stashsrvpw", "-w",
+                                   LDAP_PW, "-H", "ldap://%s" % WRAP_HOSTNAME,
+                                   "-f", stashfile,
+                                   "%s,%s" % (KRB5_USER, LDAP_REALM)],
+                                  stdin=subprocess.PIPE, stdout=logfile,
+                                  stderr=logfile, env=ldapenv,
+                                  preexec_fn=os.setsid)
+    ssetup.communicate((LDAP_PW + '\n' + LDAP_PW + '\n').encode("UTF-8"))
+    if ssetup.returncode != 0:
+        os.killpg(ldapproc.pid, signal.SIGTERM)
+        raise ValueError("stashsrvpw failed")
+
+    return ldapproc, ldapenv
 
 TESTREALM = "GSSPROXY.DEV"
 KDC_DBNAME = 'db.file'
@@ -107,7 +232,8 @@ KRB5_CONF_TEMPLATE = '''
 
 [realms]
   ${TESTREALM} = {
-    kdc =${WRAP_HOSTNAME}
+    kdc = ${WRAP_HOSTNAME}
+    admin_server = ${WRAP_HOSTNAME}
   }
 
 [domain_realm]
@@ -116,7 +242,12 @@ KRB5_CONF_TEMPLATE = '''
 
 [dbmodules]
   ${TESTREALM} = {
-    database_name = ${KDCDIR}/${KDC_DBNAME}
+    db_library = kldap
+    ldap_kerberos_container_dn = cn=${KRB5_CN},${LDAP_REALM}
+    ldap_kdc_dn = ${KRB5_USER},${LDAP_REALM}
+    ldap_kadmind_dn = ${KRB5_USER},${LDAP_REALM}
+    ldap_service_password_file = ${TESTDIR}/ldap_passwd
+    ldap_servers = ldap://${WRAP_HOSTNAME}
   }
 '''
 KDC_CONF_TEMPLATE = '''
@@ -133,7 +264,6 @@ KDC_CONF_TEMPLATE = '''
   acl_file = ${KDCDIR}/kadm5.acl
   dict_file = /usr/share/dict/words
   default_principal_flags = +preauth
-  admin_keytab = ${TESTREALM}/kadm5.keytab
   key_stash_file = ${KDCDIR}/${KDC_STASH}
  }
 [logging]
@@ -158,7 +288,10 @@ def setup_kdc(testdir, wrapenv):
     text = t.substitute({'TESTREALM': TESTREALM,
                          'TESTDIR': testdir,
                          'KDCDIR': kdcdir,
+                         'KRB5_CN': KRB5_CN,
+                         'KRB5_USER': KRB5_USER,
                          'KDC_DBNAME': KDC_DBNAME,
+                         'LDAP_REALM': LDAP_REALM,
                          'WRAP_HOSTNAME': WRAP_HOSTNAME})
     with open(krb5conf, 'w+') as f:
         f.write(text)
@@ -177,8 +310,11 @@ def setup_kdc(testdir, wrapenv):
     kdcenv.update(wrapenv)
 
     with (open(testlog, 'a')) as logfile:
-        ksetup = subprocess.Popen(["kdb5_util", "create", "-s",
-                                   "-r", TESTREALM, "-P", KDC_PASSWORD],
+        ksetup = subprocess.Popen(["kdb5_ldap_util", "-H",
+                                   "ldap://%s" % WRAP_HOSTNAME, "-D",
+                                   "%s,%s" % (KRB5_USER, LDAP_REALM),
+                                   "create", "-w", LDAP_PW, "-P", KDC_PASSWORD,
+                                   "-s", "-r", TESTREALM],
                                   stdout=logfile, stderr=logfile,
                                   env=kdcenv, preexec_fn=os.setsid)
     ksetup.wait()
@@ -187,7 +323,7 @@ def setup_kdc(testdir, wrapenv):
 
     kdcproc = subprocess.Popen(['krb5kdc', '-n'],
                                env=kdcenv, preexec_fn=os.setsid)
-
+    time.sleep(5)
     return kdcproc, kdcenv
 
 
@@ -596,6 +732,9 @@ if __name__ == '__main__':
 
     try:
         wrapenv = setup_wrappers(testdir)
+
+        ldapproc, ldapenv = setup_ldap(testdir, wrapenv)
+        processes["LDAP(%d)" % ldapproc.pid] = ldapproc
 
         kdcproc, kdcenv = setup_kdc(testdir, wrapenv)
         processes['KDC(%d)' % kdcproc.pid] = kdcproc
