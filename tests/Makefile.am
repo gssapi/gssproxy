@@ -38,4 +38,6 @@ noinst_PROGRAMS = $(check_PROGRAMS)
 noinst_HEADERS = \
     t_utils.h
 
+EXTRA_DIST = runtests.py
+
 all: $(check_PROGRAMS)
