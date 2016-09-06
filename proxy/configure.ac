@@ -68,6 +68,7 @@ WITH_SELINUX
 WITH_GSSIDEBUG
 WITH_GPSTATE_PATH
 WITH_GPP_DEFAULT_BEHAVIOR
+WITH_HARDENING
 
 m4_include([external/pkg.m4])
 m4_include([external/libpopt.m4])

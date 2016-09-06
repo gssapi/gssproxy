@@ -281,3 +281,14 @@ AC_DEFUN([WITH_GPP_DEFAULT_BEHAVIOR],
     AC_DEFINE_UNQUOTED(GPP_DEFAULT_BEHAVIOR, $default_behavior, [Default gssproxy interposer plugin behavior])
   ])
 
+AC_DEFUN([WITH_HARDENING],
+  [ AC_ARG_WITH([hardening],
+                [AC_HELP_STRING([--with-hardening],
+                                [Whether to add extra hardening flags [no]]
+                               )
+                ],
+                [],
+                with_hardening=no
+               )
+    AM_CONDITIONAL([BUILD_HARDENING], [test x"$with_hardening" = xyes])
+  ])
