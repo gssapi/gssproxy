@@ -156,7 +156,7 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
 
             maj = gppint_get_def_creds(&min,
                                        GPP_REMOTE_ONLY,
-                                       GSS_C_NO_NAME,
+                                       NULL,
                                        GSS_C_INITIATE,
                                        &r_creds);
             if (maj == GSS_S_COMPLETE) {
