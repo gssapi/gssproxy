@@ -183,8 +183,10 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
 
     /* Then try with remote */
     if (behavior == GPP_REMOTE_ONLY || behavior == GPP_REMOTE_FIRST) {
-        gssx_cred remote = {0};
+        gssx_cred remote;
         gssx_cred *premote = NULL;
+
+        memset(&remote, 0, sizeof(gssx_cred));
 
         /* We intentionally ignore failures as finding creds is optional */
         maj = retrieve_remote_creds(&min, name ? name->remote : NULL, &remote);
