@@ -529,7 +529,9 @@ OM_uint32 gssi_release_cred(OM_uint32 *minor_status,
 
     GSSI_TRACE();
 
-    if (*cred_handle == GSS_C_NO_CREDENTIAL) {
+    if (cred_handle == NULL) {
+        return GSS_S_NO_CRED | GSS_S_CALL_INACCESSIBLE_READ;
+    } else if (*cred_handle == GSS_C_NO_CREDENTIAL) {
         *minor_status = 0;
         return GSS_S_COMPLETE;
     }
