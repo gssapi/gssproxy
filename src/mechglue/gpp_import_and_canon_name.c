@@ -253,7 +253,7 @@ OM_uint32 gssi_release_name(OM_uint32 *minor_status,
     GSSI_TRACE();
 
     name = (struct gpp_name_handle *)*input_name;
-    if (!name->local && !name->remote) {
+    if (!name || (!name->local && !name->remote)) {
         return GSS_S_BAD_NAME;
     }
 
