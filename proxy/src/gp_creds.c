@@ -248,7 +248,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
     int ret = -1;
     int k_num = -1;
     int ck_num = -1;
-    int c, d;
+    int d;
 
     memset(cs, 0, sizeof(gss_key_value_set_desc));
 
@@ -354,7 +354,6 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         ret = ENOMEM;
         goto done;
     }
-    c = 0;
     for (d = 0; d < svc->krb5.cred_count; d++) {
         p = strchr(svc->krb5.cred_store[d], ':');
         if (!p) {
@@ -366,9 +365,9 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         }
 
         if (strncmp(svc->krb5.cred_store[d], "client_keytab:", 14) == 0) {
-            ck_num = c;
+            ck_num = cs->count;
         } else if (strncmp(svc->krb5.cred_store[d], "keytab:", 7) == 0) {
-            k_num = c;
+            k_num = cs->count;
         }
 
         ret = asprintf(&str, "%.*s", (int)(p - svc->krb5.cred_store[d]),
@@ -377,19 +376,20 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             ret = ENOMEM;
             goto done;
         }
-        cs->elements[c].key = str;
+        cs->elements[cs->count].key = str;
 
         fmtstr = p + 1;
-        cs->elements[c].value = get_formatted_string(fmtstr, target_uid);
-        if (!cs->elements[c].value) {
+        cs->elements[cs->count].value =
+            get_formatted_string(fmtstr, target_uid);
+        if (!cs->elements[cs->count].value) {
+            safefree(str);
             GPDEBUG("Failed to build credential store formatted string.\n");
             ret = ENOMEM;
             goto done;
         }
 
-        c++;
+        cs->count++;
     }
-    cs->count = c;
 
     /* when a user is not explicitly requested then it means the calling
      * application wants to use the credentials in the standard keytab,
