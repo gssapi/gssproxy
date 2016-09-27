@@ -700,7 +700,7 @@ static uint32_t gp_export_creds_enoent(uint32_t *min, gss_buffer_t buf)
 static uint32_t gp_export_creds_linux(uint32_t *min, gss_name_t name,
                                       gss_const_OID mech, gss_buffer_t buf)
 {
-    gss_buffer_desc localname;
+    gss_buffer_desc localname = {};
     uint32_t ret_maj;
     uint32_t ret_min;
     struct passwd pwd, *res;
@@ -767,6 +767,7 @@ static uint32_t gp_export_creds_linux(uint32_t *min, gss_name_t name,
     case ENOENT:
     case ESRCH:
         free(pwbuf);
+        gss_release_buffer(&ret_min, &localname);
         return gp_export_creds_enoent(min, buf);
     default:
         ret_min = ret;
@@ -817,6 +818,7 @@ done:
     }
     free(pwbuf);
     *min = ret_min;
+    gss_release_buffer(&ret_min, &localname);
     return ret_maj;
 }
 
