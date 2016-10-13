@@ -160,6 +160,7 @@ done:
     gss_release_name(&ret_min, &src_name);
     gss_release_buffer(&ret_min, &obuf);
     gss_release_cred(&ret_min, &dch);
+    gss_release_cred(&ret_min, &ach);
     gss_delete_sec_context(&ret_min, &ctx, GSS_C_NO_BUFFER);
 
     return ret;
