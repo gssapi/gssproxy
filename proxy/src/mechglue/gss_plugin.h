@@ -81,6 +81,16 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
                             gss_OID_set *actual_mechs,
                             OM_uint32 *time_rec);
 
+OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
+                                 const gss_name_t desired_name,
+                                 OM_uint32 time_req,
+                                 const gss_OID_set desired_mechs,
+                                 gss_cred_usage_t cred_usage,
+                                 gss_const_key_value_set_t cred_store,
+                                 gss_cred_id_t *output_cred_handle,
+                                 gss_OID_set *actual_mechs,
+                                 OM_uint32 *time_rec);
+
 OM_uint32 gssi_add_cred(OM_uint32 *minor_status,
                         const gss_cred_id_t input_cred_handle,
                         const gss_name_t desired_name,
@@ -92,6 +102,19 @@ OM_uint32 gssi_add_cred(OM_uint32 *minor_status,
                         gss_OID_set *actual_mechs,
                         OM_uint32 *initiator_time_rec,
                         OM_uint32 *acceptor_time_rec);
+
+OM_uint32 gssi_add_cred_from(OM_uint32 *minor_status,
+                             const gss_cred_id_t input_cred_handle,
+                             const gss_name_t desired_name,
+                             const gss_OID desired_mech,
+                             gss_cred_usage_t cred_usage,
+                             OM_uint32 initiator_time_req,
+                             OM_uint32 acceptor_time_req,
+                             gss_const_key_value_set_t cred_store,
+                             gss_cred_id_t *output_cred_handle,
+                             gss_OID_set *actual_mechs,
+                             OM_uint32 *initiator_time_rec,
+                             OM_uint32 *acceptor_time_rec);
 
 OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
                                           const gss_name_t desired_name,
@@ -152,6 +175,16 @@ OM_uint32 gssi_store_cred(OM_uint32 *minor_status,
                           OM_uint32 default_cred,
                           gss_OID_set *elements_stored,
                           gss_cred_usage_t *cred_usage_stored);
+
+OM_uint32 gssi_store_cred_into(OM_uint32 *minor_status,
+                               const gss_cred_id_t input_cred_handle,
+                               gss_cred_usage_t input_usage,
+                               const gss_OID desired_mech,
+                               OM_uint32 overwrite_cred,
+                               OM_uint32 default_cred,
+                               gss_const_key_value_set_t cred_store,
+                               gss_OID_set *elements_stored,
+                               gss_cred_usage_t *cred_usage_stored);
 
 OM_uint32 gssi_release_cred(OM_uint32 *minor_status,
                             gss_cred_id_t *cred_handle);

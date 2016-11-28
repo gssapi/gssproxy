@@ -8,6 +8,7 @@ static OM_uint32 acquire_local(OM_uint32 *minor_status,
                                OM_uint32 time_req,
                                const gss_OID_set desired_mechs,
                                gss_cred_usage_t cred_usage,
+                               gss_const_key_value_set_t cred_store,
                                struct gpp_cred_handle *out_cred_handle,
                                gss_OID_set *actual_mechs,
                                OM_uint32 *time_rec)
@@ -43,14 +44,15 @@ static OM_uint32 acquire_local(OM_uint32 *minor_status,
         goto done;
     }
 
-    maj = gss_acquire_cred(&min,
-                           name ? name->local : NULL,
-                           time_req,
-                           special_mechs,
-                           cred_usage,
-                           &out_cred_handle->local,
-                           actual_mechs,
-                           time_rec);
+    maj = gss_acquire_cred_from(&min,
+                                name ? name->local : NULL,
+                                time_req,
+                                special_mechs,
+                                cred_usage,
+                                cred_store,
+                                &out_cred_handle->local,
+                                actual_mechs,
+                                time_rec);
 
 done:
     *minor_status = min;
@@ -66,6 +68,21 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
                             gss_cred_id_t *output_cred_handle,
                             gss_OID_set *actual_mechs,
                             OM_uint32 *time_rec)
+{
+    return gssi_acquire_cred_from(minor_status, desired_name, time_req,
+                                  desired_mechs, cred_usage, NULL,
+                                  output_cred_handle, actual_mechs, time_rec);
+}
+
+OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
+                                 const gss_name_t desired_name,
+                                 OM_uint32 time_req,
+                                 const gss_OID_set desired_mechs,
+                                 gss_cred_usage_t cred_usage,
+                                 gss_const_key_value_set_t cred_store,
+                                 gss_cred_id_t *output_cred_handle,
+                                 gss_OID_set *actual_mechs,
+                                 OM_uint32 *time_rec)
 {
     enum gpp_behavior behavior;
     struct gpp_name_handle *name;
@@ -97,7 +114,7 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
     if (behavior == GPP_LOCAL_ONLY || behavior == GPP_LOCAL_FIRST) {
 
         maj = acquire_local(&min, NULL, name,
-                            time_req, desired_mechs, cred_usage,
+                            time_req, desired_mechs, cred_usage, cred_store,
                             out_cred_handle, actual_mechs, time_rec);
 
         if (maj == GSS_S_COMPLETE || behavior == GPP_LOCAL_ONLY) {
@@ -132,7 +149,7 @@ OM_uint32 gssi_acquire_cred(OM_uint32 *minor_status,
     if (behavior == GPP_REMOTE_FIRST) {
         /* So remote failed, but we can fallback to local, try that */
         maj = acquire_local(&min, NULL, name,
-                            time_req, desired_mechs, cred_usage,
+                            time_req, desired_mechs, cred_usage, cred_store,
                             out_cred_handle, actual_mechs, time_rec);
     }
 
@@ -163,6 +180,26 @@ OM_uint32 gssi_add_cred(OM_uint32 *minor_status,
                         gss_OID_set *actual_mechs,
                         OM_uint32 *initiator_time_rec,
                         OM_uint32 *acceptor_time_rec)
+{
+    return gssi_add_cred_from(minor_status, input_cred_handle, desired_name,
+                              desired_mech, cred_usage, initiator_time_req,
+                              acceptor_time_req, NULL, output_cred_handle,
+                              actual_mechs, initiator_time_rec,
+                              acceptor_time_rec);
+}
+
+OM_uint32 gssi_add_cred_from(OM_uint32 *minor_status,
+                             const gss_cred_id_t input_cred_handle,
+                             const gss_name_t desired_name,
+                             const gss_OID desired_mech,
+                             gss_cred_usage_t cred_usage,
+                             OM_uint32 initiator_time_req,
+                             OM_uint32 acceptor_time_req,
+                             gss_const_key_value_set_t cred_store,
+                             gss_cred_id_t *output_cred_handle,
+                             gss_OID_set *actual_mechs,
+                             OM_uint32 *initiator_time_rec,
+                             OM_uint32 *acceptor_time_rec)
 {
     gss_OID_set desired_mechs = GSS_C_NO_OID_SET;
     OM_uint32 time_req, time_rec;
@@ -206,14 +243,9 @@ OM_uint32 gssi_add_cred(OM_uint32 *minor_status,
         time_req = 0;
     }
 
-    maj = gssi_acquire_cred(minor_status,
-                            desired_name,
-                            time_req,
-                            desired_mechs,
-                            cred_usage,
-                            output_cred_handle,
-                            actual_mechs,
-                            &time_rec);
+    maj = gssi_acquire_cred_from(minor_status, desired_name, time_req,
+                                 desired_mechs, cred_usage, NULL,
+                                 output_cred_handle, actual_mechs, &time_rec);
     if (maj == GSS_S_COMPLETE) {
         if (acceptor_time_rec &&
             (cred_usage == GSS_C_ACCEPT || cred_usage == GSS_C_BOTH)) {
@@ -375,7 +407,7 @@ OM_uint32 gssi_acquire_cred_impersonate_name(OM_uint32 *minor_status,
     if (behavior == GPP_LOCAL_ONLY || behavior == GPP_LOCAL_FIRST) {
 
         maj = acquire_local(&min, impersonator_cred_handle, name,
-                            time_req, desired_mechs, cred_usage,
+                            time_req, desired_mechs, cred_usage, NULL,
                             out_cred_handle, actual_mechs, time_rec);
 
         if (maj == GSS_S_COMPLETE || behavior == GPP_LOCAL_ONLY) {
@@ -412,7 +444,7 @@ OM_uint32 gssi_acquire_cred_impersonate_name(OM_uint32 *minor_status,
     if (behavior == GPP_REMOTE_FIRST) {
         /* So remote failed, but we can fallback to local, try that */
         maj = acquire_local(&min, impersonator_cred_handle, name,
-                            time_req, desired_mechs, cred_usage,
+                            time_req, desired_mechs, cred_usage, NULL,
                             out_cred_handle, actual_mechs, time_rec);
     }
 
@@ -431,4 +463,3 @@ done:
     *minor_status = gpp_map_error(min);
     return maj;
 }
-
