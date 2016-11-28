@@ -6,7 +6,9 @@
 #define GPKRB_SRV_NAME "Encrypted/Credentials/v1@X-GSSPROXY:"
 #define GPKRB_MAX_CRED_SIZE 1024 * 512
 
-uint32_t gpp_store_remote_creds(uint32_t *min, gssx_cred *creds)
+uint32_t gpp_store_remote_creds(uint32_t *min,
+                                gss_const_key_value_set_t cred_store,
+                                gssx_cred *creds)
 {
     krb5_context ctx = NULL;
     krb5_ccache ccache = NULL;
@@ -24,8 +26,20 @@ uint32_t gpp_store_remote_creds(uint32_t *min, gssx_cred *creds)
     ret = krb5_init_context(&ctx);
     if (ret) return ret;
 
-    ret = krb5_cc_default(ctx, &ccache);
-    if (ret) goto done;
+    if (cred_store) {
+        for (unsigned i = 0; i < cred_store->count; i++) {
+            if (strcmp(cred_store->elements[i].key, "ccache") == 0) {
+                ret = krb5_cc_resolve(ctx, cred_store->elements[i].value,
+                                      &ccache);
+                if (ret) goto done;
+                break;
+            }
+        }
+    }
+    if (!ccache) {
+        ret = krb5_cc_default(ctx, &ccache);
+        if (ret) goto done;
+    }
 
     ret = krb5_parse_name(ctx,
                           creds->desired_name.display_name.octet_string_val,
@@ -497,6 +511,21 @@ OM_uint32 gssi_store_cred(OM_uint32 *minor_status,
                           gss_OID_set *elements_stored,
                           gss_cred_usage_t *cred_usage_stored)
 {
+    return gssi_store_cred_into(minor_status, input_cred_handle, input_usage,
+                                desired_mech, overwrite_cred, default_cred,
+                                NULL, elements_stored, cred_usage_stored);
+}
+
+OM_uint32 gssi_store_cred_into(OM_uint32 *minor_status,
+                               const gss_cred_id_t input_cred_handle,
+                               gss_cred_usage_t input_usage,
+                               const gss_OID desired_mech,
+                               OM_uint32 overwrite_cred,
+                               OM_uint32 default_cred,
+                               gss_const_key_value_set_t cred_store,
+                               gss_OID_set *elements_stored,
+                               gss_cred_usage_t *cred_usage_stored)
+{
     struct gpp_cred_handle *cred = NULL;
     OM_uint32 maj, min;
 
@@ -509,14 +538,14 @@ OM_uint32 gssi_store_cred(OM_uint32 *minor_status,
     cred = (struct gpp_cred_handle *)input_cred_handle;
 
     if (cred->remote) {
-        maj = gpp_store_remote_creds(&min, cred->remote);
+        maj = gpp_store_remote_creds(&min, cred_store, cred->remote);
         goto done;
     }
 
-    maj = gss_store_cred(&min, cred->local, input_usage,
-                         gpp_special_mech(desired_mech),
-                         overwrite_cred, default_cred,
-                         elements_stored, cred_usage_stored);
+    maj = gss_store_cred_into(&min, cred->local, input_usage,
+                              gpp_special_mech(desired_mech),
+                              overwrite_cred, default_cred, cred_store,
+                              elements_stored, cred_usage_stored);
 done:
     *minor_status = gpp_map_error(min);
     return maj;
