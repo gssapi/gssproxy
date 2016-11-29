@@ -50,6 +50,11 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         }
     }
 
+    /* check if we want delegated creds */
+    if (delegated_cred_handle) {
+        arg->ret_deleg_cred = true;
+    }
+
     /* execute proxy request */
     ret = gpm_make_call(GSSX_ACCEPT_SEC_CONTEXT, &uarg, &ures);
     if (ret) {
