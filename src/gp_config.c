@@ -62,10 +62,31 @@ static void gp_service_free(struct gp_service *svc)
         free(svc->krb5.principal);
         free_str_array(&(svc->krb5.cred_store),
                        &svc->krb5.cred_count);
+        gp_free_creds_handle(&svc->krb5.creds_handle);
     }
-    gp_free_creds_handle(&svc->creds_handle);
     SELINUX_context_free(svc->selinux_ctx);
     memset(svc, 0, sizeof(struct gp_service));
+}
+
+static int setup_krb5_creds_handle(struct gp_service *svc)
+{
+    uint32_t ret_maj, ret_min;
+    const char *keytab = NULL;
+
+    for (unsigned i = 0; i < svc->krb5.cred_count; i++) {
+        if (strncmp(svc->krb5.cred_store[i], "keytab:", 7) == 0) {
+            keytab = svc->krb5.cred_store[i] + 7;
+            break;
+        }
+    }
+
+    ret_maj = gp_init_creds_handle(&ret_min, svc->name, keytab,
+                                   &svc->krb5.creds_handle);
+    if (ret_maj) {
+        return ret_min;
+    }
+
+    return 0;
 }
 
 static int get_krb5_mech_cfg(struct gp_service *svc,
@@ -113,6 +134,10 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     if (ret == ENOENT) {
         /* when not there we ignore */
         ret = 0;
+    }
+
+    if (ret == 0) {
+        ret = setup_krb5_creds_handle(svc);
     }
 
     return ret;
@@ -167,18 +192,6 @@ static int parse_flags(const char *value, uint32_t *storage)
         else *storage &= ~flagval;
     }
     safefree(str);
-
-    return 0;
-}
-
-static int setup_service_creds_handle(struct gp_service *svc)
-{
-    uint32_t ret_maj, ret_min;
-
-    ret_maj = gp_init_creds_handle(&ret_min, &svc->creds_handle);
-    if (ret_maj) {
-        return ret_min;
-    }
 
     return 0;
 }
@@ -339,11 +352,6 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 }
             }
 
-            ret = setup_service_creds_handle(cfg->svcs[n]);
-            if (ret) {
-                goto done;
-            }
-
             ret = gp_config_get_string(ctx, secname, "mechs", &value);
             if (ret != 0) {
                 /* if mechs is missing or there is an error retrieving it
@@ -377,6 +385,7 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                         safefree(vcopy);
                         return ret;
                     }
+
                 } else {
                     GPERROR("Unknown mech: %s in [%s], ignoring.\n",
                             token, secname);
@@ -604,7 +613,7 @@ done:
 
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc)
 {
-    return svc->creds_handle;
+    return svc->krb5.creds_handle;
 }
 
 void free_config(struct gp_config **cfg)

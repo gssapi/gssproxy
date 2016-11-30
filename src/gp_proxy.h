@@ -17,13 +17,14 @@
 
 #define GP_CRED_KRB5    0x01
 
+struct gp_creds_handle;
+
 struct gp_cred_krb5 {
     char *principal;
     const char **cred_store;
     int cred_count;
+    struct gp_creds_handle *creds_handle;
 };
-
-struct gp_creds_handle;
 
 struct gp_service {
     char *name;
@@ -40,8 +41,6 @@ struct gp_service {
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
-
-    struct gp_creds_handle *creds_handle;
 
     verto_ev *ev;
 };
@@ -127,7 +126,9 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
                                        struct gp_conn *conn);
 
 /* from gp_export.c */
-uint32_t gp_init_creds_handle(uint32_t *min, struct gp_creds_handle **out);
+uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
+                              const char *keytab,
+                              struct gp_creds_handle **out);
 void gp_free_creds_handle(struct gp_creds_handle **in);
 
 #endif /* _GP_PROXY_H_ */
