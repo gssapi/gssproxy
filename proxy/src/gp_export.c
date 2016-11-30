@@ -17,8 +17,8 @@
 #define GP_CREDS_HANDLE_KEY_ENCTYPE ENCTYPE_AES256_CTS_HMAC_SHA1_96
 
 struct gp_creds_handle {
-    krb5_keyblock key;
     krb5_context context;
+    krb5_keyblock *key;
 };
 
 void gp_free_creds_handle(struct gp_creds_handle **in)
@@ -30,7 +30,7 @@ void gp_free_creds_handle(struct gp_creds_handle **in)
     }
 
     if (handle->context) {
-        krb5_free_keyblock_contents(handle->context, &handle->key);
+        krb5_free_keyblock(handle->context, handle->key);
         krb5_free_context(handle->context);
     }
 
@@ -39,11 +39,15 @@ void gp_free_creds_handle(struct gp_creds_handle **in)
     return;
 }
 
-uint32_t gp_init_creds_handle(uint32_t *min, struct gp_creds_handle **out)
+uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
+                              const char *keytab,
+                              struct gp_creds_handle **out)
 {
     struct gp_creds_handle *handle;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
+    krb5_keytab ktid = NULL;
+    char ktname[MAX_KEYTAB_NAME_LEN + 1] = {0};
     int ret;
 
     handle = calloc(1, sizeof(struct gp_creds_handle));
@@ -61,19 +65,111 @@ uint32_t gp_init_creds_handle(uint32_t *min, struct gp_creds_handle **out)
         goto done;
     }
 
-    ret = krb5_c_make_random_key(handle->context,
-                                 GP_CREDS_HANDLE_KEY_ENCTYPE,
+    /* Try to use a keytab, and fall back to a random runtime secret if all
+     * else fails */
+    if (keytab) {
+        ret = krb5_kt_resolve(handle->context, keytab, &ktid);
+        if (ret == 0) {
+            ret = krb5_kt_have_content(handle->context, ktid);
+        }
+        /* if a keytab is specified then it must be usable */
+        if (ret) {
+            ret_min = ret;
+            ret_maj = GSS_S_CRED_UNAVAIL;
+            goto done;
+        }
+        strncpy(ktname, keytab, MAX_KEYTAB_NAME_LEN);
+    } else {
+        ret = krb5_kt_default(handle->context, &ktid);
+        /* if the default keyab does not exist or is empty it is not fatal */
+        if (ret) {
+            ktid = NULL;
+        } else {
+            ret = krb5_kt_have_content(handle->context, ktid);
+            if (ret) {
+                (void)krb5_kt_close(handle->context, ktid);
+                ktid = NULL;
+            } else {
+                ret = krb5_kt_default_name(handle->context, ktname,
+                                           MAX_KEYTAB_NAME_LEN);
+                if (ret) strncpy(ktname, "[default]", MAX_KEYTAB_NAME_LEN);
+            }
+        }
+    }
+
+    if (ktid) {
+        krb5_kt_cursor cursor;
+        krb5_keytab_entry entry;
+        krb5_enctype *permitted;
+
+        ret = krb5_get_permitted_enctypes(handle->context, &permitted);
+        if (ret) {
+            ret_min = ret;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
+
+        ret = krb5_kt_start_seq_get(handle->context, ktid, &cursor);
+        if (ret) {
+            ret_min = ret;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
+        do {
+            ret = krb5_kt_next_entry(handle->context, ktid, &entry, &cursor);
+            if (ret == 0) {
+                for (unsigned i = 0; permitted[i] != 0; i++) {
+                    if (permitted[i] == entry.key.enctype) {
+                        /* should we derive a key instead ? */
+                        ret = krb5_copy_keyblock(handle->context, &entry.key,
+                                                 &handle->key);
+                        if (ret == 0) {
+                            GPDEBUG("Service: %s, Enckey: %s, Enctype: %d\n",
+                                    svc_name, ktname, entry.key.enctype);
+                            ret = KRB5_KT_END;
+                        }
+                        break;
+                    }
+                }
+                (void)krb5_free_keytab_entry_contents(handle->context, &entry);
+            }
+        } while (ret == 0);
+        (void)krb5_kt_end_seq_get(handle->context, ktid, &cursor);
+        if ((ret == KRB5_KT_END) && (handle->key == NULL)) {
+            ret = KRB5_WRONG_ETYPE;
+            ret_maj = GSS_S_CRED_UNAVAIL;
+            goto done;
+        }
+        if (ret != KRB5_KT_END) {
+            ret_min = ret;
+            ret_maj = GSS_S_CRED_UNAVAIL;
+            goto done;
+        }
+    } else {
+        ret = krb5_init_keyblock(handle->context,
+                                 GP_CREDS_HANDLE_KEY_ENCTYPE, 0,
                                  &handle->key);
-    if (ret) {
-        ret_min = ret;
-        ret_maj = GSS_S_FAILURE;
-        goto done;
+        if (ret == 0) {
+            ret = krb5_c_make_random_key(handle->context,
+                                         GP_CREDS_HANDLE_KEY_ENCTYPE,
+                                         handle->key);
+            GPDEBUG("Service: %s, Enckey: [ephemeral], Enctype: %d\n",
+                    svc_name, GP_CREDS_HANDLE_KEY_ENCTYPE);
+        }
+        if (ret) {
+            ret_min = ret;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
     }
 
     ret_maj = GSS_S_COMPLETE;
     ret_min = 0;
 
 done:
+    if (handle->context && ktid) {
+        (void)krb5_kt_close(handle->context, ktid);
+    }
     *min = ret_min;
     if (ret_maj) {
         gp_free_creds_handle(&handle);
@@ -97,7 +193,7 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
     ret = krb5_c_encrypt_length(context,
-                                GP_CREDS_HANDLE_KEY_ENCTYPE,
+                                key->enctype,
                                 data_in.length,
                                 &cipherlen);
     if (ret) {
@@ -254,7 +350,7 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
         goto done;
     }
 
-    ret = gp_encrypt_buffer(handle->context, &handle->key,
+    ret = gp_encrypt_buffer(handle->context, handle->key,
                             token.length, token.value,
                             &out->cred_handle_reference);
     if (ret) {
@@ -338,7 +434,7 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
         goto done;
     }
 
-    ret = gp_decrypt_buffer(handle->context, &handle->key,
+    ret = gp_decrypt_buffer(handle->context, handle->key,
                             &cred->cred_handle_reference,
                             &token.length, token.value);
     if (ret) {
