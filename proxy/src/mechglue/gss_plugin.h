@@ -136,6 +136,9 @@ OM_uint32 gssi_acquire_cred_impersonate_name(OM_uint32 *minor_status,
                                              gss_OID_set *actual_mechs,
                                              OM_uint32 *time_rec);
 
+OM_uint32 gppint_retrieve_remote_creds(uint32_t *min, const char *ccache_name,
+                                       gssx_name *name, gssx_cred *creds);
+
 OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
                                enum gpp_behavior behavior,
                                struct gpp_name_handle *name,

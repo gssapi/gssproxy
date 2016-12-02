@@ -79,8 +79,8 @@ done:
     return ret ? GSS_S_FAILURE : GSS_S_COMPLETE;
 }
 
-static uint32_t retrieve_remote_creds(uint32_t *min, gssx_name *name,
-                      gssx_cred *creds)
+OM_uint32 gppint_retrieve_remote_creds(uint32_t *min, const char *ccache_name,
+                                       gssx_name *name, gssx_cred *creds)
 {
     krb5_context ctx = NULL;
     krb5_ccache ccache = NULL;
@@ -96,7 +96,11 @@ static uint32_t retrieve_remote_creds(uint32_t *min, gssx_name *name,
     ret = krb5_init_context(&ctx);
     if (ret) goto done;
 
-    ret = krb5_cc_default(ctx, &ccache);
+    if (ccache_name) {
+        ret = krb5_cc_resolve(ctx, ccache_name, &ccache);
+    } else {
+        ret = krb5_cc_default(ctx, &ccache);
+    }
     if (ret) goto done;
 
     if (name) {
@@ -203,7 +207,9 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
         memset(&remote, 0, sizeof(gssx_cred));
 
         /* We intentionally ignore failures as finding creds is optional */
-        maj = retrieve_remote_creds(&min, name ? name->remote : NULL, &remote);
+        maj = gppint_retrieve_remote_creds(&min, NULL,
+                                           name ? name->remote : NULL,
+                                           &remote);
         if (maj == GSS_S_COMPLETE) {
             premote = &remote;
         }
