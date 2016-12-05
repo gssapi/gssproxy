@@ -58,14 +58,10 @@ uint32_t gpp_store_remote_creds(uint32_t *min,
     }
     cred.ticket.length = xdr_getpos(&xdrctx);
 
-    ret = krb5_cc_store_cred(ctx, ccache, &cred);
-
-    if (ret == KRB5_FCC_NOFILE) {
-        /* If a ccache does not exit, try to create one */
-        ret = krb5_cc_initialize(ctx, ccache, cred.client);
-        if (ret) goto done;
-
-        /* and try again to store the cred */
+    /* Always initialize and destroy any existing contents to avoid pileup of
+     * entries */
+    ret = krb5_cc_initialize(ctx, ccache, cred.client);
+    if (ret == 0) {
         ret = krb5_cc_store_cred(ctx, ccache, &cred);
     }
 
