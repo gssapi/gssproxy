@@ -37,7 +37,6 @@ except ImportError:
 def print_keyed(status, key, text, io):
     print("%s %s" % (format_key(status, key), text), file=io)
 
-
 def print_success(key, text, io=sys.stderr):
     print_keyed("success", key, text, io)
 
@@ -49,6 +48,13 @@ def print_failure(key, text, io=sys.stderr):
 def print_warning(key, text, io=sys.stderr):
     print_keyed("other", key, text, io)
 
+def print_return(ret, name, expected_failure):
+    if ret != 0 and not expected_failure:
+        print_failure("SUCCESS" if ret == 0 else "FAILED",
+                      "%s test returned %s" % (name, str(ret)))
+    else:
+        print_success("SUCCESS" if ret == 0 else "FAILED",
+                      "%s test returned %s" % (name, str(ret)))
 
 WRAP_HOSTNAME = "kdc.gssproxy.dev"
 

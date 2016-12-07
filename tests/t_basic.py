@@ -43,31 +43,14 @@ def run(testdir, env, conf, expected_failure=False):
 
     try:
         p1.wait(30)
-    except subprocess.TimeoutExpired:
-        # p1.returncode is set to None here
-        pass
-    if p1.returncode != 0 and not expected_failure:
-        print_failure("SUCCESS" if p1.returncode == 0 else "FAILED",
-                      "Init test returned %s" % str(p1.returncode))
-        try:
-            os.killpg(p2.pid, signal.SIGTERM)
-        except OSError:
-            pass
-    else:
-        print_success("SUCCESS" if p1.returncode == 0 else "FAILED",
-                      "Init test returned %s" % str(p1.returncode))
-    try:
         p2.wait(30)
     except subprocess.TimeoutExpired:
-        # p2.returncode is set to None here
+        # {p1,p2}.returncode are set to None here
         pass
-    if p2.returncode != 0 and not expected_failure:
-        print_failure("SUCCESS" if p1.returncode == 0 else "FAILED",
-                      "Accept test returned %s" % str(p2.returncode))
-        try:
-            os.killpg(p1.pid, signal.SIGTERM)
-        except OSError:
-            pass
-    else:
-        print_success("SUCCESS" if p1.returncode == 0 else "FAILED",
-                      "Accept test returned %s" % str(p2.returncode))
+    print_return(p1.returncode, "Init", expected_failure)
+    print_return(p2.returncode, "Accept", expected_failure)
+    try:
+        os.killpg(p1.pid, signal.SIGTERM)
+        os.killpg(p2.pid, signal.SIGTERM)
+    except OSError:
+        pass

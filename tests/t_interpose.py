@@ -24,5 +24,4 @@ def run(testdir, env, conf):
                              stdout=logfile, stderr=logfile,
                              env=ienv)
     itest.wait()
-    print_success("SUCCESS" if itest.returncode == 0 else "FAILED",
-                  "Interpose test returned %s" % str(itest.returncode))
+    print_return(itest.returncode, "Interpose", False)
