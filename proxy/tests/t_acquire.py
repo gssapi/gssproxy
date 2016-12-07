@@ -24,7 +24,7 @@ def run(testdir, env, conf, expected_failure=False):
     p1 = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile,
                           env=testenv, preexec_fn=os.setsid)
     try:
-        p1.wait(30)
+        p1.wait(10)
     except subprocess.TimeoutExpired:
         # p1.returncode is set to None here
         pass

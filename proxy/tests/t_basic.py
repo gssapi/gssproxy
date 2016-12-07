@@ -42,8 +42,8 @@ def run(testdir, env, conf, expected_failure=False):
                           stderr=logfile, env=svcenv, preexec_fn=os.setsid)
 
     try:
-        p1.wait(30)
-        p2.wait(30)
+        p1.wait(10)
+        p2.wait(10)
     except subprocess.TimeoutExpired:
         # {p1,p2}.returncode are set to None here
         pass
