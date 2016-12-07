@@ -316,8 +316,10 @@ CLEANFILES = *.X */*.X */*/*.X \
     examples/80-httpd.conf \
     examples/99-nfs-client.conf
 
-tests: all $(check_PROGRAMS)
+check: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py
+
+tests: check
 
 # RPM-related tasks
 
