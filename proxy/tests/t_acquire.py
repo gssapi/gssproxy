@@ -28,9 +28,4 @@ def run(testdir, env, conf, expected_failure=False):
     except subprocess.TimeoutExpired:
         # p1.returncode is set to None here
         pass
-    if p1.returncode != 0 and not expected_failure:
-        print_failure("SUCCESS" if p1.returncode == 0 else "FAILED",
-                      "Acquire test returned %s" % str(p1.returncode))
-    else:
-        print_success("SUCCESS" if p1.returncode == 0 else "FAILED",
-                      "Acquire test returned %s" % str(p1.returncode))
+    print_return(p1.returncode, "Acquire", expected_failure)
