@@ -23,6 +23,7 @@ def run(testdir, env, conf):
 
     print("Testing multiple keys Keytab with first principal",
           file=sys.stderr)
+    sys.stderr.write("  ")
     conf["prefix"] = prefix + "_1"
     if os.path.exists(os.path.join(testdir, 'gssproxy', 'gpccache')):
         os.unlink(os.path.join(testdir, 'gssproxy', 'gpccache'))
@@ -37,6 +38,7 @@ def run(testdir, env, conf):
 
     print("Testing multiple keys Keytab with second principal",
           file=sys.stderr)
+    sys.stderr.write("  ")
     if os.path.exists(os.path.join(testdir, 'gssproxy', 'gpccache')):
             os.unlink(os.path.join(testdir, 'gssproxy', 'gpccache'))
     conf['prefix'] = prefix + "_2"
