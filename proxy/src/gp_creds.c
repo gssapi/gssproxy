@@ -203,17 +203,16 @@ static bool try_impersonate(struct gp_service *svc,
                             gss_cred_usage_t cred_usage,
                             enum gp_aqcuire_cred_type acquire_type)
 {
-    if (acquire_type == ACQ_IMPNAME) {
+    if (acquire_type == ACQ_IMPNAME &&
+        (svc->allow_proto_trans || svc->trusted)) {
         return true;
     }
-    if (!svc->impersonate) {
-        return false;
-    }
-    if (cred_usage == GSS_C_ACCEPT) {
-        return false;
+    if (svc->impersonate &&
+        (cred_usage == GSS_C_INITIATE || cred_usage == GSS_C_BOTH)) {
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 static int gp_get_cred_environment(struct gp_call_ctx *gpcall,

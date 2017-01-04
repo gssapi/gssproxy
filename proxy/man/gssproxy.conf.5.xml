@@ -102,6 +102,18 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>allow_protocol_transition (boolean)</term>
+                    <listitem>
+                        <para>Allow clients to request a ticket to self for an arbitrary user.</para>
+                        <para>This option controls whether s4u2self requests are allowed for the
+                              requesting client. The configured keytab is used as the service
+                              identity for which a ticket is requested. The KDC still needs to allow
+                              the operation for it to succeed.</para>
+                        <para>Default: false</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>cred_usage (string)</term>
                     <listitem>
                         <para>Allow to restrict the kind of operations permitted for this service.</para>

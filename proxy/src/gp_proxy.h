@@ -30,6 +30,7 @@ struct gp_service {
     char *name;
     uid_t euid;
     bool any_uid;
+    bool allow_proto_trans;
     bool trusted;
     bool kernel_nfsd;
     bool impersonate;
