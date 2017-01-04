@@ -3,6 +3,7 @@
 #include "config.h"
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <errno.h>
 #include <string.h>
 #include <pwd.h>
@@ -680,4 +681,108 @@ void gp_filter_flags(struct gp_call_ctx *gpcall, uint32_t *flags)
 {
     *flags |= gpcall->service->enforce_flags;
     *flags &= ~gpcall->service->filter_flags;
+}
+
+uint32_t gp_cred_allowed(uint32_t *min,
+                         struct gp_call_ctx *gpcall,
+                         gss_cred_id_t cred)
+{
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    char *memcache = NULL;
+    krb5_context context = NULL;
+    krb5_ccache ccache = NULL;
+    krb5_data config;
+    int err;
+
+    if (cred == GSS_C_NO_CREDENTIAL) {
+        return GSS_S_CRED_UNAVAIL;
+    }
+
+    if (gpcall->service->trusted ||
+        gpcall->service->impersonate ||
+        gpcall->service->allow_const_deleg) {
+
+        GPDEBUGN(2, "Credentials allowed by configuration\n");
+        *min = 0;
+        return GSS_S_COMPLETE;
+    }
+
+    /* FIXME: krb5 specific code, should get an oid registerd to query the
+     * cred with gss_inquire_cred_by_oid() or similar instead */
+
+    err = krb5_init_context(&context);
+    if (err) {
+        ret_min = err;
+        ret_maj =  GSS_S_FAILURE;
+        goto done;
+    }
+
+    /* Create a memory ccache we can iterate with libkrb5 functions */
+    gss_key_value_element_desc ccelement = { "ccache", NULL };
+    gss_key_value_set_desc cred_store = { 1, &ccelement };
+
+    err = asprintf(&memcache, "MEMORY:cred_allowed_%p", &memcache);
+    if (err == -1) {
+        memcache = NULL;
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    cred_store.elements[0].value = memcache;
+
+    ret_maj = gss_store_cred_into(&ret_min, cred, GSS_C_INITIATE,
+                                  discard_const(gss_mech_krb5), 1, 0,
+                                  &cred_store, NULL, NULL);
+    if (ret_maj != GSS_S_COMPLETE) {
+        goto done;
+    }
+
+    err = krb5_cc_resolve(context, memcache, &ccache);
+    if (err) {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    /* if we find an impersonator entry we bail as that is not authorized,
+     * if it were then gpcall->service->allow_const_deleg would have caused
+     * the ealier check to return GSS_S_COMPLETE already */
+    err = krb5_cc_get_config(context, ccache, NULL, "proxy_impersonator",
+                             &config);
+    if (!err) {
+        krb5_free_data_contents(context, &config);
+        ret_min = 0;
+        ret_maj = GSS_S_UNAUTHORIZED;
+    } else if (err != KRB5_CC_NOTFOUND) {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+    } else {
+        ret_min = 0;
+        ret_maj = GSS_S_COMPLETE;
+    }
+
+done:
+    switch (ret_maj) {
+    case GSS_S_UNAUTHORIZED:
+        GPDEBUGN(2, "Unauthorized impersonator credentials detected\n");
+        break;
+    case GSS_S_COMPLETE:
+        GPDEBUGN(2, "No impersonator credentials detected\n");
+        break;
+    default:
+        GPDEBUG("Failure while checking credentials\n");
+        break;
+    }
+    if (context) {
+        /* NOTE: destroy only if we created a MEMORY ccache */
+        if (ccache) {
+            if (memcache) krb5_cc_destroy(context, ccache);
+            else krb5_cc_close(context, ccache);
+        }
+        krb5_free_context(context);
+    }
+    free(memcache);
+    *min = ret_min;
+    return ret_maj;
 }

@@ -114,6 +114,18 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>allow_constrained_delegation (boolean)</term>
+                    <listitem>
+                        <para>Allow clients to request a ticket to another service using an
+                              evidence ticket.</para>
+                        <para>This option controls whether s4u2proxy requests are allowed for
+                              the requesting client. The KDC still needs to allow the operation
+                              for it to succeed.</para>
+                        <para>Default: false</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>cred_usage (string)</term>
                     <listitem>
                         <para>Allow to restrict the kind of operations permitted for this service.</para>

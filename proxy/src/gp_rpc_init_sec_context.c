@@ -55,6 +55,7 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
             goto done;
         }
     }
+
     ret_maj = gp_conv_gssx_to_name(&ret_min, isca->target_name, &target_name);
     if (ret_maj) {
         goto done;
@@ -96,6 +97,11 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
         if (ret_maj) {
             goto done;
         }
+    }
+
+    ret_maj = gp_cred_allowed(&ret_min, gpcall, ich);
+    if (ret_maj) {
+        goto done;
     }
 
     gp_filter_flags(gpcall, &req_flags);

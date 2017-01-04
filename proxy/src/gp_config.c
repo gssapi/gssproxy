@@ -379,6 +379,14 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 }
             }
 
+            ret = gp_config_get_string(ctx, secname,
+                                       "allow_constrained_delegation", &value);
+            if (ret == 0) {
+                if (gp_boolean_is_true(value)) {
+                    cfg->svcs[n]->allow_const_deleg = true;
+                }
+            }
+
             ret = gp_config_get_string(ctx, secname, "trusted", &value);
             if (ret == 0) {
                 if (gp_boolean_is_true(value)) {
