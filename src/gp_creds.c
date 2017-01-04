@@ -410,10 +410,10 @@ done:
     return ret;
 }
 
-uint32_t gp_check_cred(uint32_t *min,
-                       gss_cred_id_t in_cred,
-                       gssx_name *desired_name,
-                       gss_cred_usage_t cred_usage)
+static uint32_t gp_check_cred(uint32_t *min,
+                              gss_cred_id_t in_cred,
+                              gssx_name *desired_name,
+                              gss_cred_usage_t cred_usage)
 {
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
