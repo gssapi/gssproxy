@@ -371,6 +371,14 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 }
             }
 
+            ret = gp_config_get_string(ctx, secname,
+                                       "allow_protocol_transition", &value);
+            if (ret == 0) {
+                if (gp_boolean_is_true(value)) {
+                    cfg->svcs[n]->allow_proto_trans = true;
+                }
+            }
+
             ret = gp_config_get_string(ctx, secname, "trusted", &value);
             if (ret == 0) {
                 if (gp_boolean_is_true(value)) {
