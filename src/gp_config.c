@@ -55,13 +55,26 @@ static void free_str_array(const char ***a, int *count)
     safefree(*a);
 }
 
+void free_cred_store_elements(gss_key_value_set_desc *cs)
+{
+    int i;
+
+    if (!cs->elements) return;
+
+    for (i = 0; i < cs->count; i++) {
+        safefree(cs->elements[i].key);
+        safefree(cs->elements[i].value);
+    }
+    safefree(cs->elements);
+    cs->count = 0;
+}
+
 static void gp_service_free(struct gp_service *svc)
 {
     free(svc->name);
     if (svc->mechs & GP_CRED_KRB5) {
         free(svc->krb5.principal);
-        free_str_array(&(svc->krb5.cred_store),
-                       &svc->krb5.cred_count);
+        free_cred_store_elements(&svc->krb5.store);
         gp_free_creds_handle(&svc->krb5.creds_handle);
     }
     SELINUX_context_free(svc->selinux_ctx);
@@ -73,9 +86,9 @@ static int setup_krb5_creds_handle(struct gp_service *svc)
     uint32_t ret_maj, ret_min;
     const char *keytab = NULL;
 
-    for (unsigned i = 0; i < svc->krb5.cred_count; i++) {
-        if (strncmp(svc->krb5.cred_store[i], "keytab:", 7) == 0) {
-            keytab = svc->krb5.cred_store[i] + 7;
+    for (unsigned i = 0; i < svc->krb5.store.count; i++) {
+        if (strcmp(svc->krb5.store.elements[i].key, "keytab") == 0) {
+            keytab = svc->krb5.store.elements[i].value;
             break;
         }
     }
@@ -99,6 +112,8 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         {"krb5_client_keytab", "client_keytab" }
     };
     const char *value;
+    const char **strings = NULL;
+    int count = 0;
     int i;
     int ret;
 
@@ -127,11 +142,43 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     }
 
     /* instead look for the cred_store parameter */
-    ret = gp_config_get_string_array(ctx, secname,
-                                     "cred_store",
-                                     &svc->krb5.cred_count,
-                                     &svc->krb5.cred_store);
-    if (ret == ENOENT) {
+    ret = gp_config_get_string_array(ctx, secname, "cred_store",
+                                     &count, &strings);
+    if (ret == 0) {
+        const char *p;
+        size_t len;
+        char *key;
+
+        svc->krb5.store.elements =
+            calloc(count, sizeof(gss_key_value_element_desc));
+        if (!svc->krb5.store.elements) {
+            ret = ENOMEM;
+            goto done;
+        }
+        svc->krb5.store.count = count;
+
+        for (int c = 0; c < count; c++) {
+            p = strchr(strings[c], ':');
+            if (!p) {
+                GPERROR("Invalid cred_store value, no ':' separator found in"
+                        " [%s].\n", strings[c]);
+                ret = EINVAL;
+                goto done;
+            }
+            len = asprintf(&key, "%.*s", (int)(p - strings[c]), strings[c]);
+            if (len == -1) {
+                ret = ENOMEM;
+                goto done;
+            }
+            svc->krb5.store.elements[c].key = key;
+            svc->krb5.store.elements[c].value = strdup(p + 1);
+            if (!svc->krb5.store.elements[c].value) {
+                ret = ENOMEM;
+                goto done;
+            }
+        }
+
+    } else if (ret == ENOENT) {
         /* when not there we ignore */
         ret = 0;
     }
@@ -140,6 +187,8 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
         ret = setup_krb5_creds_handle(svc);
     }
 
+done:
+    free_str_array(&strings, &count);
     return ret;
 }
 

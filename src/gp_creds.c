@@ -181,17 +181,6 @@ done:
     return str;
 }
 
-static void free_cred_store_elements(gss_key_value_set_desc *cs)
-{
-    int i;
-
-    for (i = 0; i < cs->count; i++) {
-        safefree(cs->elements[i].key);
-        safefree(cs->elements[i].value);
-    }
-    safefree(cs->elements);
-}
-
 int gp_get_acquire_type(struct gssx_arg_acquire_cred *arg)
 {
     struct gssx_option *val = NULL;
@@ -240,9 +229,6 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     uid_t target_uid;
-    const char *fmtstr;
-    const char *p;
-    char *str;
     bool user_requested = false;
     bool use_service_keytab = false;
     int ret = -1;
@@ -301,6 +287,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
     /* impersonation case (only for initiation) */
     if (user_requested) {
         if (try_impersonate(svc, *cred_usage, ACQ_NORMAL)) {
+            char *str;
             /* When impersonating we want to use the service keytab to
              * acquire initial credential ... */
             use_service_keytab = true;
@@ -342,47 +329,36 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         }
     }
 
-    if (svc->krb5.cred_store == NULL) {
+    if (svc->krb5.store.count == 0) {
         return 0;
     }
 
     /* allocate 1 more than in source, just in case we need to add
      * an internal client_keytab element */
-    cs->elements = calloc(svc->krb5.cred_count + 1,
+    cs->elements = calloc(svc->krb5.store.count + 1,
                           sizeof(gss_key_value_element_desc));
     if (!cs->elements) {
         ret = ENOMEM;
         goto done;
     }
-    for (d = 0; d < svc->krb5.cred_count; d++) {
-        p = strchr(svc->krb5.cred_store[d], ':');
-        if (!p) {
-            GPERROR("Invalid cred_store value"
-                    "no ':' separator found in [%s].\n",
-                    svc->krb5.cred_store[d]);
-            ret = EINVAL;
-            goto done;
-        }
-
-        if (strncmp(svc->krb5.cred_store[d], "client_keytab:", 14) == 0) {
+    for (d = 0; d < svc->krb5.store.count; d++) {
+        if (strcmp(svc->krb5.store.elements[d].key, "client_keytab") == 0) {
             ck_num = cs->count;
-        } else if (strncmp(svc->krb5.cred_store[d], "keytab:", 7) == 0) {
+        } else if (strcmp(svc->krb5.store.elements[d].key, "keytab") == 0) {
             k_num = cs->count;
         }
 
-        ret = asprintf(&str, "%.*s", (int)(p - svc->krb5.cred_store[d]),
-                                     svc->krb5.cred_store[d]);
-        if (ret == -1) {
+        cs->elements[cs->count].key = strdup(svc->krb5.store.elements[d].key);
+        if (!cs->elements[cs->count].key) {
             ret = ENOMEM;
             goto done;
         }
-        cs->elements[cs->count].key = str;
 
-        fmtstr = p + 1;
         cs->elements[cs->count].value =
-            get_formatted_string(fmtstr, target_uid);
+            get_formatted_string(svc->krb5.store.elements[d].value,
+                                 target_uid);
         if (!cs->elements[cs->count].value) {
-            safefree(str);
+            safefree(cs->elements[cs->count].key);
             GPDEBUG("Failed to build credential store formatted string.\n");
             ret = ENOMEM;
             goto done;
