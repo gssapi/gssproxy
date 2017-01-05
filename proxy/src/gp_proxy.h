@@ -6,6 +6,7 @@
 #include <libintl.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <gssapi/gssapi_ext.h>
 #include "verto.h"
 #include "gp_common.h"
 #include "gp_selinux.h"
@@ -21,8 +22,7 @@ struct gp_creds_handle;
 
 struct gp_cred_krb5 {
     char *principal;
-    const char **cred_store;
-    int cred_count;
+    gss_key_value_set_desc store;
     struct gp_creds_handle *creds_handle;
 };
 
@@ -86,6 +86,7 @@ struct gp_config *read_config(char *config_file, char *config_dir,
                               char *socket_name, int opt_daemonize);
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
 void free_config(struct gp_config **config);
+void free_cred_store_elements(gss_key_value_set_desc *cs);
 
 /* from gp_init.c */
 void init_server(bool daemonize, int *wait_fd);
