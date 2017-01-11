@@ -43,7 +43,10 @@ if __name__ == '__main__':
 
         logfile = open(gssproxylog, "a")
 
-        gproc, gpsocket = setup_gssproxy(testdir, logfile, keysenv)
+        gssproxyenv = keysenv
+        gssproxyenv['KRB5_TRACE'] = os.path.join(testdir, 'gssproxy.trace')
+
+        gproc, gpsocket = setup_gssproxy(testdir, logfile, gssproxyenv)
         time.sleep(5) #Give time to gssproxy to fully start up
         processes['GSS-Proxy(%d)' % gproc.pid] = gproc
         gssapienv['GSSPROXY_SOCKET'] = gpsocket
