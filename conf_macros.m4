@@ -80,42 +80,24 @@ AC_DEFUN([WITH_PID_FILE],
 AC_DEFUN([WITH_INITSCRIPT],
   [ AC_ARG_WITH([initscript],
                 [AC_HELP_STRING([--with-initscript=INITSCRIPT_TYPE],
-                                [Type of your init script (sysv|systemd). [sysv]]
+                                [Type of your init script (systemd|none). [systemd]]
                                )
                 ]
                )
-  default_initscript=sysv
+  default_initscript=systemd
   if test x"$with_initscript" = x; then
     with_initscript=$default_initscript
   fi
 
-  if test x"$with_initscript" = xsysv || \
-     test x"$with_initscript" = xsystemd; then
+  if test x"$with_initscript" = xsystemd || \
+     test x"$with_initscript" = xnone; then
         initscript=$with_initscript
   else
       AC_MSG_ERROR([Illegal value -$with_initscript- for option --with-initscript])
   fi
 
-  AM_CONDITIONAL([HAVE_SYSV], [test x"$initscript" = xsysv])
   AM_CONDITIONAL([HAVE_SYSTEMD_UNIT], [test x"$initscript" = xsystemd])
   AC_MSG_NOTICE([Will use init script type: $initscript])
-  ])
-
-AC_DEFUN([WITH_INIT_DIR],
-  [ AC_ARG_WITH([init-dir],
-                [AC_HELP_STRING([--with-init-dir=DIR],
-                                [Where to store init script for gssproxy [/etc/rc.d/init.d]]
-                               )
-                ]
-               )
-    initdir="${sysconfdir}/rc.d/init.d"
-    if test x$osname == xgentoo; then
-        initdir="${sysconfdir}/init.d"
-    fi
-    if test x"$with_init_dir" != x; then
-        initdir=$with_init_dir
-    fi
-    AC_SUBST(initdir)
   ])
 
 dnl A macro to configure the directory to install the systemd unit files to

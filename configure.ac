@@ -50,7 +50,6 @@ AC_COMPILE_IFELSE(
     [AC_DEFINE([HAVE_PTHREAD], [1], [Pthread mutexes available.])],
     [AC_MSG_WARN([Pthread library not found! Clients will not be thread safe...])])
 
-#Include here cause WITH_INIT_DIR requires $osname set in platform.m4
 m4_include([external/platform.m4])
 
 m4_include(conf_macros.m4)
@@ -60,7 +59,6 @@ WITH_LOG_PATH
 WITH_PUBCONF_PATH
 WITH_SOCKET_NAME
 WITH_PID_FILE
-WITH_INIT_DIR
 WITH_TEST_DIR
 WITH_MANPAGES
 WITH_XML_CATALOG
