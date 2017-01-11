@@ -21,7 +21,6 @@ gssconfdir = $(sysconfdir)/gss
 localedir = @localedir@
 
 ccpath = @ccpath@
-initdir = @initdir@
 systemdunitdir = @systemdunitdir@
 examplesdir= @datarootdir@/examples
 logpath = @logpath@
@@ -233,7 +232,6 @@ endif
 # Installation Extras #
 #######################
 
-dist_init_SCRIPTS =
 systemdunit_DATA =
 if HAVE_SYSTEMD_UNIT
     systemdunit_DATA += \
@@ -306,8 +304,6 @@ install-exec-hook: installgsspdirs
 	mkdir -p doc $(DESTDIR)/$(docdir); cp -a doc $(DESTDIR)/$(docdir)/
 if HAVE_SYSTEMD_UNIT
 	mkdir -p $(DESTDIR)$(systemdunitdir)
-else
-	mkdir -p $(DESTDIR)$(initdir)
 endif
 
 clean-local:
