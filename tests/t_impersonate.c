@@ -2,13 +2,13 @@
 
 #include "t_utils.h"
 #include <unistd.h>
+#include <stdbool.h>
 
 int main(int argc, const char *argv[])
 {
     char buffer[MAX_RPC_SIZE];
     uint32_t buflen;
     gss_cred_id_t impersonator_cred_handle = GSS_C_NO_CREDENTIAL;
-    gss_cred_id_t user_cred_handle = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gss_ctx_id_t init_ctx = GSS_C_NO_CONTEXT;
     gss_ctx_id_t accept_ctx = GSS_C_NO_CONTEXT;
@@ -20,9 +20,13 @@ int main(int argc, const char *argv[])
     uint32_t ret_maj;
     uint32_t ret_min;
     uint32_t time_rec;
+    uint32_t flags = GSS_C_MUTUAL_FLAG | GSS_C_DELEG_FLAG;
     int ret = -1;
+    bool selfhalf = false;
+    bool proxyhalf = false;
+    const char *deleg_ccache = NULL;
 
-    if (argc != 3) return -1;
+    if (argc < 3) return -1;
 
     ret = t_string_to_name(argv[1], &user_name, GSS_C_NT_USER_NAME);
     if (ret) {
@@ -39,41 +43,100 @@ int main(int argc, const char *argv[])
         goto done;
     }
 
-    ret_maj = gss_acquire_cred(&ret_min,
-                               GSS_C_NO_NAME,
-                               GSS_C_INDEFINITE,
-                               &oid_set,
-                               GSS_C_BOTH,
-                               &impersonator_cred_handle,
-                               NULL, NULL);
-    if (ret_maj != GSS_S_COMPLETE) {
-        DEBUG("gss_acquire_cred() failed\n");
-        t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
-        ret = -1;
-        goto done;
+    if (argc > 3) {
+        if (strcmp(argv[3], "s4u2self") == 0) {
+            selfhalf = true;
+        } else if (strcmp(argv[3], "s4u2proxy") == 0) {
+            proxyhalf = true;
+        } else {
+            DEBUG("Invalid argument 3: %s\n", argv[3]);
+            ret = -1;
+            goto done;
+        }
+        if (argc < 5) {
+            DEBUG("Option %s requires additional arguments\n", argv[3]);
+            ret = -1;
+            goto done;
+        }
+        deleg_ccache = argv[4];
+        DEBUG("S4U2%s half [ccache %s]\n", selfhalf?"Self":"Proxy", argv[4]);
     }
 
-    ret_maj = gss_acquire_cred_impersonate_name(&ret_min,
-                                                impersonator_cred_handle,
-                                                user_name,
-                                                GSS_C_INDEFINITE,
-                                                &oid_set,
-                                                GSS_C_INITIATE,
-                                                &user_cred_handle,
-                                                NULL, NULL);
-    if (ret_maj != GSS_S_COMPLETE) {
-        DEBUG("gss_acquire_cred_impersonate_name() failed\n");
-        t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
-        ret = -1;
+    if (proxyhalf) {
+        gss_key_value_element_desc ccelement = { "ccache", deleg_ccache };
+        gss_key_value_set_desc cred_store = { 1, &ccelement };
+
+        ret_maj = gss_acquire_cred_from(&ret_min,
+                                        GSS_C_NO_NAME,
+                                        GSS_C_INDEFINITE,
+                                        &oid_set,
+                                        GSS_C_INITIATE,
+                                        &cred_store,
+                                        &cred_handle,
+                                        NULL, NULL);
+        if (ret_maj != GSS_S_COMPLETE) {
+            DEBUG("gss_acquire_cred_from() [s4u2proxy] failed\n");
+            t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+            ret = -1;
+            goto done;
+        }
+
+        flags = GSS_C_MUTUAL_FLAG;
+    } else {
+
+        ret_maj = gss_acquire_cred(&ret_min,
+                                   GSS_C_NO_NAME,
+                                   GSS_C_INDEFINITE,
+                                   &oid_set,
+                                   GSS_C_BOTH,
+                                   &impersonator_cred_handle,
+                                   NULL, NULL);
+        if (ret_maj != GSS_S_COMPLETE) {
+            DEBUG("gss_acquire_cred() failed\n");
+            t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+            ret = -1;
+            goto done;
+        }
+
+        ret_maj = gss_acquire_cred_impersonate_name(&ret_min,
+                                                    impersonator_cred_handle,
+                                                    user_name,
+                                                    GSS_C_INDEFINITE,
+                                                    &oid_set,
+                                                    GSS_C_INITIATE,
+                                                    &cred_handle,
+                                                    NULL, NULL);
+        if (ret_maj != GSS_S_COMPLETE) {
+            DEBUG("gss_acquire_cred_impersonate_name() failed\n");
+            t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+            ret = -1;
+            goto done;
+        }
+    }
+
+    if (selfhalf) {
+        gss_key_value_element_desc ccelement = { "ccache", deleg_ccache };
+        gss_key_value_set_desc cred_store = { 1, &ccelement };
+
+        ret_maj = gss_store_cred_into(&ret_min,
+                                      cred_handle,
+                                      GSS_C_INITIATE,
+                                      discard_const(gss_mech_krb5), 1, 0,
+                                      &cred_store, NULL, NULL);
+        if (ret_maj != GSS_S_COMPLETE) {
+            DEBUG("gss_store_cred_into() failed\n");
+            t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
+            ret = -1;
+        }
         goto done;
     }
 
     ret_maj = gss_init_sec_context(&ret_min,
-                                   user_cred_handle,
+                                   cred_handle,
                                    &init_ctx,
                                    target_name,
                                    GSS_C_NO_OID,
-                                   GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
+                                   flags,
                                    0,
                                    GSS_C_NO_CHANNEL_BINDINGS,
                                    &in_token,
@@ -123,11 +186,11 @@ int main(int argc, const char *argv[])
     gss_release_buffer(&ret_min, &out_token);
 
     ret_maj = gss_init_sec_context(&ret_min,
-                                   user_cred_handle,
+                                   cred_handle,
                                    &init_ctx,
                                    target_name,
                                    GSS_C_NO_OID,
-                                   GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG,
+                                   flags,
                                    0,
                                    GSS_C_NO_CHANNEL_BINDINGS,
                                    &in_token,
@@ -147,6 +210,7 @@ int main(int argc, const char *argv[])
 done:
     gss_release_buffer(&ret_min, &in_token);
     gss_release_buffer(&ret_min, &out_token);
+    gss_release_cred(&ret_min, &impersonator_cred_handle);
     gss_release_cred(&ret_min, &cred_handle);
     return ret;
 }
