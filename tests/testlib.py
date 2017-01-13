@@ -49,11 +49,12 @@ def print_warning(key, text, io=sys.stderr):
     print_keyed("other", key, text, io)
 
 def print_return(ret, name, expected_failure):
-    if ret != 0 and not expected_failure:
-        print_failure("SUCCESS" if ret == 0 else "FAILED",
+    if ((ret == 0 and expected_failure == False) or
+        (ret != 0 and expected_failure == True)):
+        print_success("SUCCESS" if ret == 0 else "FAILED",
                       "%s test returned %s" % (name, str(ret)))
     else:
-        print_success("SUCCESS" if ret == 0 else "FAILED",
+        print_failure("SUCCESS" if ret == 0 else "FAILED",
                       "%s test returned %s" % (name, str(ret)))
 
 WRAP_HOSTNAME = "kdc.gssproxy.dev"
