@@ -344,6 +344,43 @@ USR2_PWD = "usrpwd"
 MULTI_KTNAME = "multi.gssproxy.keytab"
 MULTI_UPN = "multi$"
 MULTI_SVC = "multi/%s" % WRAP_HOSTNAME
+HOST_SVC = "host/%s" % WRAP_HOSTNAME
+PROXY_SVC = "proxy/%s" % WRAP_HOSTNAME
+PROXY_GSS = "proxy@%s" % WRAP_HOSTNAME
+PROXY_KTNAME = "proxy.keytab"
+
+PROXY_LDIF_TEMPLATE = """
+dn: krbPrincipalName=${HOST_SVC}@${TESTREALM},cn=${TESTREALM},cn=${KRB5_CN},${LDAP_REALM}
+changetype: modify
+add: krbAllowedToDelegateTo
+krbAllowedToDelegateTo: ${PROXY_SVC}@${TESTREALM}
+-
+"""
+
+def authorize_to_proxy(testdir, env):
+    testlog = os.path.join(testdir, 'kerbsetup.log')
+
+    t = Template(PROXY_LDIF_TEMPLATE)
+    text = t.substitute({"HOST_SVC": HOST_SVC,
+                         "PROXY_SVC": PROXY_SVC,
+                         "TESTREALM": TESTREALM,
+                         "LDAP_REALM": LDAP_REALM,
+                         "KRB5_CN": KRB5_CN})
+    ldif = os.path.join(testdir, "ldap", "k5proxy.ldif")
+    with open(ldif, "w+") as f:
+        f.write(text)
+
+    with open(testlog, "a") as logfile:
+        lmod = subprocess.Popen(["ldapmodify", "-w", LDAP_PW, "-H",
+                                 "ldap://%s" % WRAP_HOSTNAME, "-D",
+                                 "%s,%s" % (KRB5_USER, LDAP_REALM),
+                                 "-f", ldif],
+                                 stdout=logfile, stderr=logfile, env=env,
+                                 preexec_fn=os.setsid)
+
+    lmod.wait()
+    if lmod.returncode != 0:
+        raise ValueError("Proxy princ setup failed")
 
 def setup_keys(testdir, env):
 
@@ -351,7 +388,8 @@ def setup_keys(testdir, env):
 
     svc_name = "host/%s" % WRAP_HOSTNAME
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
-    cmd = "addprinc -randkey -e %s %s" % (KEY_TYPE, svc_name)
+    cmd = "addprinc -randkey -e %s +ok_to_auth_as_delegate %s" % (KEY_TYPE,
+                                                                  svc_name)
     with (open(testlog, 'a')) as logfile:
         kadmin_local(cmd, env, logfile)
     cmd = "ktadd -k %s -e %s %s" % (svc_keytab, KEY_TYPE, svc_name)
@@ -369,6 +407,18 @@ def setup_keys(testdir, env):
     cmd = "addprinc -pw %s %s" % (USR2_PWD, USR2_NAME)
     with (open(testlog, 'a')) as logfile:
         kadmin_local(cmd, env, logfile)
+
+    proxy_keytab = os.path.join(testdir, PROXY_KTNAME)
+    cmd = "addprinc -randkey -e %s -requires_preauth %s" % (KEY_TYPE,
+                                                            PROXY_SVC)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+    shutil.copy(svc_keytab, proxy_keytab)
+    cmd = "ktadd -k %s -e %s %s" % (proxy_keytab, KEY_TYPE, PROXY_SVC)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+
+    authorize_to_proxy(testdir, env)
 
     keys_env = {"client_keytab": usr_keytab,
                 "KRB5_KTNAME": svc_keytab}
@@ -532,7 +582,8 @@ def update_gssproxy_conf(testdir, env, template):
             'GSSPROXY_CLIENT_CCACHE': ccache,
             'GSSPROXY_CLIENT_KEYTAB': ckeytab,
             'UIDNUMBER': os.getuid(),
-            'SECOND_SOCKET': socket2}
+            'SECOND_SOCKET': socket2,
+            'TESTDIR': testdir}
     if 'client_name' in env:
         subs['GSSPROXY_CLIENT_PRINCIPAL'] = env['client_name']
     text = t.substitute(subs)
