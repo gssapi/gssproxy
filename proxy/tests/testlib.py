@@ -477,7 +477,7 @@ def setup_gssapi_env(testdir, wrapenv):
 
 GSSPROXY_CONF_TEMPLATE = '''
 [gssproxy]
-  debug_level = 2
+  debug_level = 3
 
 [service/test]
   mechs = krb5
@@ -547,12 +547,14 @@ def setup_gssproxy(testdir, logfile, env):
 
     update_gssproxy_conf(testdir, env, GSSPROXY_CONF_TEMPLATE)
 
+    gpenv = env.copy()
+    gpenv['KRB5_TRACE'] = os.path.join(testdir, 'gp_krb5_trace.log')
+
     socket = os.path.join(gssproxy, 'gp.sock')
     conf = os.path.join(gssproxy, 'gp.conf')
     gproc = subprocess.Popen(["valgrind", "--track-origins=yes",
-                              "./gssproxy", "-i", "-d",
-                              "-s", socket, "-c", conf],
+                              "./gssproxy", "-i", "-s", socket, "-c", conf],
                              stdout=logfile, stderr=logfile,
-                             env=env, preexec_fn=os.setsid)
+                             env=gpenv, preexec_fn=os.setsid)
 
     return gproc, socket
