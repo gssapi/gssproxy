@@ -563,7 +563,6 @@ GSSPROXY_MULTI_TEMPLATE = '''
 [service/test]
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   krb5_principal = ${GSSPROXY_CLIENT_PRINCIPAL}
   trusted = yes
