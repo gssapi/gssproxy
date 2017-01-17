@@ -432,5 +432,9 @@ static void gp_handle_query(struct gp_workers *w, struct gp_query *q)
         q->buffer = buffer;
         q->buflen = buflen;
     }
+
+    if (gpcall.destroy_callback) {
+        gpcall.destroy_callback(gpcall.destroy_callback_data);
+    }
 }
 
