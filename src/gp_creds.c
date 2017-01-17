@@ -3,10 +3,12 @@
 #include "config.h"
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <errno.h>
 #include <string.h>
 #include <pwd.h>
+#include <unistd.h>
 #include <krb5/krb5.h>
 #include <gssapi/gssapi_krb5.h>
 #include "gp_proxy.h"
@@ -216,6 +218,81 @@ static bool try_impersonate(struct gp_service *svc,
     return false;
 }
 
+static void safe_free_mem_ccache(void *data)
+{
+    krb5_error_code e;
+    krb5_context ctx = NULL;
+    krb5_ccache cc = NULL;
+    char *ccname = (char *) data;
+
+    if (!ccname) {
+        return;
+    }
+
+    e = krb5_init_context(&ctx);
+    if (e != 0) {
+        goto done;
+    }
+
+    e = krb5_cc_resolve(ctx, ccname, &cc);
+    if (e != 0) {
+        goto done;
+    }
+
+    /* also closes handle */
+    krb5_cc_destroy(ctx, cc);
+
+done:
+    if (ctx) {
+        krb5_free_context(ctx);
+    }
+    free(ccname);
+}
+
+static int ensure_segregated_ccache(struct gp_call_ctx *gpcall,
+                                    int cc_num,
+                                    struct gp_service *svc,
+                                    gss_key_value_set_desc *cs)
+{
+    int ret;
+    char *buf;
+    pid_t tid = -1;
+
+    if (cc_num != -1) {
+        return 0;
+    }
+
+    /* We always have space for at least 1 more entry in cs. */
+    cc_num = cs->count;
+
+    cs->elements[cc_num].key = strdup("ccache");
+    if (!cs->elements[cc_num].key) {
+        return ENOMEM;
+    }
+
+    do {
+        errno = 0;
+        tid = syscall(SYS_gettid);
+    } while (tid == -1 && errno == EINTR);
+
+    ret = asprintf(&buf, "MEMORY:internal_%d", tid);
+    if (!buf) {
+        return ENOMEM;
+    }
+
+    gpcall->destroy_callback = safe_free_mem_ccache;
+    gpcall->destroy_callback_data = buf;
+
+    cs->elements[cc_num].value = strdup(buf);
+    if (!cs->elements[cc_num].value) {
+        return ENOMEM;
+    }
+
+    cs->count = cc_num + 1;
+
+    return 0;
+}
+
 static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
                                    gssx_name *desired_name,
                                    gss_name_t *requested_name,
@@ -234,6 +311,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
     int ret = -1;
     int k_num = -1;
     int ck_num = -1;
+    int cc_num = -1;
     int d;
 
     memset(cs, 0, sizeof(gss_key_value_set_desc));
@@ -346,6 +424,8 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             ck_num = cs->count;
         } else if (strcmp(svc->krb5.store.elements[d].key, "keytab") == 0) {
             k_num = cs->count;
+        } else if (strcmp(svc->krb5.store.elements[d].key, "ccache") == 0) {
+            cc_num = cs->count;
         }
 
         cs->elements[cs->count].key = strdup(svc->krb5.store.elements[d].key);
@@ -399,6 +479,11 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
             ret = ENOMEM;
             goto done;
         }
+    }
+
+    ret = ensure_segregated_ccache(gpcall, cc_num, svc, cs);
+    if (ret != 0) {
+        goto done;
     }
 
     ret = 0;

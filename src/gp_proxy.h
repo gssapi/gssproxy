@@ -81,6 +81,8 @@ struct gp_call_ctx {
     struct gssproxy_ctx *gpctx;
     struct gp_service *service;
     struct gp_conn *connection;
+    void (*destroy_callback)(void *);
+    void *destroy_callback_data;
 };
 
 /* from gp_config.c */
