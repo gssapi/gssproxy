@@ -407,7 +407,7 @@ static void *gp_worker_main(void *pvt)
 
 static void gp_handle_query(struct gp_workers *w, struct gp_query *q)
 {
-    struct gp_call_ctx gpcall;
+    struct gp_call_ctx gpcall = { 0 };
     uint8_t *buffer;
     size_t buflen;
     int ret;
