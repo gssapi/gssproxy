@@ -10,7 +10,8 @@
 
 extern int gp_debug;
 
-void gp_debug_enable(int);
+int gp_debug_args(int level);
+void gp_debug_toggle(int);
 void gp_debug_printf(const char *format, ...);
 void gp_debug_time_printf(const char *format, ...);
 

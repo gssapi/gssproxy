@@ -478,6 +478,7 @@ int load_config(struct gp_config *cfg)
 {
     struct gp_ini_context *ctx;
     const char *tmpstr;
+    int tmp_dbg_lvl = 0;
     int tmpint = 0;
     int ret;
 
@@ -489,7 +490,9 @@ int load_config(struct gp_config *cfg)
     ret = gp_config_get_string(ctx, "gssproxy", "debug", &tmpstr);
     if (ret == 0) {
         if (gp_boolean_is_true(tmpstr)) {
-            gp_debug_enable(1);
+            if (tmp_dbg_lvl == 0) {
+                tmp_dbg_lvl = 1;
+            }
         }
     } else if (ret != ENOENT) {
         goto done;
@@ -497,7 +500,7 @@ int load_config(struct gp_config *cfg)
 
     ret = gp_config_get_int(ctx, "gssproxy", "debug_level", &tmpint);
     if (ret == 0) {
-        gp_debug_enable(tmpint);
+        tmp_dbg_lvl = tmpint;
     } else if (ret != ENOENT) {
         goto done;
     }
@@ -525,6 +528,7 @@ done:
     if (ret != 0) {
         GPERROR("Error reading configuration %d: %s", ret, gp_strerror(ret));
     }
+    gp_debug_toggle(tmp_dbg_lvl);
     gp_config_close(ctx);
     safefree(ctx);
     return ret;
