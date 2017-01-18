@@ -11,7 +11,6 @@ IMPERSONATE_CONF_TEMPLATE = '''
   socket = ${TESTDIR}/impersonate.socket
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   allow_protocol_transition = yes
   allow_constrained_delegation = yes
@@ -21,7 +20,6 @@ IMPERSONATE_CONF_TEMPLATE = '''
   socket = ${TESTDIR}/impersonate-selfonly.socket
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   allow_protocol_transition = yes
   euid = ${UIDNUMBER}
@@ -30,7 +28,6 @@ IMPERSONATE_CONF_TEMPLATE = '''
   socket = ${TESTDIR}/impersonate-proxyonly.socket
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   allow_constrained_delegation = yes
   euid = ${UIDNUMBER}
@@ -78,39 +75,39 @@ def run(testdir, env, conf):
 
     # Test all permitted
     socket = os.path.join(testdir, 'impersonate.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, conf['svc_name']]
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS]
     r = run_cmd(testdir, env, conf, "Impersonate", socket, cmd, False)
     rets.append(r)
 
     #Test fail
     socket = os.path.join(testdir, 'impersonate-proxyonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, conf['svc_name']]
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS]
     r = run_cmd(testdir, env, conf, "Impersonate fail self", socket, cmd, True)
     rets.append(r)
 
     #Test fail
     socket = os.path.join(testdir, 'impersonate-selfonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, conf['svc_name']]
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS]
     r = run_cmd(testdir, env, conf, "Impersonate fail proxy", socket, cmd, True)
     rets.append(r)
 
     #Test s4u2self half succeed
     socket = os.path.join(testdir, 'impersonate-selfonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, conf['svc_name'], 's4u2self',
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS, 's4u2self',
            path_prefix + 'impersonate-proxy.ccache']
     r = run_cmd(testdir, env, conf, "s4u2self delegation", socket, cmd, False)
     rets.append(r)
 
     #Test s4u2proxy half fail
     socket = os.path.join(testdir, 'impersonate-selfonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, PROXY_GSS, 's4u2proxy',
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS, 's4u2proxy',
            path_prefix + 'impersonate-proxy.ccache']
     r = run_cmd(testdir, env, conf, "s4u2proxy fail", socket, cmd, True)
     rets.append(r)
 
     #Test s4u2proxy half succeed
     socket = os.path.join(testdir, 'impersonate-proxyonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, PROXY_GSS, 's4u2proxy',
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS, 's4u2proxy',
            path_prefix + 'impersonate-proxy.ccache']
     r = run_cmd(testdir, env, conf, "s4u2proxy", socket, cmd, False)
     rets.append(r)
