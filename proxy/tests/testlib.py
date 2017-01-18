@@ -345,6 +345,7 @@ MULTI_KTNAME = "multi.gssproxy.keytab"
 MULTI_UPN = "multi$"
 MULTI_SVC = "multi/%s" % WRAP_HOSTNAME
 HOST_SVC = "host/%s" % WRAP_HOSTNAME
+HOST_GSS = "host@%s" % WRAP_HOSTNAME
 PROXY_SVC = "proxy/%s" % WRAP_HOSTNAME
 PROXY_GSS = "proxy@%s" % WRAP_HOSTNAME
 PROXY_KTNAME = "proxy.keytab"

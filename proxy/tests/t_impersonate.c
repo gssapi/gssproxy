@@ -6,8 +6,6 @@
 
 int main(int argc, const char *argv[])
 {
-    char buffer[MAX_RPC_SIZE];
-    uint32_t buflen;
     gss_cred_id_t impersonator_cred_handle = GSS_C_NO_CREDENTIAL;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gss_ctx_id_t init_ctx = GSS_C_NO_CONTEXT;
@@ -15,18 +13,18 @@ int main(int argc, const char *argv[])
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_name_t user_name;
+    gss_name_t proxy_name;
     gss_name_t target_name;
     gss_OID_set_desc oid_set = { 1, discard_const(gss_mech_krb5) };
     uint32_t ret_maj;
     uint32_t ret_min;
-    uint32_t time_rec;
     uint32_t flags = GSS_C_MUTUAL_FLAG | GSS_C_DELEG_FLAG;
     int ret = -1;
     bool selfhalf = false;
     bool proxyhalf = false;
     const char *deleg_ccache = NULL;
 
-    if (argc < 3) return -1;
+    if (argc < 4) return -1;
 
     ret = t_string_to_name(argv[1], &user_name, GSS_C_NT_USER_NAME);
     if (ret) {
@@ -35,7 +33,7 @@ int main(int argc, const char *argv[])
         goto done;
     }
 
-    ret = t_string_to_name(argv[2], &target_name,
+    ret = t_string_to_name(argv[2], &proxy_name,
                            GSS_C_NT_HOSTBASED_SERVICE);
     if (ret) {
         DEBUG("Failed to import server name from argv[2]\n");
@@ -43,23 +41,31 @@ int main(int argc, const char *argv[])
         goto done;
     }
 
-    if (argc > 3) {
-        if (strcmp(argv[3], "s4u2self") == 0) {
+    ret = t_string_to_name(argv[3], &target_name,
+                           GSS_C_NT_HOSTBASED_SERVICE);
+    if (ret) {
+        DEBUG("Failed to import server name from argv[2]\n");
+        ret = -1;
+        goto done;
+    }
+
+    if (argc > 4) {
+        if (strcmp(argv[4], "s4u2self") == 0) {
             selfhalf = true;
-        } else if (strcmp(argv[3], "s4u2proxy") == 0) {
+        } else if (strcmp(argv[4], "s4u2proxy") == 0) {
             proxyhalf = true;
         } else {
-            DEBUG("Invalid argument 3: %s\n", argv[3]);
+            DEBUG("Invalid argument 4: %s\n", argv[4]);
             ret = -1;
             goto done;
         }
-        if (argc < 5) {
-            DEBUG("Option %s requires additional arguments\n", argv[3]);
+        if (argc < 6) {
+            DEBUG("Option %s requires additional arguments\n", argv[4]);
             ret = -1;
             goto done;
         }
-        deleg_ccache = argv[4];
-        DEBUG("S4U2%s half [ccache %s]\n", selfhalf?"Self":"Proxy", argv[4]);
+        deleg_ccache = argv[5];
+        DEBUG("S4U2%s half [ccache %s]\n", selfhalf?"Self":"Proxy", argv[5]);
     }
 
     if (proxyhalf) {
@@ -67,7 +73,7 @@ int main(int argc, const char *argv[])
         gss_key_value_set_desc cred_store = { 1, &ccelement };
 
         ret_maj = gss_acquire_cred_from(&ret_min,
-                                        GSS_C_NO_NAME,
+                                        user_name,
                                         GSS_C_INDEFINITE,
                                         &oid_set,
                                         GSS_C_INITIATE,
@@ -85,7 +91,7 @@ int main(int argc, const char *argv[])
     } else {
 
         ret_maj = gss_acquire_cred(&ret_min,
-                                   GSS_C_NO_NAME,
+                                   proxy_name,
                                    GSS_C_INDEFINITE,
                                    &oid_set,
                                    GSS_C_BOTH,
