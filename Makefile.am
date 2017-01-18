@@ -30,6 +30,10 @@ pkgconfigdir = $(libdir)/pkgconfig
 gpstatedir = @gpstatedir@
 gpclidir = @gpstatedir@/clients
 
+
+AM_DISTCHECK_CONFIGURE_FLAGS = \
+    --with-systemdunitdir='$$(prefix)/$(systemdunitdir)'
+
 AM_CPPFLAGS =
 AM_CFLAGS =
 AM_LDFLAGS =
@@ -307,13 +311,15 @@ endif
 
 clean-local:
 	rm -Rf doc
+	rm -Rf testdir
 
 CLEANFILES = *.X */*.X */*/*.X \
     examples/mech \
     examples/gssproxy.conf \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
-    examples/99-nfs-client.conf
+    examples/99-nfs-client.conf \
+    systemd/gssproxy.service
 
 check: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py
