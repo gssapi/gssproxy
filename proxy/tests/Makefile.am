@@ -46,6 +46,15 @@ noinst_PROGRAMS = $(check_PROGRAMS)
 noinst_HEADERS = \
     t_utils.h
 
-EXTRA_DIST = *.py
+EXTRA_DIST = \
+    runtests.py \
+    t_acquire.py \
+    t_basic.py \
+    t_cred_store.py \
+    testlib.py \
+    t_impersonate.py \
+    t_interpose.py \
+    t_multi_key.py \
+    t_reloading.py
 
 all: $(check_PROGRAMS)

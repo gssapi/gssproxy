@@ -59,7 +59,7 @@ if __name__ == '__main__':
         basicconf["keysenv"] = keysenv
 
         testnum = 0
-        testfiles = [f for f in os.listdir("tests") \
+        testfiles = [f for f in os.listdir(os.path.dirname(sys.argv[0])) \
                      if f.endswith(".py") and f.startswith("t_")]
         testfiles.sort()
         print("Tests to be run: " + ", ".join(testfiles))
