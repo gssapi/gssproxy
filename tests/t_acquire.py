@@ -29,3 +29,4 @@ def run(testdir, env, conf, expected_failure=False):
         # p1.returncode is set to None here
         pass
     print_return(p1.returncode, "Acquire", expected_failure)
+    return p1.returncode if not expected_failure else int(not p1.returncode)

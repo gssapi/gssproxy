@@ -34,7 +34,7 @@ def run(testdir, env, conf):
     update_gssproxy_conf(testdir, p1env, GSSPROXY_MULTI_TEMPLATE)
     os.kill(conf["gpid"], signal.SIGHUP)
     time.sleep(1) #Let gssproxy reload everything
-    run_basic_test(testdir, env, conf)
+    r1 = run_basic_test(testdir, env, conf)
 
     print("Testing multiple keys Keytab with second principal",
           file=sys.stderr)
@@ -49,4 +49,10 @@ def run(testdir, env, conf):
     update_gssproxy_conf(testdir, p2env, GSSPROXY_MULTI_TEMPLATE)
     os.kill(conf["gpid"], signal.SIGHUP)
     time.sleep(1) #Let gssproxy reload everything
-    run_basic_test(testdir, env, conf)
+    r2 = run_basic_test(testdir, env, conf)
+
+    if r1 != 0:
+        return r1
+    elif r2 != 0:
+        return r2
+    return 0

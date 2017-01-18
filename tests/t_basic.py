@@ -54,3 +54,8 @@ def run(testdir, env, conf, expected_failure=False):
         os.killpg(p2.pid, signal.SIGTERM)
     except OSError:
         pass
+    if p1.returncode != 0:
+        return p1.returncode if not expected_failure else int(not p1.returncode)
+    elif p2.returncode != 0:
+        return p2.returncode if not expected_failure else int(not p2.returncode)
+    return int(expected_failure)
