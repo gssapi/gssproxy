@@ -4,6 +4,7 @@
 import argparse
 import importlib
 import signal
+import sys
 import traceback
 
 from testlib import *
@@ -16,7 +17,6 @@ def parse_args():
     return vars(parser.parse_args())
 
 if __name__ == '__main__':
-
     args = parse_args()
 
     testdir = args['path']
@@ -25,6 +25,8 @@ if __name__ == '__main__':
     os.makedirs(testdir)
 
     processes = dict()
+
+    errored = False
 
     try:
         wrapenv = setup_wrappers(testdir)
@@ -68,12 +70,18 @@ if __name__ == '__main__':
             basicconf['prefix'] = '%02d' % testnum
             logfile = os.path.join(testdir, "%02d_%s.log" % (testnum, fmod))
             basicconf['logfile'] = open(logfile, 'a')
-            t.run(testdir, gssapienv, basicconf)
-            testnum += 1
+            r = t.run(testdir, gssapienv, basicconf)
+            if r != 0:
+                errored = True
 
+            testnum += 1
     except Exception:
         traceback.print_exc()
     finally:
         for name in processes:
             print("Killing %s" % name)
             os.killpg(processes[name].pid, signal.SIGTERM)
+
+        if errored:
+            sys.exit(1)
+        sys.exit(0)

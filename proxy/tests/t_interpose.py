@@ -25,3 +25,4 @@ def run(testdir, env, conf):
                              env=ienv)
     itest.wait()
     print_return(itest.returncode, "Interpose", False)
+    return itest.returncode

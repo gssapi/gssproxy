@@ -38,3 +38,4 @@ def run(testdir, env, conf):
         # p1.returncode is set to None here
         pass
     print_return(p1.returncode, "Cred store", False)
+    return p1.returncode
