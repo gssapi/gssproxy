@@ -39,6 +39,101 @@ void gp_free_creds_handle(struct gp_creds_handle **in)
     return;
 }
 
+uint32_t gp_init_creds_with_keytab(uint32_t *min, const char *svc_name,
+                                   const char *keytab,
+                                   struct gp_creds_handle *handle)
+{
+    char ktname[MAX_KEYTAB_NAME_LEN + 1] = {0};
+    krb5_keytab ktid = NULL;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
+    krb5_enctype *permitted;
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    int ret;
+
+    if (keytab) {
+        strncpy(ktname, keytab, MAX_KEYTAB_NAME_LEN);
+        ret = krb5_kt_resolve(handle->context, keytab, &ktid);
+    }
+    /* if the keytab is not specified or fails to resolve try default */
+    if (!keytab || ret != 0) {
+        ret = krb5_kt_default_name(handle->context, ktname,
+                                   MAX_KEYTAB_NAME_LEN);
+        if (ret) {
+            strncpy(ktname, "[default]", MAX_KEYTAB_NAME_LEN);
+        }
+        ret = krb5_kt_default(handle->context, &ktid);
+    }
+    if (ret == 0) {
+        ret = krb5_kt_have_content(handle->context, ktid);
+    }
+    if (ret) {
+        GPDEBUG("Keytab %s has no content (%d)\n", ktname, ret);
+        ret_min = ret;
+        ret_maj = GSS_S_CRED_UNAVAIL;
+        goto done;
+    }
+
+    ret = krb5_get_permitted_enctypes(handle->context, &permitted);
+    if (ret) {
+        GPDEBUG("Failed to source permitted enctypes (%d)\n", ret);
+        ret_min = ret;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    ret = krb5_kt_start_seq_get(handle->context, ktid, &cursor);
+    if (ret) {
+        GPDEBUG("krb5_kt_start_seq_get() failed (%d)\n", ret);
+        ret_min = ret;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    do {
+        ret = krb5_kt_next_entry(handle->context, ktid, &entry, &cursor);
+        if (ret == 0) {
+            for (unsigned i = 0; permitted[i] != 0; i++) {
+                if (permitted[i] == entry.key.enctype) {
+                    /* should we derive a key instead ? */
+                    ret = krb5_copy_keyblock(handle->context, &entry.key,
+                                             &handle->key);
+                    if (ret == 0) {
+                        GPDEBUG("Service: %s, Keytab: %s, Enctype: %d\n",
+                                svc_name, ktname, entry.key.enctype);
+                        ret = KRB5_KT_END;
+                    } else {
+                        GPDEBUG("krb5_copy_keyblock failed (%d)\n", ret);
+                    }
+                    break;
+                }
+            }
+            (void)krb5_free_keytab_entry_contents(handle->context, &entry);
+        }
+    } while (ret == 0);
+    (void)krb5_kt_end_seq_get(handle->context, ktid, &cursor);
+    if ((ret == KRB5_KT_END) && (handle->key == NULL)) {
+        ret = KRB5_WRONG_ETYPE;
+        ret_maj = GSS_S_CRED_UNAVAIL;
+        goto done;
+    }
+    if (ret != KRB5_KT_END) {
+        ret_min = ret;
+        ret_maj = GSS_S_CRED_UNAVAIL;
+        goto done;
+    }
+
+    ret_min = 0;
+    ret_maj = GSS_S_COMPLETE;
+
+done:
+    if (ktid) {
+        (void)krb5_kt_close(handle->context, ktid);
+    }
+    *min = ret_min;
+    return ret_maj;
+}
+
 uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
                               const char *keytab,
                               struct gp_creds_handle **out)
@@ -46,8 +141,6 @@ uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
     struct gp_creds_handle *handle;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
-    krb5_keytab ktid = NULL;
-    char ktname[MAX_KEYTAB_NAME_LEN + 1] = {0};
     int ret;
 
     handle = calloc(1, sizeof(struct gp_creds_handle));
@@ -67,85 +160,9 @@ uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
 
     /* Try to use a keytab, and fall back to a random runtime secret if all
      * else fails */
-    if (keytab) {
-        ret = krb5_kt_resolve(handle->context, keytab, &ktid);
-        if (ret == 0) {
-            ret = krb5_kt_have_content(handle->context, ktid);
-        }
-        /* if a keytab is specified then it must be usable */
-        if (ret) {
-            ret_min = ret;
-            ret_maj = GSS_S_CRED_UNAVAIL;
-            goto done;
-        }
-        strncpy(ktname, keytab, MAX_KEYTAB_NAME_LEN);
-    } else {
-        ret = krb5_kt_default(handle->context, &ktid);
-        /* if the default keyab does not exist or is empty it is not fatal */
-        if (ret) {
-            ktid = NULL;
-        } else {
-            ret = krb5_kt_have_content(handle->context, ktid);
-            if (ret) {
-                (void)krb5_kt_close(handle->context, ktid);
-                ktid = NULL;
-            } else {
-                ret = krb5_kt_default_name(handle->context, ktname,
-                                           MAX_KEYTAB_NAME_LEN);
-                if (ret) strncpy(ktname, "[default]", MAX_KEYTAB_NAME_LEN);
-            }
-        }
-    }
-
-    if (ktid) {
-        krb5_kt_cursor cursor;
-        krb5_keytab_entry entry;
-        krb5_enctype *permitted;
-
-        ret = krb5_get_permitted_enctypes(handle->context, &permitted);
-        if (ret) {
-            ret_min = ret;
-            ret_maj = GSS_S_FAILURE;
-            goto done;
-        }
-
-        ret = krb5_kt_start_seq_get(handle->context, ktid, &cursor);
-        if (ret) {
-            ret_min = ret;
-            ret_maj = GSS_S_FAILURE;
-            goto done;
-        }
-        do {
-            ret = krb5_kt_next_entry(handle->context, ktid, &entry, &cursor);
-            if (ret == 0) {
-                for (unsigned i = 0; permitted[i] != 0; i++) {
-                    if (permitted[i] == entry.key.enctype) {
-                        /* should we derive a key instead ? */
-                        ret = krb5_copy_keyblock(handle->context, &entry.key,
-                                                 &handle->key);
-                        if (ret == 0) {
-                            GPDEBUG("Service: %s, Enckey: %s, Enctype: %d\n",
-                                    svc_name, ktname, entry.key.enctype);
-                            ret = KRB5_KT_END;
-                        }
-                        break;
-                    }
-                }
-                (void)krb5_free_keytab_entry_contents(handle->context, &entry);
-            }
-        } while (ret == 0);
-        (void)krb5_kt_end_seq_get(handle->context, ktid, &cursor);
-        if ((ret == KRB5_KT_END) && (handle->key == NULL)) {
-            ret = KRB5_WRONG_ETYPE;
-            ret_maj = GSS_S_CRED_UNAVAIL;
-            goto done;
-        }
-        if (ret != KRB5_KT_END) {
-            ret_min = ret;
-            ret_maj = GSS_S_CRED_UNAVAIL;
-            goto done;
-        }
-    } else {
+    ret_maj = gp_init_creds_with_keytab(&ret_min, svc_name, keytab, handle);
+    if (ret_maj != GSS_S_COMPLETE) {
+        /* fallback */
         ret = krb5_init_keyblock(handle->context,
                                  GP_CREDS_HANDLE_KEY_ENCTYPE, 0,
                                  &handle->key);
@@ -167,9 +184,6 @@ uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
     ret_min = 0;
 
 done:
-    if (handle->context && ktid) {
-        (void)krb5_kt_close(handle->context, ktid);
-    }
     *min = ret_min;
     if (ret_maj) {
         gp_free_creds_handle(&handle);

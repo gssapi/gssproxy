@@ -538,6 +538,11 @@ GSSPROXY_CONF_TEMPLATE = '''
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   trusted = yes
   euid = ${UIDNUMBER}
+
+[service/badkeytab]
+  mechs = krb5
+  cred_store = keytab:/intentionally/missing/keytab
+  euid = 123
 '''
 
 # Contains a garbage service entry
@@ -553,7 +558,17 @@ GSSPROXY_CONF_MINIMAL_TEMPLATE = '''
   euid = nobody
 '''
 
-GSSPROXY_CONF_SOCKET_TEMPLATE = GSSPROXY_CONF_TEMPLATE + '''
+GSSPROXY_CONF_SOCKET_TEMPLATE = '''
+[gssproxy]
+  debug_level = 3
+
+[service/test]
+  mechs = krb5
+  cred_store = keytab:${GSSPROXY_KEYTAB}
+  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
+  cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
+  trusted = yes
+  euid = ${UIDNUMBER}
   socket = ${SECOND_SOCKET}
 '''
 
