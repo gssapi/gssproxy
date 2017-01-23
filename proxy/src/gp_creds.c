@@ -411,9 +411,9 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         return 0;
     }
 
-    /* allocate 1 more than in source, just in case we need to add
-     * an internal client_keytab element */
-    cs->elements = calloc(svc->krb5.store.count + 1,
+    /* allocate 2 more than in source, just in case we need to add
+     * an internal client_keytab element and ccache */
+    cs->elements = calloc(svc->krb5.store.count + 2,
                           sizeof(gss_key_value_element_desc));
     if (!cs->elements) {
         ret = ENOMEM;
