@@ -612,7 +612,7 @@ struct gp_config *read_config(char *config_file, char *config_dir,
                               char *socket_name, int opt_daemonize)
 {
     const char *socket = GP_SOCKET_NAME;
-    const char *dir = PUBCONF_PATH;
+    const char *dir = NULL;
     struct gp_config *cfg;
     int ret;
 
@@ -634,12 +634,18 @@ struct gp_config *read_config(char *config_file, char *config_dir,
         }
     }
 
-    if (config_dir) dir = config_dir;
+    if (config_dir) {
+        dir = config_dir;
+    } else if (!config_file) {
+        dir = PUBCONF_PATH;
+    }
 
-    cfg->config_dir = strdup(dir);
-    if (!cfg->config_dir) {
-        ret = ENOMEM;
-        goto done;
+    if (dir) {
+        cfg->config_dir = strdup(dir);
+        if (!cfg->config_dir) {
+            ret = ENOMEM;
+            goto done;
+        }
     }
 
     if (socket_name) socket = socket_name;
