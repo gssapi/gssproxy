@@ -148,10 +148,11 @@ def setup_ldap(testdir, wrapenv):
         raise ValueError("Did not find LDAP schemas; is openldap installed?")
 
     k5schema = None
-    for path in ["/usr/share/doc/krb5-server-ldap/kerberos.schema",
+    for path in ["/usr/share/doc/krb5-server-ldap*/kerberos.schema",
                  "/usr/share/doc/krb5-kdc-ldap/kerberos.schema.gz"]:
-        if os.path.exists(path):
-            k5schema = path
+        pathlist = glob.glob(path)
+        if len(pathlist) > 0:
+            k5schema = pathlist[0]
             break
     if k5schema == None:
         print("Please be sure krb5 ldap packages are installed")
