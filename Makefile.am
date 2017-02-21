@@ -40,19 +40,13 @@ AM_LDFLAGS =
 if WANT_AUX_INFO
     AM_CFLAGS += -aux-info $@.X
 endif
-if HAVE_GCC
-# -fstrict-aliasing is needed so that -W*strict-aliasing works
-# properly
-    AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
-                 -Wcast-qual -Wcast-align -Wwrite-strings \
-                 -fstrict-aliasing -Wstrict-aliasing -Werror=strict-aliasing \
-                 -Werror-implicit-function-declaration \
-                 -Werror=format-security
-
-    AM_CPPFLAGS += -Wdate-time
-endif
+AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
+    -Wcast-qual -Wcast-align -Wwrite-strings \
+    -fstrict-aliasing -Wstrict-aliasing -Werror=strict-aliasing \
+    -Werror-implicit-function-declaration \
+    -Werror=format-security
 if BUILD_HARDENING
-    AM_CPPFLAGS += -D_FORTIFY_SOURCE=2
+    AM_CPPFLAGS += -D_FORTIFY_SOURCE=2 -Wdate-time
     AM_CFLAGS += -fPIE -fstack-protector-strong
     AM_LDFLAGS += -fPIE -pie -fPIC -Wl,-z,relro -Wl,-z,now
 endif
