@@ -180,7 +180,26 @@
                         <para>Enable debugging to syslog.</para>
                         <para>Default: debug = false</para>
                     </listitem>
-                    </varlistentry>
+                </varlistentry>
+
+                <varlistentry>
+                    <term>debug_level (integer)</term>
+                    <listitem>
+                        <para>
+                            Detail level at which to log debugging messages.
+                            0 corresponds to no logging, while 1 turns on
+                            basic debug logging.  Level 2 increases verbosity,
+                            including more detailed credential verification.
+                        </para>
+                        <para>
+                            At level 3 and above, KRB5_TRACE output is logged.
+                            If KRB5_TRACE was already set in the execution
+                            environment, trace output is sent to its value
+                            instead.
+                        </para>
+                        <para>Default: 1 if debug is true, otherwise 0</para>
+                    </listitem>
+                </varlistentry>
 
                 <varlistentry>
                     <term>euid (integer or string)</term>
