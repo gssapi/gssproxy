@@ -88,6 +88,7 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
     struct gpp_name_handle *name;
     struct gpp_cred_handle *out_cred_handle = NULL;
     struct gssx_cred *in_cred_remote = NULL;
+    const char *ccache_name = NULL;
     OM_uint32 maj, min;
     OM_uint32 tmaj, tmin;
 
@@ -111,29 +112,27 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
     name = (struct gpp_name_handle *)desired_name;
     behavior = gpp_get_behavior();
 
-    /* if a cred_store option is passed in, check if it references
-     * valid credentials, if so switch behavior appropriately */
-    if (cred_store) {
-        for (unsigned i = 0; i < cred_store->count; i++) {
-            if (strcmp(cred_store->elements[i].key, "ccache") == 0) {
-                gssx_cred remote = {0};
-                maj = gppint_retrieve_remote_creds(&min,
-                        cred_store->elements[i].value, NULL, &remote);
-                if (maj == GSS_S_COMPLETE) {
-                    in_cred_remote = malloc(sizeof(gssx_cred));
-                    if (!in_cred_remote) {
-                        maj = GSS_S_FAILURE;
-                        min = ENOMEM;
-                        goto done;
-                    }
-                    *in_cred_remote = remote;
-                    break;
-                }
-            }
+    /* Always check if we have remote creds stored in the local ccache */
+    for (unsigned i = 0; cred_store && i < cred_store->count; i++) {
+        if (strcmp(cred_store->elements[i].key, "ccache") == 0) {
+            ccache_name = cred_store->elements[i].value;
+            break;
         }
-        if (in_cred_remote) {
-            behavior = GPP_REMOTE_ONLY;
-        } else {
+    }
+
+    in_cred_remote = calloc(1, sizeof(gssx_cred));
+    if (!in_cred_remote) {
+        maj = GSS_S_FAILURE;
+        min = ENOMEM;
+        goto done;
+    }
+    maj = gppint_retrieve_remote_creds(&min, ccache_name, NULL,
+                                       in_cred_remote);
+    if (maj == GSS_S_COMPLETE) {
+        behavior = GPP_REMOTE_ONLY;
+    } else {
+        safefree(in_cred_remote);
+        if (ccache_name) {
             behavior = GPP_LOCAL_ONLY;
         }
     }
