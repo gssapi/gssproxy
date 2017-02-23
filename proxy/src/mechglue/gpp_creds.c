@@ -14,6 +14,7 @@ uint32_t gpp_store_remote_creds(uint32_t *min,
     krb5_ccache ccache = NULL;
     krb5_creds cred;
     krb5_error_code ret;
+    char cred_name[creds->desired_name.display_name.octet_string_len + 1];
     XDR xdrctx;
     bool xdrok;
 
@@ -41,9 +42,11 @@ uint32_t gpp_store_remote_creds(uint32_t *min,
         if (ret) goto done;
     }
 
-    ret = krb5_parse_name(ctx,
-                          creds->desired_name.display_name.octet_string_val,
-                          &cred.client);
+    memcpy(cred_name, creds->desired_name.display_name.octet_string_val,
+           creds->desired_name.display_name.octet_string_len);
+    cred_name[creds->desired_name.display_name.octet_string_len] = '\0';
+
+    ret = krb5_parse_name(ctx, cred_name, &cred.client);
     if (ret) goto done;
 
     ret = krb5_parse_name(ctx, GPKRB_SRV_NAME, &cred.server);
