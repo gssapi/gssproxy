@@ -103,9 +103,12 @@ OM_uint32 gppint_retrieve_remote_creds(uint32_t *min, const char *ccache_name,
     if (ret) goto done;
 
     if (name) {
-        ret = krb5_parse_name(ctx,
-                              name->display_name.octet_string_val,
-                              &icred.client);
+        char client_name[name->display_name.octet_string_len + 1];
+        memcpy(client_name, name->display_name.octet_string_val,
+               name->display_name.octet_string_len);
+        client_name[name->display_name.octet_string_len] = '\0';
+
+        ret = krb5_parse_name(ctx, client_name, &icred.client);
     } else {
         ret = krb5_cc_get_principal(ctx, ccache, &icred.client);
     }
