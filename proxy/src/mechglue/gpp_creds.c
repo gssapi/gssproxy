@@ -20,8 +20,6 @@ uint32_t gpp_store_remote_creds(uint32_t *min,
 
     *min = 0;
 
-    if (creds == NULL) return GSS_S_CALL_INACCESSIBLE_READ;
-
     memset(&cred, 0, sizeof(cred));
 
     ret = krb5_init_context(&ctx);
