@@ -276,7 +276,7 @@ static int ensure_segregated_ccache(struct gp_call_ctx *gpcall,
     } while (tid == -1 && errno == EINTR);
 
     ret = asprintf(&buf, "MEMORY:internal_%d", tid);
-    if (!buf) {
+    if (ret == -1) {
         return ENOMEM;
     }
 
