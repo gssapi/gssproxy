@@ -535,10 +535,10 @@ GSSPROXY_CONF_TEMPLATE = '''
 [service/test]
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   trusted = yes
   euid = ${UIDNUMBER}
+  allow_client_ccache_sync = yes
 
 [service/badkeytab]
   mechs = krb5
@@ -553,10 +553,10 @@ GSSPROXY_CONF_MINIMAL_TEMPLATE = '''
 [service/dontuse]
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   trusted = yes
   euid = nobody
+  allow_client_ccache_sync = yes
 '''
 
 GSSPROXY_CONF_SOCKET_TEMPLATE = '''
@@ -566,11 +566,11 @@ GSSPROXY_CONF_SOCKET_TEMPLATE = '''
 [service/test]
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = ccache:FILE:${GSSPROXY_CLIENT_CCACHE}
   cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   trusted = yes
   euid = ${UIDNUMBER}
   socket = ${SECOND_SOCKET}
+  allow_client_ccache_sync = yes
 '''
 
 GSSPROXY_MULTI_TEMPLATE = '''
@@ -580,10 +580,10 @@ GSSPROXY_MULTI_TEMPLATE = '''
 [service/test]
   mechs = krb5
   cred_store = keytab:${GSSPROXY_KEYTAB}
-  cred_store = client_keytab:${GSSPROXY_CLIENT_KEYTAB}
   krb5_principal = ${GSSPROXY_CLIENT_PRINCIPAL}
   trusted = yes
   euid = ${UIDNUMBER}
+  allow_client_ccache_sync = yes
 '''
 
 def update_gssproxy_conf(testdir, env, template):
