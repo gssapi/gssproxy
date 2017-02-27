@@ -15,6 +15,7 @@
 #include "gp_rpc_creds.h"
 #include "gp_creds.h"
 #include "gp_conv.h"
+#include "gp_export.h"
 
 #define GSS_MECH_KRB5_OID_LENGTH 9
 #define GSS_MECH_KRB5_OID "\052\206\110\206\367\022\001\002\002"
@@ -868,6 +869,178 @@ done:
         krb5_free_context(context);
     }
     free(memcache);
+    *min = ret_min;
+    return ret_maj;
+}
+
+uint32_t gp_count_tickets(uint32_t *min, gss_cred_id_t cred, uint32_t *ccsum)
+{
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    char *memcache = NULL;
+    krb5_context context = NULL;
+    krb5_ccache ccache = NULL;
+    krb5_cc_cursor cursor = NULL;
+    krb5_creds creds;
+    int err;
+
+    err = krb5_init_context(&context);
+    if (err != 0) {
+        ret_min = err;
+        ret_maj =  GSS_S_FAILURE;
+        goto done;
+    }
+
+    /* Create a memory ccache we can iterate with libkrb5 functions */
+    gss_key_value_element_desc ccelement = { "ccache", NULL };
+    gss_key_value_set_desc cred_store = { 1, &ccelement };
+
+    err = asprintf(&memcache, "MEMORY:cred_allowed_%p", &memcache);
+    if (err == -1) {
+        memcache = NULL;
+        ret_min = ENOMEM;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    cred_store.elements[0].value = memcache;
+
+    ret_maj = gss_store_cred_into(&ret_min, cred, GSS_C_INITIATE,
+                                  discard_const(gss_mech_krb5), 1, 0,
+                                  &cred_store, NULL, NULL);
+    if (ret_maj != GSS_S_COMPLETE) {
+        goto done;
+    }
+
+    err = krb5_cc_resolve(context, memcache, &ccache);
+    if (err != 0) {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    err = krb5_cc_start_seq_get(context, ccache, &cursor);
+    if (err != 0) {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    do {
+        err = krb5_cc_next_cred(context, ccache, &cursor, &creds);
+        if (err != 0 && err != KRB5_CC_END) {
+            ret_min = err;
+            ret_maj = GSS_S_FAILURE;
+            goto done;
+        }
+
+        /* TODO: Should we do a real checksum over all creds->ticket data and
+         * flags in future ? */
+        (*ccsum)++;
+
+    } while (err == 0);
+
+    err = krb5_cc_end_seq_get(context, ccache, &cursor);
+    if (err != 0) {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+done:
+    if (context) {
+        /* NOTE: destroy only if we created a MEMORY ccache */
+        if (ccache) {
+            if (memcache) {
+                krb5_cc_destroy(context, ccache);
+            } else {
+                krb5_cc_close(context, ccache);
+            }
+        }
+        krb5_free_context(context);
+    }
+    free(memcache);
+    *min = ret_min;
+    return ret_maj;
+}
+
+/* Check if cred refresh is being requested by the client.
+ * if so, take a snapshot of the cred so that later we can check if anything
+ * was added */
+uint32_t gp_check_sync_creds(struct gp_cred_check_handle *h,
+                             gss_cred_id_t cred)
+{
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    struct gp_service *svc = h->ctx->service;
+    struct gssx_option *opt = NULL;
+    uint32_t ccsum = 0;
+
+    if (!svc->allow_cc_sync)
+        return 0;
+
+    gp_options_find(opt, h->options, CRED_SYNC_OPTION,
+                    sizeof(CRED_SYNC_OPTION));
+    if (!opt) {
+        return 0;
+    }
+    if (!gpopt_string_match(&opt->value, CRED_SYNC_DEFAULT,
+                            sizeof(CRED_SYNC_DEFAULT))) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < svc->krb5.store.count; i++) {
+        if (strcmp(svc->krb5.store.elements[i].key, "ccache") == 0) {
+            /* Saving in local ccache no need to sync up to client */
+            return 0;
+        }
+    }
+
+    ret_maj = gp_count_tickets(&ret_min, cred, &ccsum);
+    if (ret_maj) {
+        return 0;
+    }
+
+    return ccsum;
+}
+
+uint32_t gp_export_sync_creds(uint32_t *min, struct gp_call_ctx *gpcall,
+                              gss_cred_id_t *cred,
+                              gssx_option **options_val, u_int *options_len)
+{
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    gssx_cred creds = { 0 };
+    char value[GPKRB_MAX_CRED_SIZE];
+    size_t len;
+    XDR xdrctx;
+    bool xdrok;
+
+    ret_maj = gp_export_gssx_cred(&ret_min, gpcall, cred, &creds);
+    if (ret_maj) {
+        goto done;
+    }
+
+    xdrmem_create(&xdrctx, value, GPKRB_MAX_CRED_SIZE, XDR_ENCODE);
+    xdrok = xdr_gssx_cred(&xdrctx, &creds);
+    if (!xdrok) {
+        ret_min = ENOSPC;
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+    len = xdr_getpos(&xdrctx);
+
+    ret_min = gp_add_option(options_val, options_len, CRED_SYNC_PAYLOAD,
+                            sizeof(CRED_SYNC_PAYLOAD), value, len);
+    if (ret_min) {
+        ret_maj = GSS_S_FAILURE;
+        goto done;
+    }
+
+    ret_min = 0;
+    ret_maj = GSS_S_COMPLETE;
+
+done:
+    xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&creds);
     *min = ret_min;
     return ret_maj;
 }

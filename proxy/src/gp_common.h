@@ -116,6 +116,11 @@ do { \
 
 #define ACQUIRE_TYPE_OPTION         "acquire_type"
 #define ACQUIRE_IMPERSONATE_NAME    "impersonate_name"
+#define CRED_SYNC_OPTION "sync_modified_creds"
+#define CRED_SYNC_DEFAULT "default"
+#define CRED_SYNC_PAYLOAD "sync_creds"
+
+#define GPKRB_MAX_CRED_SIZE 1024 * 512
 
 uint32_t gp_add_option(gssx_option **options_val, u_int *options_len,
                        const void *option, size_t option_len,

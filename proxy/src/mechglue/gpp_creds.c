@@ -4,7 +4,6 @@
 #include <gssapi/gssapi_krb5.h>
 
 #define GPKRB_SRV_NAME "Encrypted/Credentials/v1@X-GSSPROXY:"
-#define GPKRB_MAX_CRED_SIZE 1024 * 512
 
 uint32_t gpp_store_remote_creds(uint32_t *min,
                                 gss_const_key_value_set_t cred_store,

@@ -126,6 +126,20 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>allow_client_ccache_sync (boolean)</term>
+                    <listitem>
+                        <para>Allow clients to request credentials to be sent back for better
+                              caching.</para>
+                        <para>This option allows the proxy, in certain circumstances, to send back
+                              an additional option in the response structure of certain calls when
+                              it determines that a new ticket may have been added to the internal
+                              ccache. Clients can then replace their (encrypted) copy with the
+                              updated ccache.</para>
+                        <para>Default: false</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>cred_usage (string)</term>
                     <listitem>
                         <para>Allow to restrict the kind of operations permitted for this service.</para>
