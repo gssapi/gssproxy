@@ -38,4 +38,17 @@ uint32_t gp_cred_allowed(uint32_t *min,
 
 void gp_filter_flags(struct gp_call_ctx *gpcall, uint32_t *flags);
 
+struct gp_cred_check_handle {
+    struct gp_call_ctx *ctx;
+    struct {
+        u_int options_len;
+        gssx_option *options_val;
+    } options;
+};
+uint32_t gp_check_sync_creds(struct gp_cred_check_handle *h,
+                             gss_cred_id_t cred);
+uint32_t gp_export_sync_creds(uint32_t *min, struct gp_call_ctx *gpcall,
+                              gss_cred_id_t *cred,
+                              gssx_option **options_val, u_int *options_len);
+
 #endif /* _GP_RPC_CREDS_H_ */

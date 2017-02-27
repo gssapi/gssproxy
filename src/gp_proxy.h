@@ -32,6 +32,7 @@ struct gp_service {
     bool any_uid;
     bool allow_proto_trans;
     bool allow_const_deleg;
+    bool allow_cc_sync;
     bool trusted;
     bool kernel_nfsd;
     bool impersonate;
