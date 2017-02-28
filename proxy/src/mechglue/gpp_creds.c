@@ -5,7 +5,87 @@
 
 #define GPKRB_SRV_NAME "Encrypted/Credentials/v1@X-GSSPROXY:"
 
-uint32_t gpp_store_remote_creds(uint32_t *min,
+uint32_t gpp_cred_handle_init(uint32_t *min, bool defcred, const char *ccache,
+                              struct gpp_cred_handle **out_handle)
+{
+    struct gpp_cred_handle *h = NULL;
+    uint32_t maj = 0;
+
+    h = calloc(1, sizeof(struct gpp_cred_handle));
+    if (!h) {
+        *min = ENOMEM;
+        return GSS_S_FAILURE;
+    }
+
+    h->default_creds = defcred;
+
+    if (ccache) {
+        h->store.elements = calloc(1, sizeof(gss_key_value_element_desc));
+        if (!h->store.elements) {
+            *min = ENOMEM;
+            maj = GSS_S_FAILURE;
+            goto done;
+        }
+        h->store.count = 1;
+
+        h->store.elements[0].key = strdup("ccache");
+        if (!h->store.elements[0].key) {
+            *min = ENOMEM;
+            maj = GSS_S_FAILURE;
+            goto done;
+        }
+
+        h->store.elements[0].value = strdup(ccache);
+        if (!h->store.elements[0].value) {
+            *min = ENOMEM;
+            maj = GSS_S_FAILURE;
+            goto done;
+        }
+    }
+
+done:
+    if (maj) {
+        uint32_t tmp;
+        (void)gpp_cred_handle_free(&tmp, h);
+    } else {
+        *out_handle = h;
+    }
+    return maj;
+}
+
+uint32_t gpp_cred_handle_free(uint32_t *min, struct gpp_cred_handle *handle)
+{
+    uint32_t maj = GSS_S_COMPLETE;
+
+    *min = 0;
+
+    if (!handle) {
+        return GSS_S_COMPLETE;
+    }
+
+    if (handle->local) {
+        maj = gss_release_cred(min, &handle->local);
+    }
+
+    if (handle->remote) {
+        xdr_free((xdrproc_t)xdr_gssx_cred, (char *)handle->remote);
+        free(handle->remote);
+    }
+
+    if (handle->store.count > 0) {
+        for (size_t i = 0; i < handle->store.count; i++) {
+            free((void *)handle->store.elements[i].key);
+            free((void *)handle->store.elements[i].value);
+        }
+        free(handle->store.elements);
+        handle->store.count = 0;
+    }
+
+    free(handle);
+    return maj;
+}
+
+uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
                                 gss_const_key_value_set_t cred_store,
                                 gssx_cred *creds)
 {
@@ -35,6 +115,10 @@ uint32_t gpp_store_remote_creds(uint32_t *min,
         }
     }
     if (!ccache) {
+        if (!default_creds) {
+            ret = ENOMEDIUM;
+            goto done;
+        }
         ret = krb5_cc_default(ctx, &ccache);
         if (ret) goto done;
     }
@@ -140,7 +224,7 @@ done:
 static OM_uint32 get_local_def_creds(OM_uint32 *minor_status,
                                      struct gpp_name_handle *name,
                                      gss_cred_usage_t cred_usage,
-                                     struct gpp_cred_handle *cred_handle)
+                                     gss_cred_id_t *cred_handle)
 {
     gss_OID_set interposed_mechs = GSS_C_NO_OID_SET;
     gss_OID_set special_mechs = GSS_C_NO_OID_SET;
@@ -159,7 +243,7 @@ static OM_uint32 get_local_def_creds(OM_uint32 *minor_status,
     }
 
     maj = gss_acquire_cred(&min, name ? name->local : NULL, 0, special_mechs,
-                           cred_usage, &cred_handle->local, NULL, NULL);
+                           cred_usage, cred_handle, NULL, NULL);
 done:
     *minor_status = min;
     (void)gss_release_oid_set(&min, &special_mechs);
@@ -179,17 +263,21 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
     OM_uint32 maj = GSS_S_FAILURE;
     OM_uint32 min = 0;
 
-    cred = calloc(1, sizeof(struct gpp_cred_handle));
-    if (!cred) {
-        min = ENOMEM;
-        goto done;
+    if (*cred_handle) {
+        cred = *cred_handle;
+    } else {
+        maj = gpp_cred_handle_init(&min, true, NULL, &cred);
+        if (maj != GSS_S_COMPLETE) {
+            *minor_status = min;
+            return maj;
+        }
     }
 
     /* See if we should try local first */
     if (behavior == GPP_LOCAL_ONLY || behavior == GPP_LOCAL_FIRST) {
 
-        maj = get_local_def_creds(&min, name, cred_usage, cred);
-        if (maj != GSS_S_NO_CRED || behavior != GPP_LOCAL_FIRST) {
+        maj = get_local_def_creds(&min, name, cred_usage, &cred->local);
+        if (maj == GSS_S_COMPLETE || behavior == GPP_LOCAL_ONLY) {
             goto done;
         }
 
@@ -199,7 +287,7 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
     }
 
     /* Then try with remote */
-    if (behavior == GPP_REMOTE_ONLY || behavior == GPP_REMOTE_FIRST) {
+    if (behavior != GPP_LOCAL_ONLY) {
         gssx_cred remote;
         gssx_cred *premote = NULL;
 
@@ -219,12 +307,14 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
 
         xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&remote);
 
-        if (maj == GSS_S_COMPLETE || behavior == GPP_REMOTE_ONLY) {
+        if (maj == GSS_S_COMPLETE) {
             goto done;
         }
 
-        /* So remote failed, but we can fallback to local, try that */
-        maj = get_local_def_creds(&min, name, cred_usage, cred);
+        if (behavior == GPP_REMOTE_FIRST) {
+            /* So remote failed, but we can fallback to local, try that */
+            maj = get_local_def_creds(&min, name, cred_usage, &cred->local);
+        }
     }
 
 done:
@@ -234,7 +324,9 @@ done:
     }
     *minor_status = min;
     if (maj != GSS_S_COMPLETE) {
-        gssi_release_cred(&min, (gss_cred_id_t *)&cred);
+        if (cred != *cred_handle) {
+            gssi_release_cred(&min, (gss_cred_id_t *)&cred);
+        }
     }
     *cred_handle = cred;
     return maj;
@@ -543,7 +635,8 @@ OM_uint32 gssi_store_cred_into(OM_uint32 *minor_status,
     cred = (struct gpp_cred_handle *)input_cred_handle;
 
     if (cred->remote) {
-        maj = gpp_store_remote_creds(&min, cred_store, cred->remote);
+        maj = gpp_store_remote_creds(&min, default_cred != 0, cred_store,
+                                     cred->remote);
         goto done;
     }
 
@@ -559,40 +652,31 @@ done:
 OM_uint32 gssi_release_cred(OM_uint32 *minor_status,
                             gss_cred_id_t *cred_handle)
 {
-    struct gpp_cred_handle *cred;
-    OM_uint32 maj, min;
-    OM_uint32 rmaj = GSS_S_COMPLETE;
+    struct gpp_cred_handle *handle;
+    uint32_t tmaj;
+    uint32_t tmin;
+    uint32_t maj;
+    uint32_t min;
 
     GSSI_TRACE();
 
     if (cred_handle == NULL) {
-        return GSS_S_NO_CRED | GSS_S_CALL_INACCESSIBLE_READ;
-    } else if (*cred_handle == GSS_C_NO_CREDENTIAL) {
-        *minor_status = 0;
-        return GSS_S_COMPLETE;
+        return GSS_S_CALL_INACCESSIBLE_READ;
     }
 
-    cred = (struct gpp_cred_handle *)*cred_handle;
+    handle = (struct gpp_cred_handle *)*cred_handle;
 
-    if (cred->local) {
-        maj = gss_release_cred(&min, &cred->local);
-        if (maj != GSS_S_COMPLETE) {
-            rmaj = maj;
-            *minor_status = gpp_map_error(min);
-        }
+    tmaj = gpm_release_cred(&tmin, &handle->remote);
+
+    maj = gpp_cred_handle_free(&min, handle);
+    if (tmaj && maj == GSS_S_COMPLETE) {
+        maj = tmaj;
+        min = tmin;
     }
 
-    if (cred->remote) {
-        maj = gpm_release_cred(&min, &cred->remote);
-        if (maj && rmaj == GSS_S_COMPLETE) {
-            rmaj = maj;
-            *minor_status = gpp_map_error(min);
-        }
-    }
-
-    free(cred);
     *cred_handle = GSS_C_NO_CREDENTIAL;
-    return rmaj;
+    *minor_status = min;
+    return maj;
 }
 
 OM_uint32 gssi_export_cred(OM_uint32 *minor_status,
@@ -638,10 +722,9 @@ OM_uint32 gssi_import_cred_by_mech(OM_uint32 *minor_status,
 
     GSSI_TRACE();
 
-    cred = calloc(1, sizeof(struct gpp_cred_handle));
-    if (!cred) {
-        *minor_status = 0;
-        return GSS_S_FAILURE;
+    maj = gpp_cred_handle_init(minor_status, false, NULL, &cred);
+    if (maj) {
+        return maj;
     }
 
     /* NOTE: it makes no sense to import a cred remotely atm,
@@ -679,4 +762,3 @@ done:
     (void)gss_release_buffer(&min, &wrap_token);
     return maj;
 }
-

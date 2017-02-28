@@ -7,8 +7,11 @@
 
 struct gpp_cred_handle {
     gssx_cred *remote;
+    gss_key_value_set_desc store;
+    bool default_creds;
     gss_cred_id_t local;
 };
+
 
 struct gpp_context_handle {
     gssx_ctx *remote;
@@ -69,6 +72,12 @@ uint32_t gpp_name_to_local(uint32_t *minor, gssx_name *name,
                            gss_OID mech_type, gss_name_t *mech_name);
 uint32_t gpp_local_to_name(uint32_t *minor,
                            gss_name_t local_name, gssx_name **name);
+uint32_t gpp_cred_handle_init(uint32_t *min, bool defcred, const char *ccache,
+                              struct gpp_cred_handle **out_handle);
+uint32_t gpp_cred_handle_free(uint32_t *min, struct gpp_cred_handle *handle);
+uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
+                                gss_const_key_value_set_t cred_store,
+                                gssx_cred *creds);
 
 OM_uint32 gssi_internal_release_oid(OM_uint32 *minor_status, gss_OID *oid);
 
