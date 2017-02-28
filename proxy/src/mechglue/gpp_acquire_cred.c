@@ -120,20 +120,22 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
         }
     }
 
-    in_cred_remote = calloc(1, sizeof(gssx_cred));
-    if (!in_cred_remote) {
-        maj = GSS_S_FAILURE;
-        min = ENOMEM;
-        goto done;
-    }
-    maj = gppint_retrieve_remote_creds(&min, ccache_name, NULL,
-                                       in_cred_remote);
-    if (maj == GSS_S_COMPLETE) {
-        behavior = GPP_REMOTE_ONLY;
-    } else {
-        safefree(in_cred_remote);
-        if (ccache_name) {
-            behavior = GPP_LOCAL_ONLY;
+    if (behavior != GPP_LOCAL_ONLY) {
+        in_cred_remote = calloc(1, sizeof(gssx_cred));
+        if (!in_cred_remote) {
+            maj = GSS_S_FAILURE;
+            min = ENOMEM;
+            goto done;
+        }
+        maj = gppint_retrieve_remote_creds(&min, ccache_name, NULL,
+                                           in_cred_remote);
+        if (maj == GSS_S_COMPLETE) {
+            behavior = GPP_REMOTE_FIRST;
+        } else {
+            safefree(in_cred_remote);
+            if (ccache_name) {
+                behavior = GPP_LOCAL_FIRST;
+            }
         }
     }
 
