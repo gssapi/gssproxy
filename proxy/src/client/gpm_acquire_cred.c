@@ -90,29 +90,16 @@ OM_uint32 gpm_acquire_cred(OM_uint32 *minor_status,
 
     /* impersonate calls use input cred and a special option */
     if (impersonate) {
-        gssx_option *opt;
-        arg->options.options_val = calloc(1, sizeof(gssx_option));
-        if (!arg->options.options_val) {
+        ret_min = gp_add_option(&arg->options.options_val,
+                                &arg->options.options_len,
+                                ACQUIRE_TYPE_OPTION,
+                                sizeof(ACQUIRE_TYPE_OPTION),
+                                ACQUIRE_IMPERSONATE_NAME,
+                                sizeof(ACQUIRE_IMPERSONATE_NAME));
+        if (ret_min) {
             ret_maj = GSS_S_FAILURE;
-            ret_min = ENOMEM;
             goto done;
         }
-        arg->options.options_len = 1;
-        opt = &arg->options.options_val[0];
-        opt->option.octet_string_val = strdup(ACQUIRE_TYPE_OPTION);
-        if (!opt->option.octet_string_val) {
-            ret_maj = GSS_S_FAILURE;
-            ret_min = ENOMEM;
-            goto done;
-        }
-        opt->option.octet_string_len = sizeof(ACQUIRE_TYPE_OPTION);
-        opt->value.octet_string_val = strdup(ACQUIRE_IMPERSONATE_NAME);
-        if (!opt->value.octet_string_val) {
-            ret_maj = GSS_S_FAILURE;
-            ret_min = ENOMEM;
-            goto done;
-        }
-        opt->value.octet_string_len = sizeof(ACQUIRE_IMPERSONATE_NAME);
     }
 
     /* execute proxy request */
