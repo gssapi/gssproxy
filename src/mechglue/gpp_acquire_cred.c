@@ -102,13 +102,6 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
     tmaj = GSS_S_COMPLETE;
     tmin = 0;
 
-    out_cred_handle = calloc(1, sizeof(struct gpp_cred_handle));
-    if (!out_cred_handle) {
-        maj = GSS_S_FAILURE;
-        min = ENOMEM;
-        goto done;
-    }
-
     name = (struct gpp_name_handle *)desired_name;
     behavior = gpp_get_behavior();
 
@@ -118,6 +111,12 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
             ccache_name = cred_store->elements[i].value;
             break;
         }
+    }
+
+    maj = gpp_cred_handle_init(&min, !ccache_name, ccache_name,
+                               &out_cred_handle);
+    if (maj != GSS_S_COMPLETE) {
+        goto done;
     }
 
     if (behavior != GPP_LOCAL_ONLY) {
@@ -196,7 +195,7 @@ done:
     if (maj == GSS_S_COMPLETE) {
         *output_cred_handle = (gss_cred_id_t)out_cred_handle;
     } else {
-        free(out_cred_handle);
+        (void)gpp_cred_handle_free(&tmin, out_cred_handle);
     }
     *minor_status = gpp_map_error(min);
     return maj;
@@ -329,10 +328,10 @@ OM_uint32 gssi_acquire_cred_with_password(OM_uint32 *minor_status,
 
     behavior = gpp_get_behavior();
 
-    out_cred_handle = calloc(1, sizeof(struct gpp_cred_handle));
-    if (!out_cred_handle) {
-        *minor_status = gpp_map_error(ENOMEM);
-        return GSS_S_FAILURE;
+    maj = gpp_cred_handle_init(&min, false, NULL, &out_cred_handle);
+    if (maj != GSS_S_COMPLETE) {
+        *minor_status = gpp_map_error(min);
+        return maj;
     }
 
     switch (behavior) {
@@ -426,10 +425,8 @@ OM_uint32 gssi_acquire_cred_impersonate_name(OM_uint32 *minor_status,
     tmaj = GSS_S_COMPLETE;
     tmin = 0;
 
-    out_cred_handle = calloc(1, sizeof(struct gpp_cred_handle));
-    if (!out_cred_handle) {
-        maj = GSS_S_FAILURE;
-        min = ENOMEM;
+    maj = gpp_cred_handle_init(&min, false, NULL, &out_cred_handle);
+    if (maj != GSS_S_COMPLETE) {
         goto done;
     }
 

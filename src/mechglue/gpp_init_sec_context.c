@@ -110,10 +110,8 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
             goto done;
         }
     } else {
-        cred_handle =  calloc(1, sizeof(struct gpp_cred_handle));
-        if (!cred_handle) {
-            maj = GSS_S_FAILURE;
-            min = ENOMEM;
+        maj = gpp_cred_handle_init(&min, true, NULL, &cred_handle);
+        if (maj) {
             goto done;
         }
     }
@@ -143,7 +141,6 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
 
     /* Then try with remote */
     if (behavior != GPP_LOCAL_ONLY) {
-
         if (name->local && !name->remote) {
             maj = gpp_local_to_name(&min, name->local, &name->remote);
             if (maj) {
@@ -152,18 +149,9 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
         }
 
         if (!cred_handle->remote) {
-            struct gpp_cred_handle *r_creds;
-
-            maj = gppint_get_def_creds(&min,
-                                       GPP_REMOTE_ONLY,
-                                       NULL,
-                                       GSS_C_INITIATE,
-                                       &r_creds);
-            if (maj == GSS_S_COMPLETE) {
-                /* steal result */
-                cred_handle->remote = r_creds->remote;
-                free(r_creds);
-            }
+            /* we ignore failures here */
+            (void)gppint_get_def_creds(&min, GPP_REMOTE_ONLY, NULL,
+                                       GSS_C_INITIATE, &cred_handle);
         }
 
         maj = gpm_init_sec_context(&min,
@@ -179,16 +167,17 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                                    output_token,
                                    ret_flags,
                                    time_rec);
-        if (maj == GSS_S_COMPLETE || maj == GSS_S_CONTINUE_NEEDED ||
-            behavior == GPP_REMOTE_ONLY) {
+        if (maj == GSS_S_COMPLETE || maj == GSS_S_CONTINUE_NEEDED) {
             goto done;
         }
 
-        /* So remote failed, but we can fallback to local, try that */
-        maj = init_ctx_local(&min, cred_handle, ctx_handle, name,
-                             mech_type, req_flags, time_req, input_cb,
-                             input_token, actual_mech_type, output_token,
-                             ret_flags, time_rec);
+        if (behavior == GPP_REMOTE_FIRST) {
+            /* So remote failed, but we can fallback to local, try that */
+            maj = init_ctx_local(&min, cred_handle, ctx_handle, name,
+                                 mech_type, req_flags, time_req, input_cb,
+                                 input_token, actual_mech_type, output_token,
+                                 ret_flags, time_rec);
+        }
     }
 
 done:

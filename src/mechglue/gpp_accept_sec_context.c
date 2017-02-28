@@ -79,10 +79,8 @@ OM_uint32 gssi_accept_sec_context(OM_uint32 *minor_status,
     }
 
     if (delegated_cred_handle) {
-        deleg_cred = calloc(1, sizeof(struct gpp_cred_handle));
-        if (!deleg_cred) {
-            maj = GSS_S_FAILURE;
-            min = ENOMEM;
+        maj = gpp_cred_handle_init(&min, false, NULL, &deleg_cred);
+        if (maj != GSS_S_COMPLETE) {
             goto done;
         }
     }
