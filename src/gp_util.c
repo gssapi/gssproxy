@@ -143,3 +143,46 @@ ssize_t gp_safe_write(int fd, const void *buf, size_t count)
 
     return len;
 }
+
+uint32_t gp_add_option(gssx_option **options_val, u_int *options_len,
+                       const void *option, size_t option_len,
+                       const void *value, size_t value_len)
+{
+    gssx_option opt = { 0 };
+    gssx_option *out;
+    uint32_t ret;
+
+    opt.option.octet_string_val = malloc(option_len);
+    if (!opt.option.octet_string_val) {
+        ret = ENOMEM;
+        goto done;
+    }
+    memcpy(opt.option.octet_string_val, option, option_len);
+    opt.option.octet_string_len = option_len;
+
+    opt.value.octet_string_val = malloc(value_len);
+    if (!opt.value.octet_string_val) {
+        ret = ENOMEM;
+        goto done;
+    }
+    memcpy(opt.value.octet_string_val, value, value_len);
+    opt.value.octet_string_len = value_len;
+
+    out = realloc(*options_val, (*options_len + 1) * sizeof(gssx_option));
+    if (!out) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    out[*options_len] = opt;
+    *options_val = out;
+    (*options_len)++;
+
+    ret = 0;
+
+done:
+    if (ret) {
+        xdr_free((xdrproc_t)xdr_gssx_option, (char *)&opt);
+    }
+    return ret;
+}

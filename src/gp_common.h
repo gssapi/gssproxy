@@ -117,4 +117,8 @@ do { \
 #define ACQUIRE_TYPE_OPTION         "acquire_type"
 #define ACQUIRE_IMPERSONATE_NAME    "impersonate_name"
 
+uint32_t gp_add_option(gssx_option **options_val, u_int *options_len,
+                       const void *option, size_t option_len,
+                       const void *value, size_t value_len);
+
 #endif /* _GP_COMMON_H_ */
