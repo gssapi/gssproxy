@@ -3,6 +3,26 @@
 #include "gssapi_gpm.h"
 #include "src/gp_conv.h"
 
+static void return_new_cred_handle(struct gssx_option *val,
+                                   gssx_cred **out_cred_handle)
+{
+    gssx_cred *creds;
+    XDR xdrctx;
+    bool xdrok;
+
+    creds = calloc(1, sizeof(*creds));
+    if (creds) {
+        xdrmem_create(&xdrctx, val->value.octet_string_val,
+                      val->value.octet_string_len, XDR_DECODE);
+        xdrok = xdr_gssx_cred(&xdrctx, creds);
+        if (xdrok) {
+            *out_cred_handle = creds;
+        } else {
+            free(creds);
+        }
+    }
+}
+
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gssx_cred *cred_handle,
                                gssx_ctx **context_handle,
@@ -15,7 +35,8 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gss_OID *actual_mech_type,
                                gss_buffer_t output_token,
                                OM_uint32 *ret_flags,
-                               OM_uint32 *time_rec)
+                               OM_uint32 *time_rec,
+                               gssx_cred **out_cred_handle)
 {
     union gp_rpc_arg uarg;
     union gp_rpc_res ures;
@@ -39,6 +60,12 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
     if (*context_handle) {
         arg->context_handle = *context_handle;
     }
+
+    /* always try request cred sync, ignore errors, not critical */
+    (void)gp_add_option(&arg->options.options_val,
+                        &arg->options.options_len,
+                        CRED_SYNC_OPTION, sizeof(CRED_SYNC_OPTION),
+                        CRED_SYNC_DEFAULT, sizeof(CRED_SYNC_DEFAULT));
 
     arg->target_name = target_name;
 
@@ -93,6 +120,16 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
         if (ret) {
             gpm_save_internal_status(ret, gp_strerror(ret));
             goto done;
+        }
+    }
+
+    /* check if a sync cred was returned to us, don't fail on errors */
+    if (out_cred_handle && res->options.options_len > 0) {
+        struct gssx_option *val = NULL;
+        gp_options_find(val, res->options, CRED_SYNC_PAYLOAD,
+                        sizeof(CRED_SYNC_PAYLOAD));
+        if (val) {
+            return_new_cred_handle(val, out_cred_handle);
         }
     }
 

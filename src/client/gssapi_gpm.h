@@ -158,7 +158,8 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gss_OID *actual_mech_type,
                                gss_buffer_t output_token,
                                OM_uint32 *ret_flags,
-                               OM_uint32 *time_rec);
+                               OM_uint32 *time_rec,
+                               gssx_cred **out_cred_handle);
 OM_uint32 gpm_inquire_context(OM_uint32 *minor_status,
                               gssx_ctx *context_handle,
                               gssx_name **src_name,

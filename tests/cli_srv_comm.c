@@ -154,6 +154,7 @@ void *client_thread(void *pvt)
                                        NULL,
                                        &out_token,
                                        NULL,
+                                       NULL,
                                        NULL);
         if (ret_maj != GSS_S_COMPLETE &&
             ret_maj != GSS_S_CONTINUE_NEEDED) {

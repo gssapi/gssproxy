@@ -166,7 +166,8 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                                    actual_mech_type,
                                    output_token,
                                    ret_flags,
-                                   time_rec);
+                                   time_rec,
+                                   NULL);
         if (maj == GSS_S_COMPLETE || maj == GSS_S_CONTINUE_NEEDED) {
             goto done;
         }
