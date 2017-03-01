@@ -2,7 +2,10 @@
 
 The traditional approach for performing Kerberos authentication in Apache 2.* is to use the mod_auth_gssapi (historically, mod_auth_kerb would have been used) module. When using this module, the Apache process must have read access to a keytab (configured with the ```GssapiCredStore``` option, or the default ```/etc/krb5.keytab```) containing keys for the HTTP service. This is not optimal from a security point of view as all websites can potentially get access to the key material. GSS-Proxy allows to implement privilege separation for the Apache httpd server by removing access to the keytab while preserving Kerberos authentication functionality.
 
-This page describes a setup which works on Fedora 21 with gssproxy-0.4.1-1.fc21.x86_64, httpd-2.4.16-1.fc21.x86_64, and mod_auth_gssapi-1.3.0-2.fc21.x86_64, and verified on Fedora 21 and RHEL 7.
+This page describes a setup which works starting with Fedora 21 with
+gssproxy-0.4.1-1.fc21.x86_64, httpd-2.4.16-1.fc21.x86_64, and
+mod_auth_gssapi-1.3.0-2.fc21.x86_64.  It works on similar versions of RHEL as
+well.
 
 ## Setting up GSS-Proxy
 
@@ -20,7 +23,10 @@ will create the service principal. On an IPA-enrolled client machine, the
 
 will retrieve the keytab for the principal. In the following configuration snippet we assume it is stored in ```/etc/gssproxy/http.keytab```. The permissions are set to 400, owner root. The Apache user does not have access to the keytab.
 
-We need to know the Apache user numerical id to put it in the configuration file, because GSS-Proxy uses the effective uid to distinguish the services. On my installation, the uid is 48. Symbolic uids will be supported in a future release of gssproxy.
+We need to know the Apache user numerical id to put it in the configuration
+file, because GSS-Proxy uses the effective uid to distinguish the services. On
+my installation, the uid is 48. Symbolic uids are also supported (e.g.,
+"httpd" or "apache").
 
 We add a new section to the ```/etc/gssproxy/gssproxy.conf``` configuration file. This section has to be before any section which might have ```allow_any_uid = yes```, namely gssproxy-0.3.0 in its ```service/nfs-client```:
 
@@ -81,10 +87,3 @@ When we now (re)start the Apache service
 ```
 
 we should be able to make HTTP requests against the server and they will be authenticated if the client has a valid Kerberos ticket.
-
-## Issues
-
-On Fedora 21 and RHEL 7 with the latest updates installed, the above setup should work.
-
-
-
