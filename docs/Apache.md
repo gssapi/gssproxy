@@ -32,18 +32,6 @@ We add a new section to the ```/etc/gssproxy/gssproxy.conf``` configuration file
   euid = 48
 ```
 
-There is an issue with libkrb5 creating a replay cache in /var/tmp, causing AVC denials. It is tracked in https://fedorahosted.org/gss-proxy/ticket/100 and it's fairly easy to fix. Create separate directory and instruct the gssproxy service to use it.
-
-```
-# mkdir /var/lib/gssproxy/rcache
-# cat > /etc/systemd/system/gssproxy.service <<EOF
-.include /usr/lib/systemd/system/gssproxy.service
-[Service]
-Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
-EOF
-# systemctl daemon-reload
-```
-
 We then start the service:
 
 ```
