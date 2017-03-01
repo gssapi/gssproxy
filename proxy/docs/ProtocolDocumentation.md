@@ -5,7 +5,7 @@ The GSS-PROXY protocol is an RPC protocol based on ONCRPC v2.
 ## Protocol Definition
 
 The protocol definition file is currently maintained in GIT here:
-https://git.fedorahosted.org/cgit/gss-proxy.git/plain/x-files/gss_proxy.x
+https://pagure.io/gssproxy/blob/master/f/x-files/gss_proxy.x
 
 The protocol is not stable yet and it is being revised while we progress prototyping client and server code, however the parts used by the Linux kernel driver are considered final and will see no backward incompatible changes.
 
