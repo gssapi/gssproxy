@@ -137,10 +137,16 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
         ret_min = ENOMEM;
         goto done;
     }
-    ret_maj = gp_export_gssx_cred(&ret_min, gpcall,
-                                  &out_cred, acr->output_cred_handle);
-    if (ret_maj) {
-        goto done;
+
+    if (out_cred == in_cred) {
+        acr->output_cred_handle = aca->input_cred_handle;
+        aca->input_cred_handle = NULL;
+    } else {
+        ret_maj = gp_export_gssx_cred(&ret_min, gpcall,
+                                      &out_cred, acr->output_cred_handle);
+        if (ret_maj) {
+            goto done;
+        }
     }
 
 done:
