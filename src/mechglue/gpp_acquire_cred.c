@@ -170,7 +170,18 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
                            &out_cred_handle->remote,
                            actual_mechs,
                            time_rec);
-    if (maj == GSS_S_COMPLETE || behavior == GPP_REMOTE_ONLY) {
+    if (maj == GSS_S_COMPLETE) {
+        /* store back creds if they changed */
+        if (out_cred_handle->remote &&
+            !gpp_creds_are_equal(in_cred_remote, out_cred_handle->remote)) {
+            tmaj = gpp_store_remote_creds(&tmin,
+                                          out_cred_handle->default_creds,
+                                          &out_cred_handle->store,
+                                          out_cred_handle->remote);
+            if (tmaj != GSS_S_COMPLETE) {
+                maj = tmaj;
+            }
+        }
         goto done;
     }
 
