@@ -85,6 +85,57 @@ uint32_t gpp_cred_handle_free(uint32_t *min, struct gpp_cred_handle *handle)
     return maj;
 }
 
+/* NOTE: currently the only things we check for are the cred name and the
+ * cred_handle_reference.  We do NOT check each cred element beyond that they
+ * match in number */
+bool gpp_creds_are_equal(gssx_cred *a, gssx_cred *b)
+{
+    gssx_buffer *ta;
+    gssx_buffer *tb;
+
+    if (!a && !b) {
+        return true;
+    } else if (!a || !b) {
+        return false;
+    }
+
+    ta = &a->desired_name.display_name;
+    tb = &b->desired_name.display_name;
+    if (ta->octet_string_len != tb->octet_string_len) {
+        return false;
+    } else if (!ta->octet_string_val && tb->octet_string_val) {
+        return false;
+    } else if (ta->octet_string_val) {
+        if (!tb->octet_string_val) {
+            return false;
+        } else if (memcmp(ta->octet_string_val, tb->octet_string_val,
+                   ta->octet_string_len) != 0) {
+            return false;
+        }
+    }
+
+    if (a->elements.elements_len != b->elements.elements_len) {
+        return false;
+    }
+
+    ta = &a->cred_handle_reference;
+    tb = &b->cred_handle_reference;
+    if (ta->octet_string_len != tb->octet_string_len) {
+        return false;
+    } else if (!ta->octet_string_val && tb->octet_string_val) {
+        return false;
+    } else if (ta->octet_string_val) {
+        if (!tb->octet_string_val) {
+            return false;
+        } else if (memcmp(ta->octet_string_val, tb->octet_string_val,
+                   ta->octet_string_len) != 0) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
                                 gss_const_key_value_set_t cred_store,
                                 gssx_cred *creds)
