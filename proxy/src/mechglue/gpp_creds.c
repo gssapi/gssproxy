@@ -355,6 +355,13 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
         maj = gpm_acquire_cred(&min, premote,
                                NULL, 0, NULL, cred_usage, false,
                                &cred->remote, NULL, NULL);
+        if (maj == GSS_S_COMPLETE) {
+            if (premote &&
+                !gpp_creds_are_equal(premote, cred->remote)) {
+                maj = gpp_store_remote_creds(&min, cred->default_creds,
+                                             &cred->store, cred->remote);
+            }
+        }
 
         xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&remote);
 

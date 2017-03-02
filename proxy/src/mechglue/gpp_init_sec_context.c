@@ -62,6 +62,7 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
     enum gpp_behavior behavior = GPP_UNINITIALIZED;
     struct gpp_context_handle *ctx_handle = NULL;
     struct gpp_cred_handle *cred_handle = NULL;
+    gssx_cred *out_cred = NULL;
     struct gpp_name_handle *name;
     OM_uint32 tmaj, tmin;
     OM_uint32 maj, min;
@@ -167,8 +168,20 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                                    output_token,
                                    ret_flags,
                                    time_rec,
-                                   NULL);
+                                   &out_cred);
         if (maj == GSS_S_COMPLETE || maj == GSS_S_CONTINUE_NEEDED) {
+            if (out_cred) {
+                xdr_free((xdrproc_t)xdr_gssx_cred,
+                         (char *)cred_handle->remote);
+                free(cred_handle->remote);
+                cred_handle->remote = out_cred;
+                out_cred = NULL;
+                /* failuire is not fatal */
+                (void)gpp_store_remote_creds(&tmin,
+                                             cred_handle->default_creds,
+                                             &cred_handle->store,
+                                             cred_handle->remote);
+            }
             goto done;
         }
 

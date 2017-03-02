@@ -22,9 +22,10 @@ int main(int argc, const char *argv[])
     int ret = -1;
     bool selfhalf = false;
     bool proxyhalf = false;
-    const char *deleg_ccache = NULL;
+    gss_key_value_element_desc ccelement = { "ccache", NULL };
+    gss_key_value_set_desc cred_store = { 1, &ccelement };
 
-    if (argc < 4) return -1;
+    if (argc < 5) return -1;
 
     ret = t_string_to_name(argv[1], &user_name, GSS_C_NT_USER_NAME);
     if (ret) {
@@ -49,29 +50,22 @@ int main(int argc, const char *argv[])
         goto done;
     }
 
-    if (argc > 4) {
-        if (strcmp(argv[4], "s4u2self") == 0) {
+    ccelement.value = argv[4];
+
+    if (argc > 5) {
+        if (strcmp(argv[5], "s4u2self") == 0) {
             selfhalf = true;
-        } else if (strcmp(argv[4], "s4u2proxy") == 0) {
+        } else if (strcmp(argv[5], "s4u2proxy") == 0) {
             proxyhalf = true;
         } else {
-            DEBUG("Invalid argument 4: %s\n", argv[4]);
+            DEBUG("Invalid argument 5: %s\n", argv[5]);
             ret = -1;
             goto done;
         }
-        if (argc < 6) {
-            DEBUG("Option %s requires additional arguments\n", argv[4]);
-            ret = -1;
-            goto done;
-        }
-        deleg_ccache = argv[5];
-        DEBUG("S4U2%s half [ccache %s]\n", selfhalf?"Self":"Proxy", argv[5]);
+        DEBUG("S4U2%s half\n", selfhalf ? "Self" : "Proxy");
     }
 
     if (proxyhalf) {
-        gss_key_value_element_desc ccelement = { "ccache", deleg_ccache };
-        gss_key_value_set_desc cred_store = { 1, &ccelement };
-
         ret_maj = gss_acquire_cred_from(&ret_min,
                                         user_name,
                                         GSS_C_INDEFINITE,
@@ -90,15 +84,17 @@ int main(int argc, const char *argv[])
         flags = GSS_C_MUTUAL_FLAG;
     } else {
 
-        ret_maj = gss_acquire_cred(&ret_min,
-                                   proxy_name,
-                                   GSS_C_INDEFINITE,
-                                   &oid_set,
-                                   GSS_C_BOTH,
-                                   &impersonator_cred_handle,
-                                   NULL, NULL);
+        ret_maj = gss_acquire_cred_from(&ret_min,
+                                        proxy_name,
+                                        GSS_C_INDEFINITE,
+                                        &oid_set,
+                                        GSS_C_BOTH,
+                                        &cred_store,
+                                        &impersonator_cred_handle,
+                                        NULL, NULL);
         if (ret_maj != GSS_S_COMPLETE) {
-            DEBUG("gss_acquire_cred() failed\n");
+            DEBUG("gss_acquire_cred_from() [%s] failed\n",
+                  selfhalf ? "s4u2self" : "impersonate");
             t_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
             ret = -1;
             goto done;
@@ -121,9 +117,6 @@ int main(int argc, const char *argv[])
     }
 
     if (selfhalf) {
-        gss_key_value_element_desc ccelement = { "ccache", deleg_ccache };
-        gss_key_value_set_desc cred_store = { 1, &ccelement };
-
         ret_maj = gss_store_cred_into(&ret_min,
                                       cred_handle,
                                       GSS_C_INITIATE,

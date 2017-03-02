@@ -75,40 +75,43 @@ def run(testdir, env, conf):
 
     # Test all permitted
     socket = os.path.join(testdir, 'impersonate.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS]
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS,
+           path_prefix + 'impersonate.cache']
     r = run_cmd(testdir, env, conf, "Impersonate", socket, cmd, False)
     rets.append(r)
 
     #Test fail
     socket = os.path.join(testdir, 'impersonate-proxyonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS]
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS,
+           path_prefix + 'impersonate.cache']
     r = run_cmd(testdir, env, conf, "Impersonate fail self", socket, cmd, True)
     rets.append(r)
 
     #Test fail
     socket = os.path.join(testdir, 'impersonate-selfonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS]
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS,
+           path_prefix + 'impersonate.cache']
     r = run_cmd(testdir, env, conf, "Impersonate fail proxy", socket, cmd, True)
     rets.append(r)
 
     #Test s4u2self half succeed
     socket = os.path.join(testdir, 'impersonate-selfonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS, 's4u2self',
-           path_prefix + 'impersonate-proxy.ccache']
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS,
+           path_prefix + 'impersonate.cache', 's4u2self']
     r = run_cmd(testdir, env, conf, "s4u2self delegation", socket, cmd, False)
     rets.append(r)
 
     #Test s4u2proxy half fail
     socket = os.path.join(testdir, 'impersonate-selfonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS, 's4u2proxy',
-           path_prefix + 'impersonate-proxy.ccache']
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS,
+           path_prefix + 'impersonate.cache', 's4u2proxy']
     r = run_cmd(testdir, env, conf, "s4u2proxy fail", socket, cmd, True)
     rets.append(r)
 
     #Test s4u2proxy half succeed
     socket = os.path.join(testdir, 'impersonate-proxyonly.socket')
-    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS, 's4u2proxy',
-           path_prefix + 'impersonate-proxy.ccache']
+    cmd = ["./tests/t_impersonate", USR_NAME, HOST_GSS, PROXY_GSS,
+           path_prefix + 'impersonate.cache', 's4u2proxy']
     r = run_cmd(testdir, env, conf, "s4u2proxy", socket, cmd, False)
     rets.append(r)
 
