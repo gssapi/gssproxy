@@ -389,6 +389,7 @@ done:
 }
 
 #define KRB5_SET_ALLOWED_ENCTYPE "krb5_set_allowed_enctype_values"
+#define KRB5_SET_NO_CI_FLAGS "krb5_set_no_ci_flags"
 
 static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
 {
@@ -396,6 +397,7 @@ static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
     struct gssx_option *op;
     uint32_t num_ktypes = 0;
     krb5_enctype *ktypes;
+    bool no_ci_flags = false;
     uint32_t maj, min;
     int i, j;
 
@@ -411,6 +413,12 @@ static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
                 num_ktypes = op->value.octet_string_len / sizeof(krb5_enctype);
                 ktypes = (krb5_enctype *)op->value.octet_string_val;
                 break;
+            } else if ((op->option.octet_string_len ==
+                        sizeof(KRB5_SET_NO_CI_FLAGS)) &&
+                (strncmp(KRB5_SET_NO_CI_FLAGS,
+                         op->option.octet_string_val,
+                         op->option.octet_string_len) == 0)) {
+                no_ci_flags = true;
             }
         }
     }
@@ -420,6 +428,16 @@ static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
                                               num_ktypes, ktypes);
         if (maj != GSS_S_COMPLETE) {
             GPDEBUG("Failed to set allowable enctypes\n");
+        }
+    }
+
+    if (no_ci_flags) {
+        gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+        maj = gss_set_cred_option(&min, &gss_cred,
+                                  discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X),
+                                  &empty_buffer);
+        if (maj != GSS_S_COMPLETE) {
+            GPDEBUG("Failed to set NO CI Flags\n");
         }
     }
 }
