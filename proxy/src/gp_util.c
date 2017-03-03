@@ -160,13 +160,15 @@ uint32_t gp_add_option(gssx_option **options_val, u_int *options_len,
     memcpy(opt.option.octet_string_val, option, option_len);
     opt.option.octet_string_len = option_len;
 
-    opt.value.octet_string_val = malloc(value_len);
-    if (!opt.value.octet_string_val) {
-        ret = ENOMEM;
-        goto done;
+    if (value_len != 0) {
+        opt.value.octet_string_val = malloc(value_len);
+        if (!opt.value.octet_string_val) {
+            ret = ENOMEM;
+            goto done;
+        }
+        memcpy(opt.value.octet_string_val, value, value_len);
+        opt.value.octet_string_len = value_len;
     }
-    memcpy(opt.value.octet_string_val, value, value_len);
-    opt.value.octet_string_len = value_len;
 
     out = realloc(*options_val, (*options_len + 1) * sizeof(gssx_option));
     if (!out) {

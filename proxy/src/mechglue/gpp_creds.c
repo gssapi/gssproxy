@@ -561,12 +561,9 @@ static uint32_t gpp_set_opt_allowable_entypes(uint32_t *min, gssx_cred *cred,
     struct gpp_allowable_enctypes *ae;
     struct gssx_cred_element *ce = NULL;
     gss_OID_desc mech;
-    gssx_option *to;
-    gssx_buffer *tb;
-    int i;
 
     /* Find the first element that matches one of the krb related OIDs */
-    for (i = 0; i < cred->elements.elements_len; i++) {
+    for (unsigned i = 0; i < cred->elements.elements_len; i++) {
         gp_conv_gssx_to_oid(&cred->elements.elements_val[i].mech, &mech);
         if (gpp_is_krb5_oid(&mech)) {
             ce = &cred->elements.elements_val[i];
@@ -579,36 +576,51 @@ static uint32_t gpp_set_opt_allowable_entypes(uint32_t *min, gssx_cred *cred,
         return GSS_S_FAILURE;
     }
 
-    to = realloc(ce->options.options_val,
-                 sizeof(gssx_option) * (ce->options.options_len + 1));
-    if (!to) {
-        *min = ENOMEM;
-        return GSS_S_FAILURE;
-    }
-    ce->options.options_val = to;
-    i = ce->options.options_len;
-
-    tb = &ce->options.options_val[i].option;
-    tb->octet_string_len = sizeof(KRB5_SET_ALLOWED_ENCTYPE);
-    tb->octet_string_val = strdup(KRB5_SET_ALLOWED_ENCTYPE);
-    if (!tb->octet_string_val) {
-        *min = ENOMEM;
-        return GSS_S_FAILURE;
-    }
-
     ae = (struct gpp_allowable_enctypes *)value->value;
-    tb = &ce->options.options_val[i].value;
-    tb->octet_string_len = sizeof(krb5_enctype) * ae->num_ktypes;
-    tb->octet_string_val = malloc(tb->octet_string_len);
-    if (!tb->octet_string_val) {
-        *min = ENOMEM;
+    *min = gp_add_option(&ce->options.options_val,
+                         &ce->options.options_len,
+                         KRB5_SET_ALLOWED_ENCTYPE,
+                         sizeof(KRB5_SET_ALLOWED_ENCTYPE),
+                         ae->ktypes,
+                         sizeof(krb5_enctype) * ae->num_ktypes);
+    if (*min != 0) {
         return GSS_S_FAILURE;
     }
-    memcpy(tb->octet_string_val, ae->ktypes, tb->octet_string_len);
 
-    ce->options.options_len++;
+    return GSS_S_COMPLETE;
+}
 
-    *min = 0;
+#define KRB5_SET_NO_CI_FLAGS "krb5_set_no_ci_flags"
+
+static uint32_t gpp_set_no_ci_flags(uint32_t *min, gssx_cred *cred,
+                                    const gss_buffer_t value)
+{
+    struct gssx_cred_element *ce = NULL;
+    gss_OID_desc mech;
+
+    /* Find the first element that matches one of the krb related OIDs */
+    for (unsigned i = 0; i < cred->elements.elements_len; i++) {
+        gp_conv_gssx_to_oid(&cred->elements.elements_val[i].mech, &mech);
+        if (gpp_is_krb5_oid(&mech)) {
+            ce = &cred->elements.elements_val[i];
+            break;
+        }
+    }
+
+    if (!ce) {
+        *min = EINVAL;
+        return GSS_S_FAILURE;
+    }
+
+    *min = gp_add_option(&ce->options.options_val,
+                         &ce->options.options_len,
+                         KRB5_SET_NO_CI_FLAGS,
+                         sizeof(KRB5_SET_NO_CI_FLAGS),
+                         NULL, 0);
+    if (*min != 0) {
+        return GSS_S_FAILURE;
+    }
+
     return GSS_S_COMPLETE;
 }
 
@@ -620,6 +632,8 @@ static uint32_t gpp_remote_options(uint32_t *min, gssx_cred *cred,
 
     if (gss_oid_equal(&gpp_allowed_enctypes_oid, desired_object)) {
         maj = gpp_set_opt_allowable_entypes(min, cred, value);
+    } else if (gss_oid_equal(GSS_KRB5_CRED_NO_CI_FLAGS_X, desired_object)) {
+        maj = gpp_set_no_ci_flags(min, cred, value);
     }
 
     return maj;
