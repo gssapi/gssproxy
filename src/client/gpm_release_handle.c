@@ -51,6 +51,8 @@ rel_done:
     gpm_free_xdrs(GSSX_RELEASE_HANDLE, &uarg, &ures);
 done:
     xdr_free((xdrproc_t)xdr_gssx_cred, (char *)r);
+    free(r);
+    *cred_handle = NULL;
     return ret;
 }
 
