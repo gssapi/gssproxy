@@ -77,6 +77,7 @@ if __name__ == '__main__':
             testnum += 1
     except Exception:
         traceback.print_exc()
+        errored = True
     finally:
         for name in processes:
             print("Killing %s" % name)
