@@ -5,19 +5,15 @@
 
 int main(int argc, const char *argv[])
 {
-    char buffer[MAX_RPC_SIZE];
-    uint32_t buflen;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
     gss_ctx_id_t init_ctx = GSS_C_NO_CONTEXT;
     gss_ctx_id_t accept_ctx = GSS_C_NO_CONTEXT;
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
-    gss_buffer_desc user_password = GSS_C_EMPTY_BUFFER;
     gss_name_t target_name;
     gss_OID_set_desc oid_set = { 1, discard_const(gss_mech_krb5) };
     uint32_t ret_maj;
     uint32_t ret_min;
-    uint32_t time_rec;
     int ret = -1;
 
     if (argc != 2) return -1;
