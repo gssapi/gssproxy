@@ -186,6 +186,11 @@ OM_uint32 gssi_acquire_cred_from(OM_uint32 *minor_status,
     }
 
     if (behavior == GPP_REMOTE_FIRST) {
+        if (maj != GSS_S_COMPLETE) {
+            /* save errors */
+            tmaj = maj;
+            tmin = min;
+        }
         /* So remote failed, but we can fallback to local, try that */
         maj = acquire_local(&min, NULL, name,
                             time_req, desired_mechs, cred_usage, cred_store,

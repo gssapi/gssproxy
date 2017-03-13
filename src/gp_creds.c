@@ -629,8 +629,12 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         ret_maj = gp_check_cred(&ret_min, in_cred, desired_name, cred_usage);
         if (ret_maj == GSS_S_COMPLETE) {
             return GSS_S_COMPLETE;
-        } else if (ret_maj != GSS_S_CREDENTIALS_EXPIRED &&
-                   ret_maj != GSS_S_NO_CRED) {
+        } else if (ret_maj == GSS_S_CREDENTIALS_EXPIRED ||
+                   ret_maj == GSS_S_NO_CRED) {
+            /* continue and try to obtain new creds */
+            ret_maj = 0;
+            ret_min = 0;
+        } else {
             *min = ret_min;
             return GSS_S_CRED_UNAVAIL;
         }
@@ -639,13 +643,13 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     if (acquire_type == ACQ_NORMAL) {
         ret_min = gp_get_cred_environment(gpcall, desired_name, &req_name,
                                           &cred_usage, &cred_store);
+        if (ret_min) {
+            ret_maj = GSS_S_CRED_UNAVAIL;
+        }
     } else if (desired_name) {
         ret_maj = gp_conv_gssx_to_name(&ret_min, desired_name, &req_name);
     }
     if (ret_maj) {
-        goto done;
-    } else if (ret_min) {
-        ret_maj = GSS_S_CRED_UNAVAIL;
         goto done;
     }
 
