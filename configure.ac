@@ -131,6 +131,9 @@ AC_CHECK_LIB(gssapi_krb5, gss_export_cred,,
              [AC_MSG_ERROR([GSSAPI library does not support gss_export_cred])],
              [$GSSAPI_LIBS])
 
+AC_CHECK_DECLS([GSS_KRB5_GET_CRED_IMPERSONATOR], [], [],
+               [[#include <gssapi/gssapi_krb5.h>]])
+
 AC_SUBST([KRB5_CFLAGS])
 AC_SUBST([KRB5_LIBS])
 AC_SUBST([GSSAPI_CFLAGS])

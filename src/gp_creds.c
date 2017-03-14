@@ -773,9 +773,9 @@ void gp_filter_flags(struct gp_call_ctx *gpcall, uint32_t *flags)
     *flags &= ~gpcall->service->filter_flags;
 }
 
-uint32_t gp_cred_allowed(uint32_t *min,
-                         struct gp_call_ctx *gpcall,
-                         gss_cred_id_t cred)
+
+static uint32_t get_impersonator_fallback(uint32_t *min, gss_cred_id_t cred,
+                                          char **impersonator)
 {
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
@@ -784,22 +784,6 @@ uint32_t gp_cred_allowed(uint32_t *min,
     krb5_ccache ccache = NULL;
     krb5_data config;
     int err;
-
-    if (cred == GSS_C_NO_CREDENTIAL) {
-        return GSS_S_CRED_UNAVAIL;
-    }
-
-    if (gpcall->service->trusted ||
-        gpcall->service->impersonate ||
-        gpcall->service->allow_const_deleg) {
-
-        GPDEBUGN(2, "Credentials allowed by configuration\n");
-        *min = 0;
-        return GSS_S_COMPLETE;
-    }
-
-    /* FIXME: krb5 specific code, should get an oid registerd to query the
-     * cred with gss_inquire_cred_by_oid() or similar instead */
 
     err = krb5_init_context(&context);
     if (err) {
@@ -835,21 +819,116 @@ uint32_t gp_cred_allowed(uint32_t *min,
         goto done;
     }
 
+    err = krb5_cc_get_config(context, ccache, NULL, "proxy_impersonator",
+                             &config);
+    if (err == 0) {
+        *impersonator = strndup(config.data, config.length);
+        if (!*impersonator) {
+            ret_min = ENOMEM;
+            ret_maj = GSS_S_FAILURE;
+        } else {
+            ret_min = 0;
+            ret_maj = GSS_S_COMPLETE;
+        }
+        krb5_free_data_contents(context, &config);
+    } else {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+    }
+
+done:
+    if (context) {
+        if (ccache) {
+            krb5_cc_destroy(context, ccache);
+        }
+        krb5_free_context(context);
+    }
+    free(memcache);
+
+    *min = ret_min;
+    return ret_maj;
+}
+
+#if !HAVE_DECL_GSS_KRB5_GET_CRED_IMPERSONATOR
+gss_OID_desc impersonator_oid = {
+    11, discard_const("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x05\x0e")
+};
+const gss_OID GSS_KRB5_GET_CRED_IMPERSONATOR = &impersonator_oid;
+#endif
+
+static uint32_t get_impersonator_name(uint32_t *min, gss_cred_id_t cred,
+                                      char **impersonator)
+{
+    gss_buffer_set_t bufset = GSS_C_NO_BUFFER_SET;
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    uint32_t discard;
+
+    *impersonator = NULL;
+
+    ret_maj = gss_inquire_cred_by_oid(&ret_min, cred,
+                                      GSS_KRB5_GET_CRED_IMPERSONATOR,
+                                      &bufset);
+    if (ret_maj == GSS_S_COMPLETE) {
+        if (bufset->count == 0) {
+            ret_min = ENOENT;
+            ret_maj = GSS_S_COMPLETE;
+            goto done;
+        }
+        *impersonator = strndup(bufset->elements[0].value,
+                                bufset->elements[0].length);
+        if (!*impersonator) {
+            ret_min = ENOMEM;
+            ret_maj = GSS_S_FAILURE;
+        }
+    } else if (ret_maj == GSS_S_UNAVAILABLE) {
+        /* Not supported by krb5 library yet, fallback to raw krb5 calls */
+        /* TODO: Remove once we set a required dependency on MIT 1.15+ */
+        ret_maj = get_impersonator_fallback(&ret_min, cred, impersonator);
+        if (ret_maj == GSS_S_FAILURE) {
+            if (ret_min == KRB5_CC_NOTFOUND) {
+                ret_min = ENOENT;
+                ret_maj = GSS_S_COMPLETE;
+            }
+        }
+    }
+
+done:
+    (void)gss_release_buffer_set(&discard, &bufset);
+    *min = ret_min;
+    return ret_maj;
+}
+
+uint32_t gp_cred_allowed(uint32_t *min,
+                         struct gp_call_ctx *gpcall,
+                         gss_cred_id_t cred)
+{
+    char *impersonator = NULL;
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+
+    if (cred == GSS_C_NO_CREDENTIAL) {
+        return GSS_S_CRED_UNAVAIL;
+    }
+
+    if (gpcall->service->trusted ||
+        gpcall->service->impersonate ||
+        gpcall->service->allow_const_deleg) {
+
+        GPDEBUGN(2, "Credentials allowed by configuration\n");
+        *min = 0;
+        return GSS_S_COMPLETE;
+    }
+
+    ret_maj = get_impersonator_name(&ret_min, cred, &impersonator);
+    if (ret_maj) goto done;
+
     /* if we find an impersonator entry we bail as that is not authorized,
      * if it were then gpcall->service->allow_const_deleg would have caused
      * the ealier check to return GSS_S_COMPLETE already */
-    err = krb5_cc_get_config(context, ccache, NULL, "proxy_impersonator",
-                             &config);
-    if (!err) {
-        krb5_free_data_contents(context, &config);
+    if (impersonator != NULL) {
         ret_min = 0;
         ret_maj = GSS_S_UNAUTHORIZED;
-    } else if (err != KRB5_CC_NOTFOUND) {
-        ret_min = err;
-        ret_maj = GSS_S_FAILURE;
-    } else {
-        ret_min = 0;
-        ret_maj = GSS_S_COMPLETE;
     }
 
 done:
@@ -864,15 +943,7 @@ done:
         GPDEBUG("Failure while checking credentials\n");
         break;
     }
-    if (context) {
-        /* NOTE: destroy only if we created a MEMORY ccache */
-        if (ccache) {
-            if (memcache) krb5_cc_destroy(context, ccache);
-            else krb5_cc_close(context, ccache);
-        }
-        krb5_free_context(context);
-    }
-    free(memcache);
+    free(impersonator);
     *min = ret_min;
     return ret_maj;
 }
