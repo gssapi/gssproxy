@@ -108,7 +108,7 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
         }
     }
 
-    ret_maj = gp_cred_allowed(&ret_min, gpcall, ich);
+    ret_maj = gp_cred_allowed(&ret_min, gpcall, ich, target_name);
     if (ret_maj) {
         goto done;
     }

@@ -883,7 +883,8 @@ static uint32_t get_impersonator_name(uint32_t *min, gss_cred_id_t cred,
         }
     } else if (ret_maj == GSS_S_UNAVAILABLE) {
         /* Not supported by krb5 library yet, fallback to raw krb5 calls */
-        /* TODO: Remove once we set a required dependency on MIT 1.15+ */
+        /* TODO: Remove once we set a minimum required dependency on a
+         * release that supports this call */
         ret_maj = get_impersonator_fallback(&ret_min, cred, impersonator);
         if (ret_maj == GSS_S_FAILURE) {
             if (ret_min == KRB5_CC_NOTFOUND) {
@@ -899,9 +900,47 @@ done:
     return ret_maj;
 }
 
+static uint32_t check_impersonator_name(uint32_t *min,
+                                        gss_name_t target_name,
+                                        const char *impersonator)
+{
+    gss_name_t canon_name = NULL;
+    gss_buffer_desc buf;
+    uint32_t ret_maj = 0;
+    uint32_t ret_min = 0;
+    uint32_t discard;
+    bool match;
+
+    ret_maj = gss_canonicalize_name(&discard, target_name, &gp_mech_krb5,
+                                    &canon_name);
+    if (ret_maj != GSS_S_COMPLETE) {
+        *min = ret_min;
+        return ret_maj;
+    }
+
+    ret_maj = gss_display_name(&discard, canon_name, &buf, NULL);
+    gss_release_name(&discard, &canon_name);
+    if (ret_maj != GSS_S_COMPLETE) {
+        *min = ret_min;
+        return ret_maj;
+    }
+
+    match = (strncmp(impersonator, buf.value, buf.length) == 0) &&
+            (strlen(impersonator) == buf.length);
+    gss_release_buffer(&discard, &buf);
+
+    *min = 0;
+    if (match) {
+        return GSS_S_COMPLETE;
+    } else {
+        return GSS_S_UNAUTHORIZED;
+    }
+}
+
 uint32_t gp_cred_allowed(uint32_t *min,
                          struct gp_call_ctx *gpcall,
-                         gss_cred_id_t cred)
+                         gss_cred_id_t cred,
+                         gss_name_t target_name)
 {
     char *impersonator = NULL;
     uint32_t ret_maj = 0;
@@ -924,11 +963,11 @@ uint32_t gp_cred_allowed(uint32_t *min,
     if (ret_maj) goto done;
 
     /* if we find an impersonator entry we bail as that is not authorized,
-     * if it were then gpcall->service->allow_const_deleg would have caused
-     * the ealier check to return GSS_S_COMPLETE already */
+     * *unless* the target is the impersonator itself! If the operation
+     * were authorized then gpcall->service->allow_const_deleg would have
+     * caused the ealier check to return GSS_S_COMPLETE already */
     if (impersonator != NULL) {
-        ret_min = 0;
-        ret_maj = GSS_S_UNAUTHORIZED;
+        ret_maj = check_impersonator_name(&ret_min, target_name, impersonator);
     }
 
 done:
@@ -937,7 +976,11 @@ done:
         GPDEBUGN(2, "Unauthorized impersonator credentials detected\n");
         break;
     case GSS_S_COMPLETE:
-        GPDEBUGN(2, "No impersonator credentials detected\n");
+        if (impersonator) {
+            GPDEBUGN(2, "Credentials allowed for 'self'\n");
+        } else {
+            GPDEBUGN(2, "No impersonator credentials detected\n");
+        }
         break;
     default:
         GPDEBUG("Failure while checking credentials\n");

@@ -34,7 +34,8 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
 
 uint32_t gp_cred_allowed(uint32_t *min,
                          struct gp_call_ctx *gpcall,
-                         gss_cred_id_t cred);
+                         gss_cred_id_t cred,
+                         gss_name_t target_name);
 
 void gp_filter_flags(struct gp_call_ctx *gpcall, uint32_t *flags);
 
