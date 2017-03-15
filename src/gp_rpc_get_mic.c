@@ -3,7 +3,7 @@
 #include "gp_rpc_process.h"
 #include <gssapi/gssapi.h>
 
-int gp_get_mic(struct gp_call_ctx *gpcall,
+int gp_get_mic(struct gp_call_ctx *gpcall UNUSED,
                union gp_rpc_arg *arg,
                union gp_rpc_res *res)
 {
@@ -79,7 +79,7 @@ int gp_get_mic(struct gp_call_ctx *gpcall,
     ret_min = 0;
 
 done:
-    ret = gp_conv_status_to_gssx(&gma->call_ctx, ret_maj, ret_min,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min,
                                  GSS_C_NO_OID, &gmr->status);
     GPRPCDEBUG(gssx_res_get_mic, gmr);
     gss_release_buffer(&ret_min, &message_token);

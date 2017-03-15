@@ -150,8 +150,7 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
     }
 
 done:
-    ret = gp_conv_status_to_gssx(&aca->call_ctx,
-                                 ret_maj, ret_min, desired_mech,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min, desired_mech,
                                  &acr->status);
 
     GPRPCDEBUG(gssx_res_acquire_cred, acr);

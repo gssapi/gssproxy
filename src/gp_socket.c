@@ -146,7 +146,7 @@ static int set_fd_flags(int fd, int flags)
     return 0;
 }
 
-void free_unix_socket(verto_ctx *ctx, verto_ev *ev)
+void free_unix_socket(verto_ctx *ctx UNUSED, verto_ev *ev)
 {
     struct gp_sock_ctx *sock_ctx = NULL;
     sock_ctx = verto_get_private(ev);

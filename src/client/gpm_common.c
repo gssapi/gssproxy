@@ -320,6 +320,7 @@ static void gpm_release_ctx(struct gpm_ctx *gpmctx)
 OM_uint32 gpm_release_buffer(OM_uint32 *minor_status,
                              gss_buffer_t buffer)
 {
+    *minor_status = 0;
     if (buffer != GSS_C_NO_BUFFER) {
         if (buffer->value) {
             free(buffer->value);

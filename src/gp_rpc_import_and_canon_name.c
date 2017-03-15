@@ -8,7 +8,7 @@
  * I am not kidding, if you hav not read it, go back and do it now, or do not
  * touch this function */
 
-int gp_import_and_canon_name(struct gp_call_ctx *gpcall,
+int gp_import_and_canon_name(struct gp_call_ctx *gpcall UNUSED,
                              union gp_rpc_arg *arg,
                              union gp_rpc_res *res)
 {
@@ -64,8 +64,7 @@ int gp_import_and_canon_name(struct gp_call_ctx *gpcall,
     /* TODO: icna->name_attributes */
 
 done:
-    ret = gp_conv_status_to_gssx(&icna->call_ctx,
-                                 ret_maj, ret_min, mech,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min, mech,
                                  &icnr->status);
     GPRPCDEBUG(gssx_res_import_and_canon_name, icnr);
 

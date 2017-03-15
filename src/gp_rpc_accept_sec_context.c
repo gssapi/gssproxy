@@ -152,8 +152,7 @@ done:
         ret_maj = acpt_maj;
         ret_min = acpt_min;
     }
-    ret = gp_conv_status_to_gssx(&asca->call_ctx,
-                                 ret_maj, ret_min, oid,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min, oid,
                                  &ascr->status);
     GPRPCDEBUG(gssx_res_accept_sec_context, ascr);
 

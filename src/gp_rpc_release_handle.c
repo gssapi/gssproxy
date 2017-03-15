@@ -2,7 +2,7 @@
 
 #include "gp_rpc_process.h"
 
-int gp_release_handle(struct gp_call_ctx *gpcall,
+int gp_release_handle(struct gp_call_ctx *gpcall UNUSED,
                       union gp_rpc_arg *arg,
                       union gp_rpc_res *res)
 {
@@ -35,8 +35,7 @@ int gp_release_handle(struct gp_call_ctx *gpcall,
         break;
     }
 
-    ret = gp_conv_status_to_gssx(&rha->call_ctx,
-                                 ret_maj, ret_min, GSS_C_NO_OID,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min, GSS_C_NO_OID,
                                  &rhr->status);
     GPRPCDEBUG(gssx_res_release_handle, rhr);
 

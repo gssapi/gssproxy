@@ -58,7 +58,7 @@ done:
 
 OM_uint32 gpm_delete_sec_context(OM_uint32 *minor_status,
                                  gssx_ctx **context_handle,
-                                 gss_buffer_t output_token)
+                                 gss_buffer_t output_token UNUSED)
 {
     union gp_rpc_arg uarg;
     union gp_rpc_res ures;

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include "gp_conv.h"
+#include "src/gp_common.h"
 
 void *gp_memdup(void *in, size_t len)
 {
@@ -488,8 +489,7 @@ done:
     return ret_maj;
 }
 
-int gp_conv_status_to_gssx(struct gssx_call_ctx *call_ctx,
-                           uint32_t ret_maj, uint32_t ret_min,
+int gp_conv_status_to_gssx(uint32_t ret_maj, uint32_t ret_min,
                            gss_OID mech, struct gssx_status *status)
 {
     int ret;

@@ -252,7 +252,6 @@ done:
 
 static int ensure_segregated_ccache(struct gp_call_ctx *gpcall,
                                     int cc_num,
-                                    struct gp_service *svc,
                                     gss_key_value_set_desc *cs)
 {
     int ret;
@@ -482,7 +481,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         }
     }
 
-    ret = ensure_segregated_ccache(gpcall, cc_num, svc, cs);
+    ret = ensure_segregated_ccache(gpcall, cc_num, cs);
     if (ret != 0) {
         goto done;
     }
@@ -587,8 +586,8 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
                            gss_cred_id_t in_cred,
                            gssx_name *desired_name,
                            gss_cred_usage_t cred_usage,
-                           uint32_t initiator_time_req,
-                           uint32_t acceptor_time_req,
+                           uint32_t initiator_time_req UNUSED,
+                           uint32_t acceptor_time_req UNUSED,
                            gss_cred_id_t *output_cred_handle,
                            gss_OID_set *actual_mechs,
                            uint32_t *initiator_time_rec,

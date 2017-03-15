@@ -8,6 +8,7 @@
 #include "gp_log.h"
 
 #define no_const(ptr) ((void *)((uintptr_t)(ptr)))
+#define UNUSED  __attribute__((unused))
 
 /* add element to list head */
 #define LIST_ADD(list, elem) do { \

@@ -3,7 +3,7 @@
 #include "gp_rpc_process.h"
 #include "gp_debug.h"
 
-int gp_indicate_mechs(struct gp_call_ctx *gpcall,
+int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
                       union gp_rpc_arg *arg,
                       union gp_rpc_res *res)
 {
@@ -251,8 +251,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall,
     }
 
 done:
-    ret = gp_conv_status_to_gssx(&ima->call_ctx,
-                                 ret_maj, ret_min, GSS_C_NO_OID,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min, GSS_C_NO_OID,
                                  &imr->status);
     GPRPCDEBUG(gssx_res_indicate_mechs, imr);
 

@@ -396,20 +396,7 @@ int gp_rpc_process_call(struct gp_call_ctx *gpcall,
     return ret;
 }
 
-int gp_get_call_context(gp_exec_std_args)
-{
-    return 0;
-}
-int gp_export_cred(gp_exec_std_args)
-{
-    return 0;
-}
-int gp_import_cred(gp_exec_std_args)
-{
-    return 0;
-}
-
-int gp_store_cred(gp_exec_std_args)
-{
-    return 0;
-}
+GP_EXEC_UNUSED_FUNC(gp_get_call_context);
+GP_EXEC_UNUSED_FUNC(gp_export_cred);
+GP_EXEC_UNUSED_FUNC(gp_import_cred);
+GP_EXEC_UNUSED_FUNC(gp_store_cred);

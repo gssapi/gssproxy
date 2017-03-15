@@ -187,8 +187,7 @@ done:
         ret_maj = init_maj;
         ret_min = init_min;
     }
-    ret = gp_conv_status_to_gssx(&isca->call_ctx,
-                                 ret_maj, ret_min, mech_type,
+    ret = gp_conv_status_to_gssx(ret_maj, ret_min, mech_type,
                                  &iscr->status);
 
     GPRPCDEBUG(gssx_res_init_sec_context, iscr);

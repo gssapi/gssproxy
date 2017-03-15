@@ -119,7 +119,7 @@ static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
     return 0;
 }
 
-static void hup_handler(verto_ctx *vctx, verto_ev *ev)
+static void hup_handler(verto_ctx *vctx, verto_ev *ev UNUSED)
 {
     int ret;
     struct gp_config *new_config, *old_config;

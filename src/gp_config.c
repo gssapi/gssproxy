@@ -720,7 +720,6 @@ void free_config(struct gp_config **cfg)
 }
 
 static int gp_config_from_file(const char *config_file,
-                               struct gp_ini_context *ctx,
                                struct ini_cfgobj *ini_config,
                                const uint32_t collision_flags)
 {
@@ -764,7 +763,6 @@ static int gp_config_from_file(const char *config_file,
 }
 
 static int gp_config_from_dir(const char *config_dir,
-                              struct gp_ini_context *ctx,
                               struct ini_cfgobj **ini_config,
                               const uint32_t collision_flags)
 {
@@ -847,8 +845,7 @@ int gp_config_init(const char *config_file, const char *config_dir,
     }
 
     if (config_file) {
-        ret = gp_config_from_file(config_file, ctx, ini_config,
-                                  collision_flags);
+        ret = gp_config_from_file(config_file, ini_config, collision_flags);
         if (ret == ENOENT) {
             GPDEBUG("Expected config file %s but did not find it.\n",
                     config_file);
@@ -857,8 +854,7 @@ int gp_config_init(const char *config_file, const char *config_dir,
         }
     }
     if (config_dir) {
-        ret = gp_config_from_dir(config_dir, ctx, &ini_config,
-                                 collision_flags);
+        ret = gp_config_from_dir(config_dir, &ini_config, collision_flags);
         if (ret) {
             return ret;
         }

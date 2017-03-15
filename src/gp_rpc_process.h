@@ -24,6 +24,12 @@ struct gp_service;
                          union gp_rpc_arg *arg, \
                          union gp_rpc_res *res
 
+#define GP_EXEC_UNUSED_FUNC(name)               \
+    int name(struct gp_call_ctx *gpcall UNUSED, \
+             union gp_rpc_arg *arg UNUSED,      \
+             union gp_rpc_res *res UNUSED)      \
+    { return 0; }
+
 int gp_indicate_mechs(gp_exec_std_args);
 int gp_get_call_context(gp_exec_std_args);
 int gp_import_and_canon_name(gp_exec_std_args);
