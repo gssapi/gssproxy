@@ -44,7 +44,7 @@ AM_CFLAGS += -Wall -Wshadow -Wstrict-prototypes -Wpointer-arith \
     -Wcast-qual -Wcast-align -Wwrite-strings \
     -fstrict-aliasing -Wstrict-aliasing -Werror=strict-aliasing \
     -Werror-implicit-function-declaration \
-    -Werror=format-security
+    -Werror=format-security -Wextra
 if BUILD_HARDENING
     AM_CPPFLAGS += -D_FORTIFY_SOURCE=2 -Wdate-time
     AM_CFLAGS += -fPIE -fstack-protector-strong
