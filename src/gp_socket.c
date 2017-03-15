@@ -303,7 +303,7 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
     struct gp_buffer *rbuf;
     uint32_t size;
     bool header = false;
-    size_t rn;
+    ssize_t rn;
     int ret;
     int fd;
 
@@ -487,7 +487,7 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
         return;
     }
     if (vecs == 2) {
-        if (wn < sizeof(size)) {
+        if (wn < (ssize_t) sizeof(size)) {
             /* don't bother trying to handle sockets that can't
              * buffer even 4 bytes */
             gp_conn_free(wbuf->conn);

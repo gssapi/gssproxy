@@ -104,9 +104,8 @@ union gp_rpc_res {
 #define gp_options_find(res, opts, name, len) \
 do { \
     struct gssx_option *_v; \
-    int _o; \
     res = NULL; \
-    for (_o = 0; _o < opts.options_len; _o++) { \
+    for (unsigned _o = 0; _o < opts.options_len; _o++) { \
         _v = &opts.options_val[_o]; \
         if (gp_option_name_match(_v, name, len)) { \
             res = _v; \

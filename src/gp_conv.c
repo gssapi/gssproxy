@@ -599,7 +599,6 @@ done:
 int gp_conv_gssx_to_oid_set(gssx_OID_set *in, gss_OID_set *out)
 {
     gss_OID_set o;
-    int i;
 
     if (in->gssx_OID_set_len == 0) {
         *out = GSS_C_NO_OID_SET;
@@ -618,7 +617,7 @@ int gp_conv_gssx_to_oid_set(gssx_OID_set *in, gss_OID_set *out)
         return ENOMEM;
     }
 
-    for (i = 0; i < o->count; i++) {
+    for (size_t i = 0; i < o->count; i++) {
         o->elements[i].elements =
                         gp_memdup(in->gssx_OID_set_val[i].octet_string_val,
                                   in->gssx_OID_set_val[i].octet_string_len);
@@ -641,7 +640,6 @@ int gp_conv_gssx_to_oid_set(gssx_OID_set *in, gss_OID_set *out)
 int gp_conv_oid_set_to_gssx(gss_OID_set in, gssx_OID_set *out)
 {
     int ret;
-    int i;
 
     if (in->count == 0) {
         return 0;
@@ -653,7 +651,7 @@ int gp_conv_oid_set_to_gssx(gss_OID_set in, gssx_OID_set *out)
         return ENOMEM;
     }
 
-    for (i = 0; i < in->count; i++) {
+    for (size_t i = 0; i < in->count; i++) {
         ret = gp_conv_octet_string(in->elements[i].length,
                                    in->elements[i].elements,
                                    &out->gssx_OID_set_val[i]);

@@ -20,7 +20,6 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
     gss_cred_id_t *add_out_cred = NULL;
     int acquire_type = ACQ_NORMAL;
     int ret;
-    int i;
 
     aca = &arg->acquire_cred;
     acr = &res->acquire_cred;
@@ -63,7 +62,7 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
             goto done;
         }
 
-        for (i = 0; i < desired_mechs->count; i++) {
+        for (unsigned i = 0; i < desired_mechs->count; i++) {
             desired_mech = &desired_mechs->elements[i];
 
             if (!gp_creds_allowed_mech(gpcall, desired_mech)) {
@@ -93,7 +92,7 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
 
     cred_usage = gp_conv_gssx_to_cred_usage(aca->cred_usage);
 
-    for (i = 0; i < use_mechs->count; i++) {
+    for (unsigned i = 0; i < use_mechs->count; i++) {
         desired_mech = &use_mechs->elements[i];
         /* this should really be folded into an extended
          * gss_add_cred in gssapi that can accept a set of URIs

@@ -312,7 +312,6 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
     int k_num = -1;
     int ck_num = -1;
     int cc_num = -1;
-    int d;
 
     memset(cs, 0, sizeof(gss_key_value_set_desc));
 
@@ -419,7 +418,7 @@ static int gp_get_cred_environment(struct gp_call_ctx *gpcall,
         ret = ENOMEM;
         goto done;
     }
-    for (d = 0; d < svc->krb5.store.count; d++) {
+    for (unsigned d = 0; d < svc->krb5.store.count; d++) {
         if (strcmp(svc->krb5.store.elements[d].key, "client_keytab") == 0) {
             ck_num = cs->count;
         } else if (strcmp(svc->krb5.store.elements[d].key, "keytab") == 0) {

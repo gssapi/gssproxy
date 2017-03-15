@@ -288,7 +288,6 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     uint32_t acceptor_lifetime = 0;
     struct gssx_cred_element *el;
     int ret;
-    int i, j;
     struct gp_creds_handle *handle = NULL;
     gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
 
@@ -314,8 +313,7 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     }
     out->elements.elements_len = mechanisms->count;
 
-    for (i = 0, j = 0; i < mechanisms->count; i++, j++) {
-
+    for (unsigned i = 0, j = 0; i < mechanisms->count; i++, j++) {
         el = &out->elements.elements_val[j];
 
         ret_maj = gss_inquire_cred_by_mech(&ret_min, *in,
@@ -399,11 +397,10 @@ static void gp_set_cred_options(gssx_cred *cred, gss_cred_id_t gss_cred)
     krb5_enctype *ktypes;
     bool no_ci_flags = false;
     uint32_t maj, min;
-    int i, j;
 
-    for (i = 0; i < cred->elements.elements_len; i++) {
+    for (unsigned i = 0; i < cred->elements.elements_len; i++) {
         ce = &cred->elements.elements_val[i];
-        for (j = 0; j < ce->options.options_len; j++) {
+        for (unsigned j = 0; j < ce->options.options_len; j++) {
             op = &ce->options.options_val[j];
             if ((op->option.octet_string_len ==
                     sizeof(KRB5_SET_ALLOWED_ENCTYPE)) &&

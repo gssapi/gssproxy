@@ -275,7 +275,6 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
 {
     gss_buffer_set_t xattrs = GSS_C_NO_BUFFER_SET;
     int ret;
-    int i;
 
     *minor_status = 0;
 
@@ -306,13 +305,13 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
             *minor_status = ENOMEM;
             return GSS_S_FAILURE;
         }
-        for (i = 0; i < xattrs->count; i++) {
+        for (unsigned i = 0; i < xattrs->count; i++) {
             ret = gp_copy_gssx_to_buffer(
                         &name->name_attributes.name_attributes_val[i].attr,
                         &xattrs->elements[i]);
             if (ret) {
-                for (--i; i >= 0; i--) {
-                    free(xattrs->elements[i].value);
+                for (; i > 0; i--) {
+                    free(xattrs->elements[i-1].value);
                 }
                 free(xattrs->elements);
                 free(xattrs);

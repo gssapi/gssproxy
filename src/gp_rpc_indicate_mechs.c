@@ -25,8 +25,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
     uint32_t ret_maj;
     uint32_t ret_min;
     int present;
-    int h, i, j;
-    int ret;
+     int ret;
 
     ima = &arg->indicate_mechs;
     imr = &res->indicate_mechs;
@@ -53,8 +52,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
     }
     imr->mechs.mechs_len = mech_set->count;
 
-    for (i = 0, h = 0; i < mech_set->count; i++, h++) {
-
+    for (unsigned i = 0, h = 0; i < mech_set->count; i++, h++) {
         mi = &imr->mechs.mechs_val[h];
 
         ret = gp_conv_oid_to_gssx(&mech_set->elements[i], &mi->mech);
@@ -104,8 +102,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
             ret_min = ret;
             goto done;
         }
-        for (j = 0; j < mech_attrs->count; j++) {
-
+        for (unsigned j = 0; j < mech_attrs->count; j++) {
             ret_maj = gss_test_oid_set_member(&ret_min,
                                               &mech_attrs->elements[j],
                                               attr_set,
@@ -136,8 +133,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
             goto done;
         }
 
-        for (j = 0; j < known_mech_attrs->count; j++) {
-
+        for (unsigned j = 0; j < known_mech_attrs->count; j++) {
             ret_maj = gss_test_oid_set_member(&ret_min,
                                               &known_mech_attrs->elements[j],
                                               attr_set,
@@ -205,8 +201,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
     }
     imr->mech_attr_descs.mech_attr_descs_len = attr_set->count;
 
-    for (i = 0; i < attr_set->count; i++) {
-
+    for (unsigned i = 0; i < attr_set->count; i++) {
         ma = &imr->mech_attr_descs.mech_attr_descs_val[i];
 
         ret = gp_conv_oid_to_gssx(&attr_set->elements[i], &ma->attr);

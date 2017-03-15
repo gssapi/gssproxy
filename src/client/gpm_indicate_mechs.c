@@ -51,7 +51,6 @@ static uint32_t gpm_copy_gss_OID_set(uint32_t *minor_status,
     gss_OID_set n;
     uint32_t ret_maj;
     uint32_t ret_min;
-    int i;
 
     ret_maj = gss_create_empty_oid_set(&ret_min, &n);
     if (ret_maj) {
@@ -59,7 +58,7 @@ static uint32_t gpm_copy_gss_OID_set(uint32_t *minor_status,
         return ret_maj;
     }
 
-    for (i = 0; i < oldset->count; i++) {
+    for (size_t i = 0; i < oldset->count; i++) {
         ret_maj = gss_add_oid_set_member(&ret_min, &oldset->elements[i], &n);
         if (ret_maj) {
             *minor_status = ret_min;
@@ -124,7 +123,6 @@ static void gpmint_indicate_mechs(void)
     uint32_t ret_min;
     uint32_t ret_maj = 0;
     int ret = 0;
-    int i;
 
     memset(arg, 0, sizeof(gssx_arg_indicate_mechs));
     memset(res, 0, sizeof(gssx_res_indicate_mechs));
@@ -158,7 +156,7 @@ static void gpmint_indicate_mechs(void)
         goto done;
     }
 
-    for (i = 0; i < res->mechs.mechs_len; i++) {
+    for (unsigned i = 0; i < res->mechs.mechs_len; i++) {
         mi = &res->mechs.mechs_val[i];
         gi = &global_mechs.info[i];
 
@@ -222,7 +220,7 @@ static void gpmint_indicate_mechs(void)
         goto done;
     }
 
-    for (i = 0; i < res->mech_attr_descs.mech_attr_descs_len; i++) {
+    for (unsigned i = 0; i < res->mech_attr_descs.mech_attr_descs_len; i++) {
         ma = &res->mech_attr_descs.mech_attr_descs_val[i];
         ga = &global_mechs.desc[i];
 
@@ -249,7 +247,7 @@ static void gpmint_indicate_mechs(void)
 
 done:
     if (ret || ret_maj) {
-        for (i = 0; i < global_mechs.desc_len; i++) {
+        for (unsigned i = 0; i < global_mechs.desc_len; i++) {
             ga = &global_mechs.desc[i];
             gss_release_oid(&discard, &ga->attr);
             gss_release_buffer(&discard, ga->name);
@@ -258,7 +256,7 @@ done:
         }
         free(global_mechs.desc);
         global_mechs.desc = NULL;
-        for (i = 0; i < global_mechs.info_len; i++) {
+        for (unsigned i = 0; i < global_mechs.info_len; i++) {
             gi = &global_mechs.info[i];
             gss_release_oid(&discard, &gi->mech);
             gss_release_oid_set(&discard, &gi->name_types);
@@ -335,7 +333,6 @@ OM_uint32 gpm_inquire_names_for_mech(OM_uint32 *minor_status,
 {
     uint32_t ret_min;
     uint32_t ret_maj;
-    int i;
 
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -351,7 +348,7 @@ OM_uint32 gpm_inquire_names_for_mech(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    for (i = 0; i < global_mechs.info_len; i++) {
+    for (unsigned i = 0; i < global_mechs.info_len; i++) {
         if (!gpm_equal_oids(global_mechs.info[i].mech, mech_type)) {
             continue;
         }
@@ -375,7 +372,6 @@ OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
     uint32_t discard;
     gss_OID name_type = GSS_C_NO_OID;
     int present;
-    int i;
 
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -402,7 +398,7 @@ OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
         goto done;
     }
 
-    for (i = 0; i < global_mechs.info_len; i++) {
+    for (unsigned i = 0; i < global_mechs.info_len; i++) {
         ret_maj = gss_test_oid_set_member(&ret_min, name_type,
                                           global_mechs.info[i].name_types,
                                           &present);
@@ -439,7 +435,6 @@ OM_uint32 gpm_inquire_attrs_for_mech(OM_uint32 *minor_status,
     uint32_t ret_min;
     uint32_t ret_maj;
     uint32_t discard;
-    int i;
 
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -451,7 +446,7 @@ OM_uint32 gpm_inquire_attrs_for_mech(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    for (i = 0; i < global_mechs.info_len; i++) {
+    for (unsigned i = 0; i < global_mechs.info_len; i++) {
         if (!gpm_equal_oids(global_mechs.info[i].mech, mech)) {
             continue;
         }
@@ -495,7 +490,6 @@ OM_uint32 gpm_inquire_saslname_for_mech(OM_uint32 *minor_status,
     uint32_t ret_min;
     uint32_t ret_maj;
     uint32_t discard;
-    int i;
 
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -511,7 +505,7 @@ OM_uint32 gpm_inquire_saslname_for_mech(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    for (i = 0; i < global_mechs.info_len; i++) {
+    for (unsigned i = 0; i < global_mechs.info_len; i++) {
         if (!gpm_equal_oids(global_mechs.info[i].mech, desired_mech)) {
             continue;
         }
@@ -554,7 +548,6 @@ OM_uint32 gpm_display_mech_attr(OM_uint32 *minor_status,
     uint32_t ret_min;
     uint32_t ret_maj;
     uint32_t discard;
-    int i;
 
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -570,7 +563,7 @@ OM_uint32 gpm_display_mech_attr(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    for (i = 0; i < global_mechs.desc_len; i++) {
+    for (unsigned i = 0; i < global_mechs.desc_len; i++) {
         if (!gpm_equal_oids(global_mechs.desc[i].attr, mech_attr)) {
             continue;
         }
@@ -614,7 +607,6 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
     uint32_t ret_maj;
     uint32_t discard;
     int present;
-    int i, j;
 
     if (!minor_status) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
@@ -636,8 +628,9 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
         return ret_maj;
     }
 
-    for (i = 0; i < global_mechs.info_len; i++) {
+    for (unsigned i = 0; i < global_mechs.info_len; i++) {
         if (desired_mech_attrs != GSS_C_NO_OID_SET) {
+            unsigned j;
             for (j = 0; j < desired_mech_attrs->count; j++) {
                 ret_maj = gss_test_oid_set_member(&ret_min,
                                             &desired_mech_attrs->elements[j],
@@ -657,6 +650,7 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
             }
         }
         if (except_mech_attrs != GSS_C_NO_OID_SET) {
+            unsigned j;
             for (j = 0; j < except_mech_attrs->count; j++) {
                 ret_maj = gss_test_oid_set_member(&ret_min,
                                             &except_mech_attrs->elements[j],
@@ -676,6 +670,7 @@ OM_uint32 gpm_indicate_mechs_by_attrs(OM_uint32 *minor_status,
             }
         }
         if (critical_mech_attrs != GSS_C_NO_OID_SET) {
+            unsigned j;
             for (j = 0; j < critical_mech_attrs->count; j++) {
                 ret_maj = gss_test_oid_set_member(&ret_min,
                                     &critical_mech_attrs->elements[j],

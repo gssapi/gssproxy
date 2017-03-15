@@ -8,7 +8,7 @@
 int t_send_buffer(int fd, char *buf, uint32_t len)
 {
     uint32_t size;
-    size_t wn;
+    ssize_t wn;
     size_t pos;
 
     size = htonl(len);
@@ -36,7 +36,7 @@ int t_send_buffer(int fd, char *buf, uint32_t len)
 int t_recv_buffer(int fd, char *buf, uint32_t *len)
 {
     uint32_t size;
-    size_t rn;
+    ssize_t rn;
     size_t pos;
 
     rn = read(fd, &size, sizeof(uint32_t));

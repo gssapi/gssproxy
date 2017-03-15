@@ -109,7 +109,7 @@ char *gp_strerror(int errnum)
 ssize_t gp_safe_read(int fd, void *buf, size_t count)
 {
     char *b = (char *)buf;
-    ssize_t len = 0;
+    size_t len = 0;
     ssize_t ret;
 
     do {
@@ -128,7 +128,7 @@ ssize_t gp_safe_read(int fd, void *buf, size_t count)
 ssize_t gp_safe_write(int fd, const void *buf, size_t count)
 {
     const char *b = (const char *)buf;
-    ssize_t len = 0;
+    size_t len = 0;
     ssize_t ret;
 
     do {

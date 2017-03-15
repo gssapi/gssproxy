@@ -57,11 +57,9 @@ static void free_str_array(const char ***a, int *count)
 
 void free_cred_store_elements(gss_key_value_set_desc *cs)
 {
-    int i;
-
     if (!cs->elements) return;
 
-    for (i = 0; i < cs->count; i++) {
+    for (unsigned i = 0; i < cs->count; i++) {
         safefree(cs->elements[i].key);
         safefree(cs->elements[i].value);
     }
@@ -146,7 +144,7 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
                                      &count, &strings);
     if (ret == 0) {
         const char *p;
-        size_t len;
+        ssize_t len;
         char *key;
 
         svc->krb5.store.elements =
@@ -698,7 +696,6 @@ struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc)
 void free_config(struct gp_config **cfg)
 {
     struct gp_config *config = *cfg;
-    uint32_t i;
 
     if (!config) {
         return;
@@ -709,7 +706,7 @@ void free_config(struct gp_config **cfg)
     free(config->socket_name);
     free(config->proxy_user);
 
-    for (i=0; i < config->num_svcs; i++) {
+    for (int i = 0; i < config->num_svcs; i++) {
         gp_service_free(config->svcs[i]);
         safefree(config->svcs[i]);
     }

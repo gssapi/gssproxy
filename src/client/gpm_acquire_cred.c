@@ -6,8 +6,6 @@ static int gpmint_cred_to_actual_mechs(gssx_cred *c, gss_OID_set *a)
 {
     gssx_cred_element *e;
     gss_OID_set m = GSS_C_NO_OID_SET;
-    int i;
-
 
     if (c->elements.elements_len) {
 
@@ -22,7 +20,7 @@ static int gpmint_cred_to_actual_mechs(gssx_cred *c, gss_OID_set *a)
             return ENOMEM;
         }
 
-        for (i = 0; i < c->elements.elements_len; i++) {
+        for (unsigned i = 0; i < c->elements.elements_len; i++) {
             e = &c->elements.elements_val[i];
 
             m->elements[i].elements = gp_memdup(e->mech.octet_string_val,
@@ -280,7 +278,6 @@ OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
     uint32_t ret_maj = GSS_S_COMPLETE;
     uint32_t life;
     int cu;
-    int i;
 
     if (!cred) {
         *minor_status = 0;
@@ -308,8 +305,7 @@ OM_uint32 gpm_inquire_cred(OM_uint32 *minor_status,
     life = GSS_C_INDEFINITE;
     cu = -1;
 
-    for (i = 0; i < cred->elements.elements_len; i++) {
-
+    for (unsigned i = 0; i < cred->elements.elements_len; i++) {
         e = &cred->elements.elements_val[i];
 
         switch (e->cred_usage) {
@@ -402,7 +398,7 @@ OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
     gss_OID_desc tmp_oid;
     uint32_t ret_min = 0;
     uint32_t ret_maj = GSS_S_COMPLETE;
-    int i;
+    unsigned i;
 
     if (!cred) {
         *minor_status = 0;
@@ -414,7 +410,6 @@ OM_uint32 gpm_inquire_cred_by_mech(OM_uint32 *minor_status,
     }
 
     for (i = 0; i < cred->elements.elements_len; i++) {
-
         e = &cred->elements.elements_val[i];
         gp_conv_gssx_to_oid(&e->mech, &tmp_oid);
         if (!gss_oid_equal(&tmp_oid, mech_type)) {

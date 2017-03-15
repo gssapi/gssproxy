@@ -19,7 +19,7 @@ void gpdbg_octet_string(octet_string *x)
         }
         fprintf(stderr, "... ] ");
     } else {
-        for (int i = 0; i < x->octet_string_len; i++) {
+        for (unsigned i = 0; i < x->octet_string_len; i++) {
             fprintf(stderr, "%x", x->octet_string_val[i]);
         }
         fprintf(stderr, " ] ");
@@ -55,7 +55,7 @@ void gpdbg_gssx_OID(gssx_OID *x)
 void gpdbg_gssx_OID_set(gssx_OID_set *x)
 {
     gp_debug_printf("{ ");
-    for (int i = 0; i < x->gssx_OID_set_len; i++) {
+    for (unsigned i = 0; i < x->gssx_OID_set_len; i++) {
         gpdbg_gssx_OID(&x->gssx_OID_set_val[i]);
     }
     gp_debug_printf("} ");
@@ -90,7 +90,7 @@ void gpdbg_gssx_option(gssx_option *x)
 #define gpdbg_extensions(x) do { \
     if ((x)->extensions.extensions_len > 0) { \
         gp_debug_printf("[ "); \
-        for (int i = 0; i < (x)->extensions.extensions_len; i++) { \
+        for (unsigned i = 0; i < (x)->extensions.extensions_len; i++) { \
             gpdbg_gssx_option(&(x)->extensions.extensions_val[i]); \
         } \
         gp_debug_printf("] "); \
@@ -100,7 +100,7 @@ void gpdbg_gssx_option(gssx_option *x)
 #define gpdbg_options(x) do { \
     if ((x)->options.options_len > 0) { \
         gp_debug_printf("[ "); \
-        for (int i = 0; i < (x)->options.options_len; i++) { \
+        for (unsigned i = 0; i < (x)->options.options_len; i++) { \
             gpdbg_gssx_option(&(x)->options.options_val[i]); \
         } \
         gp_debug_printf("] "); \
@@ -168,7 +168,7 @@ void gpdbg_gssx_call_ctx(gssx_call_ctx *x)
 #define gpdbg_name_attributes(X) do { \
     gp_debug_printf("[ "); \
     if (x->name_attributes.name_attributes_len > 0) { \
-        for (int i = 0; i < x->name_attributes.name_attributes_len; i++) { \
+        for (unsigned i = 0; i < x->name_attributes.name_attributes_len; i++) { \
             gpdbg_gssx_name_attr( \
                 &x->name_attributes.name_attributes_val[i]); \
         } \
@@ -209,7 +209,7 @@ void gpdbg_gssx_cred(gssx_cred *x)
     gp_debug_printf("{ ");
     gpdbg_gssx_name(&x->desired_name);
     gp_debug_printf("[ ");
-    for (int i = 0; i < x->elements.elements_len; i++) {
+    for (unsigned i = 0; i < x->elements.elements_len; i++) {
         gpdbg_gssx_cred_element(&x->elements.elements_val[i]);
     }
     gp_debug_printf("] ");
@@ -289,17 +289,17 @@ void gpdbg_gssx_res_indicate_mechs(gssx_res_indicate_mechs *x)
     gp_debug_printf("    GSSX_RES_INDICATE_MECHS( status: ");
     gpdbg_gssx_status(&x->status);
     gp_debug_printf("mechs: [ ");
-    for (int i = 0; i < x->mechs.mechs_len; i++) {
+    for (unsigned i = 0; i < x->mechs.mechs_len; i++) {
         gpdbg_gssx_mech_info(&x->mechs.mechs_val[i]);
     }
     gp_debug_printf("] ");
     gp_debug_printf("mech_attr_descs: [ ");
-    for (int i = 0; i < x->mech_attr_descs.mech_attr_descs_len; i++) {
+    for (unsigned i = 0; i < x->mech_attr_descs.mech_attr_descs_len; i++) {
         gpdbg_gssx_mech_attr(&x->mech_attr_descs.mech_attr_descs_val[i]);
     }
     gp_debug_printf("] ");
     gp_debug_printf("supported_extensions: [ ");
-    for (int i = 0;
+    for (unsigned i = 0;
          i < x->supported_extensions.supported_extensions_len; i++) {
         gpdbg_gssx_buffer(
             &x->supported_extensions.supported_extensions_val[i]);
@@ -602,7 +602,7 @@ void gpdbg_gssx_arg_wrap(gssx_arg_wrap *x)
     gp_debug_printf("conf_req: ");
     gp_debug_printf("%d ", (int)x->conf_req);
     gp_debug_printf("message_buffer: [ ");
-    for (int i = 0; i < x->message_buffer.message_buffer_len; i++) {
+    for (unsigned i = 0; i < x->message_buffer.message_buffer_len; i++) {
         gpdbg_octet_string(&x->message_buffer.message_buffer_val[i]);
     }
     gp_debug_printf("] ");
@@ -618,7 +618,7 @@ void gpdbg_gssx_res_wrap(gssx_res_wrap *x)
     gp_debug_printf("context_handle: ");
     GPRPCDEBUG(gssx_ctx, x->context_handle);
     gp_debug_printf("token_buffer: [ ");
-    for (int i = 0; i < x->token_buffer.token_buffer_len; i++) {
+    for (unsigned i = 0; i < x->token_buffer.token_buffer_len; i++) {
         gpdbg_octet_string(&x->token_buffer.token_buffer_val[i]);
     }
     gp_debug_printf("] ");
@@ -640,7 +640,7 @@ void gpdbg_gssx_arg_unwrap(gssx_arg_unwrap *x)
     gp_debug_printf("context_handle: ");
     gpdbg_gssx_ctx(&x->context_handle);
     gp_debug_printf("token_buffer: [ ");
-    for (int i = 0; i < x->token_buffer.token_buffer_len; i++) {
+    for (unsigned i = 0; i < x->token_buffer.token_buffer_len; i++) {
         gpdbg_octet_string(&x->token_buffer.token_buffer_val[i]);
     }
     gp_debug_printf("] ");
@@ -656,7 +656,7 @@ void gpdbg_gssx_res_unwrap(gssx_res_unwrap *x)
     gp_debug_printf("context_handle: ");
     GPRPCDEBUG(gssx_ctx, x->context_handle);
     gp_debug_printf("message_buffer: [ ");
-    for (int i = 0; i < x->message_buffer.message_buffer_len; i++) {
+    for (unsigned i = 0; i < x->message_buffer.message_buffer_len; i++) {
         gpdbg_octet_string(&x->message_buffer.message_buffer_val[i]);
     }
     gp_debug_printf("] ");

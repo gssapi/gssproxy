@@ -166,7 +166,7 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
                            char *buffer, uint32_t length)
 {
     uint32_t size;
-    size_t wn;
+    ssize_t wn;
     size_t pos;
     bool retry;
     int ret;
@@ -232,7 +232,7 @@ static int gpm_recv_buffer(struct gpm_ctx *gpmctx,
                            char *buffer, uint32_t *length)
 {
     uint32_t size;
-    size_t rn;
+    ssize_t rn;
     size_t pos;
     int ret;
 
