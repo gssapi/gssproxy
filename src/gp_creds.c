@@ -885,7 +885,7 @@ static uint32_t get_impersonator_name(uint32_t *min, gss_cred_id_t cred,
          * release that supports this call */
         ret_maj = get_impersonator_fallback(&ret_min, cred, impersonator);
         if (ret_maj == GSS_S_FAILURE) {
-            if (ret_min == KRB5_CC_NOTFOUND) {
+            if (ret_min == (uint32_t)KRB5_CC_NOTFOUND) {
                 ret_min = ENOENT;
                 ret_maj = GSS_S_COMPLETE;
             }
