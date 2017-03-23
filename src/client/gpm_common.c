@@ -312,11 +312,6 @@ static struct gpm_ctx *gpm_get_ctx(void)
     return &gpm_global_ctx;
 }
 
-static void gpm_release_ctx(struct gpm_ctx *gpmctx)
-{
-    gpm_release_sock(gpmctx);
-}
-
 OM_uint32 gpm_release_buffer(OM_uint32 *minor_status,
                              gss_buffer_t buffer)
 {
@@ -503,7 +498,6 @@ done:
     xdr_free((xdrproc_t)xdr_gp_rpc_msg, (char *)&msg);
     xdr_destroy(&xdr_call_ctx);
     xdr_destroy(&xdr_reply_ctx);
-    gpm_release_ctx(gpmctx);
     return ret;
 }
 
