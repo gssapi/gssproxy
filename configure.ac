@@ -133,6 +133,9 @@ AC_CHECK_LIB(gssapi_krb5, gss_export_cred,,
 
 AC_CHECK_DECLS([GSS_KRB5_GET_CRED_IMPERSONATOR], [], [],
                [[#include <gssapi/gssapi_krb5.h>]])
+AC_CHECK_DECLS([GSS_KRB5_CRED_NO_CI_FLAGS_X], [],
+               [AC_MSG_ERROR([krb5 too old; missing GSS_KRB5_CRED_NO_CI_FLAGS_X (v1.14)])],
+               [[#include <gssapi/gssapi_krb5.h>]])
 
 AC_SUBST([KRB5_CFLAGS])
 AC_SUBST([KRB5_LIBS])
