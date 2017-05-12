@@ -91,12 +91,13 @@
                     <term>allow_any_uid (boolean)</term>
                     <listitem>
                         <para>Allow any process of any user to use this service.</para>
-                        <para>Note that absent a custom socket or selinux_context option
-                              this option may cause a service definition to mask access to
-                              following services. To avoid issues change the order of services
-                              in your configuation file so that services with allow_any_uid
-                              enabled are listed last, or define a custom socket for other
-                              services.</para>
+                        <para>Note that absent a custom socket option this
+                              option may cause a service definition to mask
+                              access to following services. To avoid issues
+                              change the order of services in your
+                              configuation file so that services with
+                              allow_any_uid enabled are listed last, or define
+                              a custom socket for other services.</para>
                         <para>Default: false</para>
                     </listitem>
                 </varlistentry>
@@ -331,14 +332,8 @@
                 <varlistentry>
                     <term>selinux_context (string)</term>
                     <listitem>
-                        <para>This parameter instructs the proxy to allow map a
-                              request to the service only if the context of the
-                              connecting client matches the one defined here.
-                        </para>
-                        <para>When this parameter is not set any client will be
-                              allowed regardless of their selinux context.
-                        </para>
-                        <para>Example: selinux_context = system_u:system_r:gssd_t
+                        <para>This option is deprecated.  Use a custom socket
+                              or euid instead.
                         </para>
                     </listitem>
                     </varlistentry>

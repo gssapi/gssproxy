@@ -477,6 +477,8 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
             ret = gp_config_get_string(ctx, secname,
                                        "selinux_context", &value);
             if (ret == 0) {
+                GPDEBUG(
+                    "selinux_ctx is deprecated; use euid/socket instead.\n");
                 cfg->svcs[n]->selinux_ctx = SELINUX_context_new(value);
                 if (!cfg->svcs[n]->selinux_ctx) {
                     ret = EINVAL;
