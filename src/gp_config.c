@@ -845,16 +845,17 @@ int gp_config_init(const char *config_file, const char *config_dir,
 
     if (config_file) {
         ret = gp_config_from_file(config_file, ini_config, collision_flags);
-        if (ret == ENOENT) {
-            GPDEBUG("Expected config file %s but did not find it.\n",
+        if (ret) {
+            GPDEBUG("Error when trying to read config file %s.\n",
                     config_file);
-        } else if (ret) {
             return ret;
         }
     }
     if (config_dir) {
         ret = gp_config_from_dir(config_dir, &ini_config, collision_flags);
         if (ret) {
+            GPDEBUG("Error when trying to read config directory %s.\n",
+                    config_dir);
             return ret;
         }
     }
