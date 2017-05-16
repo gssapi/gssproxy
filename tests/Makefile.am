@@ -1,4 +1,3 @@
-
 t_acquire_SOURCES = \
     t_utils.c \
     t_acquire.c
@@ -64,6 +63,7 @@ EXTRA_DIST = \
     t_impersonate.py \
     t_interpose.py \
     t_multi_key.py \
-    t_reloading.py
+    t_reloading.py \
+    $(NULL)
 
 all: $(check_PROGRAMS)

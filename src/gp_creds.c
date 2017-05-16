@@ -77,31 +77,28 @@ struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,
 {
     struct gp_creds *gcs;
     const char *socket;
-    int i;
+    const char *program;
 
     gcs = gp_conn_get_creds(conn);
     socket = gp_conn_get_socket(conn);
+    program = gp_conn_get_program(conn);
 
-    for (i = 0; i < gpctx->config->num_svcs; i++) {
-        if (gpctx->config->svcs[i]->any_uid ||
-            gpctx->config->svcs[i]->euid == gcs->ucred.uid) {
-            if (gpctx->config->svcs[i]->socket) {
-                if (!gp_same(socket, gpctx->config->svcs[i]->socket)) {
-                    continue;
-                }
-            } else {
-                if (!gp_same(socket, gpctx->config->socket_name)) {
-                    continue;
-                }
-            }
-            if (!gp_conn_check_selinux(conn,
-                                       gpctx->config->svcs[i]->selinux_ctx)) {
-                continue;
-            }
-            return gpctx->config->svcs[i];
+    for (int i = 0; i < gpctx->config->num_svcs; i++) {
+        struct gp_service *svc = gpctx->config->svcs[i];
+
+        if ((!svc->any_uid && svc->euid != gcs->ucred.uid) ||
+            !gp_conn_check_selinux(conn, svc->selinux_ctx) ||
+            (svc->program && !gp_same(program, svc->program)) ||
+            (svc->socket && !gp_same(socket, svc->socket)) ||
+            (!svc->socket && !gp_same(socket, gpctx->config->socket_name))) {
+            continue;
         }
+
+        GPDEBUGN(2, "Connection matched service %s\n", svc->name);
+        return svc;
     }
 
+    GPDEBUGN(2, "No matching service found\n");
     return NULL;
 }
 

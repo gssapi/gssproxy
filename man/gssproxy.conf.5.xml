@@ -349,6 +349,20 @@
                     </varlistentry>
 
                 <varlistentry>
+                    <term>program (string)</term>
+                    <listitem>
+                        <para>If specified, this service will only match when
+                              the program being run is the specified string.
+                        </para>
+                        <para>Programs are assumed to be specified as
+                              canonical paths (i.e., no relative paths, no
+                              symlinks).  Additionally, the '|' character is
+                              reserved for future use and therefore forbidden.
+                        </para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>trusted (boolean)</term>
                         <listitem><para>Defines whether this service is considered trusted. Use with caution, this enables impersonation.</para>
                             <para>Default: trusted = false</para>

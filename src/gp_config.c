@@ -258,6 +258,16 @@ static int check_services(const struct gp_config *cfg)
             isock = GP_SOCKET_NAME;
         }
 
+        if (isvc->program) {
+            if (isvc->program[0] != '/') {
+                ret = 1;
+                GPERROR("Program paths must be absolute!\n");
+            } else if (strchr(isvc->program, '|')) {
+                ret = 1;
+                GPERROR("The character '|' is invalid in program paths!\n");
+            }
+        }
+
         for (j = 0; j < i; j++) {
             jsvc = cfg->svcs[j];
             jsock = jsvc->socket;
@@ -266,18 +276,21 @@ static int check_services(const struct gp_config *cfg)
             }
 
             if (!gp_same(isock, jsock) ||
+                !gp_same(isvc->program, jsvc->program) ||
                 !gp_selinux_ctx_equal(isvc->selinux_ctx, jsvc->selinux_ctx)) {
                 continue;
             }
 
             if (jsvc->any_uid) {
                 ret = 1;
-                GPERROR("%s sets allow_any_uid with the same socket and "
-                        "selinux_context as %s!\n", jsvc->name, isvc->name);
+                GPERROR("%s sets allow_any_uid with the same socket, "
+                        "selinux_context, and program as %s!\n",
+                        jsvc->name, isvc->name);
             } else if (jsvc->euid == isvc->euid) {
                 ret = 1;
-                GPERROR("socket, selinux_context, and euid for %s and %s "
-                        "should not match!\n", isvc->name, jsvc->name);
+                GPERROR("socket, selinux_context, euid, and program for "
+                        "%s and %s should not match!\n",
+                        isvc->name, jsvc->name);
             }
         }
     }
@@ -513,6 +526,15 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
             if (ret == 0) {
                 ret = parse_flags(value, &cfg->svcs[n]->enforce_flags);
                 if (ret) goto done;
+            }
+
+            ret = gp_config_get_string(ctx, secname, "program", &value);
+            if (ret == 0) {
+                cfg->svcs[n]->program = strdup(value);
+                if (!cfg->svcs[n]->program) {
+                    ret = ENOMEM;
+                    goto done;
+                }
             }
         }
         safefree(secname);

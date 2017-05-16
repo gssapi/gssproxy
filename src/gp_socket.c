@@ -33,6 +33,7 @@ struct gp_conn {
     struct unix_sock_conn us;
     struct gp_creds creds;
     SELINUX_CTX selinux_ctx;
+    char *program;
 };
 
 struct gp_buffer {
@@ -108,6 +109,11 @@ int gp_conn_get_cid(struct gp_conn *conn)
     return conn->us.sd;
 }
 
+const char *gp_conn_get_program(struct gp_conn *conn)
+{
+    return conn->program;
+}
+
 void gp_conn_free(struct gp_conn *conn)
 {
     if (!conn) return;
@@ -115,6 +121,7 @@ void gp_conn_free(struct gp_conn *conn)
     if (conn->us.sd != -1) {
         close(conn->us.sd);
     }
+    free(conn->program);
     SELINUX_context_free(conn->selinux_ctx);
     free(conn);
 }
@@ -273,6 +280,45 @@ static int get_peercred(int fd, struct gp_conn *conn)
     return 0;
 }
 
+static char *get_program(pid_t pid)
+{
+    char procfile[21];
+    char *program;
+    int ret, e;
+    struct stat sb;
+
+    ret = snprintf(procfile, 20, "/proc/%u/exe", pid);
+    if (ret < 0) {
+        e = errno;
+        GPERROR("Internal error in snprintf: %d (%s)", e, strerror(e));
+        return NULL;
+    }
+    procfile[ret] = '\0';
+
+    program = realpath(procfile, NULL);
+    if (program) {
+        return program;
+    }
+
+    e = errno;
+    if (e != ENOENT) {
+        GPERROR("Unexpected failure in realpath: %d (%s)", e, strerror(e));
+        return NULL;
+    }
+
+    /* check if /proc is even around */
+    procfile[ret - 4] = '\0';
+    ret = stat(procfile, &sb); /* complains if we give it NULL */
+    e = errno;
+    if (ret == -1 && e == ENOENT) {
+        /* kernel thread */
+        return NULL;
+    }
+
+    GPERROR("Problem with /proc; program name matching won't work: %d (%s)",
+            e, strerror(e));
+    return NULL;
+}
 
 static void gp_socket_read(verto_ctx *vctx, verto_ev *ev);
 
@@ -563,7 +609,14 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
         goto done;
     }
 
-    GPDEBUG("Client connected (fd = %d)", fd);
+    conn->program = get_program(conn->creds.ucred.pid);
+
+    GPDEBUG("Client ");
+    if (conn->program) {
+        GPDEBUG("(%s) ", conn->program);
+    }
+    GPDEBUG(" connected (fd = %d)", fd);
+
     if (conn->creds.type & CRED_TYPE_UNIX) {
         GPDEBUG(" (pid = %d) (uid = %d) (gid = %d)",
                 conn->creds.ucred.pid,

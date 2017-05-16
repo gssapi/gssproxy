@@ -41,6 +41,7 @@ struct gp_service {
     gss_cred_usage_t cred_usage;
     uint32_t filter_flags;
     uint32_t enforce_flags;
+    char *program;
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
@@ -114,6 +115,7 @@ struct gp_creds *gp_conn_get_creds(struct gp_conn *conn);
 uid_t gp_conn_get_uid(struct gp_conn *conn);
 const char *gp_conn_get_socket(struct gp_conn *conn);
 int gp_conn_get_cid(struct gp_conn *conn);
+const char *gp_conn_get_program(struct gp_conn *conn);
 bool gp_selinux_ctx_equal(SELINUX_CTX ctx1, SELINUX_CTX ctx2);
 bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx);
 

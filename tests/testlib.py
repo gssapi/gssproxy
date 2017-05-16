@@ -549,6 +549,7 @@ GSSPROXY_CONF_TEMPLATE = '''
 # Contains a garbage service entry
 GSSPROXY_CONF_MINIMAL_TEMPLATE = '''
 [gssproxy]
+  debug_level = 3
 
 [service/dontuse]
   mechs = krb5
@@ -599,6 +600,7 @@ def update_gssproxy_conf(testdir, env, template):
             'GSSPROXY_CLIENT_KEYTAB': ckeytab,
             'UIDNUMBER': os.getuid(),
             'SECOND_SOCKET': socket2,
+            'PROGDIR': os.path.join(os.getcwd(), "tests"),
             'TESTDIR': testdir}
     if 'client_name' in env:
         subs['GSSPROXY_CLIENT_PRINCIPAL'] = env['client_name']
