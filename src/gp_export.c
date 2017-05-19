@@ -888,7 +888,8 @@ static uint32_t gp_export_creds_linux(uint32_t *min, gss_name_t name,
         if (res != NULL) {
             break;
         }
-        /* fall through as ret == NULL is equivalent to ENOENT */
+        /* ret == NULL is equivalent to ENOENT */
+        /* fall through */
     case ENOENT:
     case ESRCH:
         free(pwbuf);
