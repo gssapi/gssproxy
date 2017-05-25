@@ -144,11 +144,11 @@ void init_proc_nfsd(struct gp_config *cfg)
 {
     char buf[] = "1";
     bool enabled = false;
-    int fd, i, ret;
+    int fd, ret;
 
     /* check first if any service enabled kernel support */
-    for (i = 0; i < cfg->num_svcs; i++) {
-        if (cfg->svcs[i]->kernel_nfsd == true) {
+    for (int i = 0; i < cfg->num_svcs; i++) {
+        if (cfg->svcs[i]->kernel_nfsd) {
             enabled = true;
             break;
         }
@@ -161,30 +161,26 @@ void init_proc_nfsd(struct gp_config *cfg)
     fd = open(LINUX_PROC_USE_GSS_PROXY_FILE, O_RDWR);
     if (fd == -1) {
         ret = errno;
-        fprintf(stderr, "GSS-Proxy is not supported by this kernel since "
-                "file %s could not be found: %d (%s)\n",
-                LINUX_PROC_USE_GSS_PROXY_FILE,
-                ret, gp_strerror(ret));
-        exit(1);
+        GPDEBUG("Kernel doesn't support GSS-Proxy (can't open %s: %d (%s))\n",
+                LINUX_PROC_USE_GSS_PROXY_FILE, ret, gp_strerror(ret));
+        goto fail;
     }
 
     ret = write(fd, buf, 1);
     if (ret != 1) {
         ret = errno;
-        fprintf(stderr, "Failed to write to %s: %d (%s)\n",
-                LINUX_PROC_USE_GSS_PROXY_FILE,
-                ret, gp_strerror(ret));
-        exit(1);
+        GPDEBUG("Failed to write to %s: %d (%s)\n",
+                LINUX_PROC_USE_GSS_PROXY_FILE, ret, gp_strerror(ret));
     }
 
-    ret = close(fd);
-    if (ret == -1) {
-        ret = errno;
-        fprintf(stderr, "Failed to close %s: %d (%s)\n",
-                LINUX_PROC_USE_GSS_PROXY_FILE,
-                ret, gp_strerror(ret));
-        exit(1);
+    close(fd);
+    if (ret != 0) {
+        goto fail;
     }
+
+    return;
+fail:
+    GPDEBUG("Problem with kernel communication!  NFS server will not work\n");
 }
 
 void write_pid(void)
