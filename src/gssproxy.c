@@ -159,6 +159,10 @@ int main(int argc, const char *argv[])
     int wait_fd;
     int ret;
 
+    /* initialize debug client id to 0 in the main thread */
+    /* we do this early, before any code starts using debug statements */
+    gp_debug_set_conn_id(0);
+
     struct poptOption long_options[] = {
         POPT_AUTOHELP
         {"daemon", 'D', POPT_ARG_NONE, &opt_daemon, 0, \

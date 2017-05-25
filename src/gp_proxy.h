@@ -113,6 +113,7 @@ void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
 struct gp_creds *gp_conn_get_creds(struct gp_conn *conn);
 uid_t gp_conn_get_uid(struct gp_conn *conn);
 const char *gp_conn_get_socket(struct gp_conn *conn);
+int gp_conn_get_cid(struct gp_conn *conn);
 bool gp_selinux_ctx_equal(SELINUX_CTX ctx1, SELINUX_CTX ctx2);
 bool gp_conn_check_selinux(struct gp_conn *conn, SELINUX_CTX ctx);
 

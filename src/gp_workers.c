@@ -357,6 +357,9 @@ static void *gp_worker_main(void *pvt)
 
     while (!t->pool->shutdown) {
 
+        /* initialize debug client id to 0 until work is scheduled */
+        gp_debug_set_conn_id(0);
+
         /* ======> COND_MUTEX */
         pthread_mutex_lock(&t->cond_mutex);
         while (t->query == NULL) {
@@ -373,6 +376,9 @@ static void *gp_worker_main(void *pvt)
 
         /* <====== COND_MUTEX */
         pthread_mutex_unlock(&t->cond_mutex);
+
+        /* set client id before hndling requests */
+        gp_debug_set_conn_id(gp_conn_get_cid(q->conn));
 
         /* handle the client request */
         gp_handle_query(t->pool, q);

@@ -103,6 +103,11 @@ const char *gp_conn_get_socket(struct gp_conn *conn)
     return conn->sock_ctx->socket;
 }
 
+int gp_conn_get_cid(struct gp_conn *conn)
+{
+    return conn->us.sd;
+}
+
 void gp_conn_free(struct gp_conn *conn)
 {
     if (!conn) return;

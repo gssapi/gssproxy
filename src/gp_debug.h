@@ -14,6 +14,7 @@ int gp_debug_args(int level);
 void gp_debug_toggle(int);
 void gp_debug_printf(const char *format, ...);
 void gp_debug_time_printf(const char *format, ...);
+void gp_debug_set_conn_id(int id);
 
 #define GPDEBUG(...) do { \
     if (gp_debug) { \
