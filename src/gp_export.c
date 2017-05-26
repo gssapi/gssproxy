@@ -381,6 +381,7 @@ uint32_t gp_export_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
 
 done:
     *min = ret_min;
+    gss_release_buffer(&ret_min, &token);
     gss_release_name(&ret_min, &name);
     gss_release_oid_set(&ret_min, &mechanisms);
     return ret_maj;
