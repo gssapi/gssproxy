@@ -12,10 +12,9 @@
 
 bool gp_same(const char *a, const char *b)
 {
-    if ((a == b) || strcmp(a, b) == 0) {
+    if (a == b || (a && b && strcmp(a, b) == 0)) {
         return true;
     }
-
     return false;
 }
 
