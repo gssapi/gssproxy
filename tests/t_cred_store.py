@@ -5,7 +5,10 @@ from testlib import *
 
 def run(testdir, env, conf):
     print("Testing cred store extensions...", file=sys.stderr)
-    logfile = conf["logfile"]
+    conf['prefix'] = str(cmd_index)
+
+    logfile = os.path.join(conf["logpath"], "test_%d.log" % cmd_index)
+    logfile = open(logfile, 'a')
 
     ccache = "FILE:" + os.path.join(testdir, "t" + conf["prefix"] +
                                     "_cred_store.ccache")
@@ -26,16 +29,10 @@ def run(testdir, env, conf):
     testenv.update(env)
     temp_ccache = "FILE:" + os.path.join(testdir, "t" + conf["prefix"] +
                                          "_temp.ccache")
-    cmd = ["./tests/t_cred_store", ccache, temp_ccache]
-    print("[COMMAND]\n%s\n[ENVIRONMENT]\n%s\n" % (cmd, testenv), file=logfile)
-    logfile.flush()
+    cmd = " ".join(["./tests/t_cred_store", ccache, temp_ccache])
 
-    p1 = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile,
-                          env=testenv, preexec_fn=os.setsid)
-    try:
-        p1.wait()
-    except subprocess.TimeoutExpired:
-        # p1.returncode is set to None here
-        pass
-    print_return(p1.returncode, "Cred store", False)
-    return p1.returncode
+    return run_testcase_cmd(testenv, conf, cmd, "Cred store")
+
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_cred_store.py"])

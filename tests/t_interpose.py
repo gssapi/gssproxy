@@ -5,7 +5,9 @@ from testlib import *
 
 def run(testdir, env, conf):
     print("Testing interposer...", file=sys.stderr)
-    logfile = conf['logfile']
+    conf['prefix'] = str(cmd_index)
+    logfile = os.path.join(conf['logpath'], "test_%d.log" % cmd_index)
+    logfile = open(logfile, 'a')
 
     ienv = {"KRB5CCNAME": os.path.join(testdir, 'interpose_ccache'),
             "KRB5_KTNAME": os.path.join(testdir, SVC_KTNAME)}
@@ -19,10 +21,9 @@ def run(testdir, env, conf):
     if ksetup.returncode != 0:
         raise ValueError('Kinit %s failed' % USR_NAME)
 
-    itest = subprocess.Popen(["./interposetest", "-t",
-                              "host@%s" % WRAP_HOSTNAME],
-                             stdout=logfile, stderr=logfile,
-                             env=ienv)
-    itest.wait()
-    print_return(itest.returncode, "Interpose", False)
-    return itest.returncode
+    cmd = " ".join(["./interposetest", "-t", "host@%s" % WRAP_HOSTNAME])
+    return run_testcase_cmd(ienv, conf, cmd, "Interpose")
+
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_interpose.py"])

@@ -19,6 +19,7 @@ from testlib import *
 
 def run(testdir, env, conf):
     setup_multi_keys(testdir, env)
+    conf['prefix'] = str(cmd_index)
     prefix = conf["prefix"]
 
     print("Testing multiple keys Keytab with first principal",
@@ -56,3 +57,7 @@ def run(testdir, env, conf):
     elif r2 != 0:
         return r2
     return 0
+
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_multi_key.py"])

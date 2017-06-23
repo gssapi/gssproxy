@@ -5,6 +5,7 @@ from testlib import *
 from t_basic import run as run_basic_test
 
 def run(testdir, env, basicconf):
+    basicconf['prefix'] = str(cmd_index)
     prefix = basicconf['prefix']
     keysenv = basicconf["keysenv"]
 
@@ -56,3 +57,7 @@ def run(testdir, env, basicconf):
     if len(e) > 0:
         return e[0]
     return 0
+
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_reloading.py"])

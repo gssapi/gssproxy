@@ -316,7 +316,7 @@ CLEANFILES = *.X */*.X */*/*.X \
     systemd/gssproxy.service
 
 check: all $(check_PROGRAMS)
-	$(srcdir)/tests/runtests.py
+	$(srcdir)/tests/runtests.py $(CHECKARGS)
 
 tests: check
 

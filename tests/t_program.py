@@ -22,6 +22,7 @@ GSSPROXY_PROGRAM = '''
 '''
 
 def run(testdir, env, conf):
+    conf['prefix'] = str(cmd_index)
     prefix = conf["prefix"]
     retval = 0
 
@@ -47,5 +48,9 @@ def run(testdir, env, conf):
     os.kill(conf["gpid"], signal.SIGHUP)
     time.sleep(1)
 
-    print_return(retval, "Program", False)
+    print_return(retval, -1, "Program", False)
     return retval
+
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_program.py"])

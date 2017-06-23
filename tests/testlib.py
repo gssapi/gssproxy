@@ -11,6 +11,17 @@ import subprocess
 import sys
 import time
 
+testcase_wait = 15
+cmd_index = 0
+
+debug_all = False
+debug_gssproxy = False
+debug_cmd = "gdb --args"
+debug_cmd_index = -1
+
+valgrind_cmd = "valgrind", "--track-origins=yes"
+valgrind_everywhere = False
+
 try:
     from colorama import Fore, Style
 
@@ -28,6 +39,20 @@ except ImportError:
     def format_key(status, key):
         return "[" + key + "]"
 
+def testlib_process_args(args):
+    global debug_all, debug_cmd, debug_cmd_index, debug_gssproxy
+    global testcase_wait, valgrind_cmd, valgrind_everywhere
+
+    testcase_wait = args['timeout']
+    debug_cmd_index = args['debug_num']
+
+    debug_all = args['debug_all']
+    debug_cmd = args['debug_cmd'] + " "
+    debug_gssproxy = args['debug_gssproxy']
+
+    valgrind_cmd = args['valgrind_cmd'] + " "
+    valgrind_everywhere = args['force_valgrind']
+
 def print_keyed(status, key, text, io):
     print("%s %s" % (format_key(status, key), text), file=io)
 
@@ -42,7 +67,7 @@ def print_failure(key, text, io=sys.stderr):
 def print_warning(key, text, io=sys.stderr):
     print_keyed("other", key, text, io)
 
-def print_return(ret, name, expected_failure):
+def print_return(ret, num, name, expected_failure):
     key = "PASS"
     expected = "zero" if not expected_failure else "nonzero"
     if (ret == 0 and expected_failure) or \
@@ -54,9 +79,68 @@ def print_return(ret, name, expected_failure):
     else:
         print_failure(key, "%s test returned %s (expected %s)" %
                       (name, str(ret), expected))
+        if num != -1:
+            print_warning("INFO", "To debug this test case, run:\n" +
+                          ("    make check CHECKARGS='--debug-num=%d'" % num))
 
 WRAP_HOSTNAME = "kdc.gssproxy.dev"
 
+def run_testcase_cmd(env, conf, cmd, name, expected_failure=False, wait=True):
+    global testcase_wait, debug_cmd_index, cmd_index
+    global valgrind_everywhere, valgrind_cmd, debug_all
+
+    logfile = os.path.join(conf['logpath'], "test_%d.log" % cmd_index)
+    logfile = open(logfile, 'w')
+
+    print("[NAME]\n%s\n[COMMAND %d]\n%s\n[ENVIRONMENT]\n%s\n\n" % (name,
+          cmd_index, cmd, env), file=logfile)
+    logfile.flush()
+
+    testenv = env.copy()
+
+    if debug_all or debug_cmd_index == cmd_index:
+        return rundebug_cmd(testenv, conf, cmd, name, expected_failure)
+
+    run_cmd = cmd
+    if valgrind_everywhere:
+        run_cmd = valgrind_cmd + cmd
+
+    p1 = subprocess.Popen(run_cmd, stderr=subprocess.STDOUT, stdout=logfile,
+                          env=testenv, preexec_fn=os.setsid, shell=True,
+                          executable="/bin/bash")
+
+    if not wait:
+        cmd_index += 1
+        conf['prefix'] = str(cmd_index)
+        return p1
+
+    try:
+        p1.wait(testcase_wait)
+    except subprocess.TimeoutExpired:
+        # p1.returncode is set to None here
+        if not expected_failure:
+            print_warning("warning", "timeout")
+
+    logfile.close()
+    print_return(p1.returncode, cmd_index, "(%d) %s" % (cmd_index, name),
+                 expected_failure)
+    cmd_index += 1
+    conf['prefix'] = str(cmd_index)
+    return p1.returncode if not expected_failure else int(not p1.returncode)
+
+def rundebug_cmd(env, conf, cmd, name, expected_failure=False):
+    global debug_cmd, cmd_index
+
+    run_cmd = debug_cmd + cmd
+
+    returncode = subprocess.call(run_cmd, env=env, shell=True,
+                                 executable="/bin/bash")
+
+    print_return(returncode, cmd_index, "(%d) %s" % (cmd_index, name),
+                 expected_failure)
+    cmd_index += 1
+
+    return returncode if not expected_failure else int(not returncode)
 
 def setup_wrappers(base):
 
@@ -633,6 +717,7 @@ def update_gssproxy_conf(testdir, env, template):
         f.write(text)
 
 def setup_gssproxy(testdir, logfile, env):
+    global debug_gssproxy, valgrind_cmd
 
     gssproxy = os.path.join(testdir, 'gssproxy')
     if os.path.exists(gssproxy):
@@ -646,9 +731,22 @@ def setup_gssproxy(testdir, logfile, env):
 
     socket = os.path.join(gssproxy, 'gp.sock')
     conf = os.path.join(gssproxy, 'gp.conf')
-    gproc = subprocess.Popen(["valgrind", "--track-origins=yes",
-                              "./gssproxy", "-i", "-s", socket, "-c", conf],
+
+    cmd = "./gssproxy -i -s " + socket + " -c " + conf
+
+    full_command = valgrind_cmd + cmd
+
+    if debug_gssproxy:
+        full_command = cmd
+
+    gproc = subprocess.Popen(full_command,
                              stdout=logfile, stderr=logfile,
-                             env=gpenv, preexec_fn=os.setsid)
+                             env=gpenv, preexec_fn=os.setsid, shell=True,
+                             executable="/bin/bash")
+
+    if debug_gssproxy:
+        print("PID: %d" % (gproc.pid))
+        print("Attach and start debugging, then press enter to continue.")
+        input()
 
     return gproc, socket

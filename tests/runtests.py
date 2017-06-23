@@ -7,16 +7,37 @@ import signal
 import sys
 import traceback
 
+import testlib
 from testlib import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description='GSS-Proxy Tests Environment')
     parser.add_argument('--path', default='%s/testdir' % os.getcwd(),
                         help="Directory in which tests are run")
+    parser.add_argument('--debug-all', default=False, action="store_true",
+                        help="Enable debugging for all test cases")
+    parser.add_argument('--debug-gssproxy', default=False, action="store_true",
+                        help="Enable debugging for gssproxy command")
+    parser.add_argument('--debug-cmd', default="gdb --args",
+                        help="Set the debugging command. Defaults to gdb " +
+                              "--args")
+    parser.add_argument('--debug-num', default=-1, type=int,
+                        help="Specify the testcase number to debug")
+    parser.add_argument('--timeout', default=15, type=int,
+                        help="Specify test case timeout limit")
+    parser.add_argument('--valgrind-cmd', default="valgrind " +
+                        "--track-origins=yes",
+                        help="Set the valgrind command. Defaults to " +
+                        "valgrind --track-origins=yes")
+    parser.add_argument('--force-valgrind', default=False, action="store_true",
+                        help="Force valgrind to be run on all test cases")
 
-    return vars(parser.parse_args())
+    args = vars(parser.parse_args())
+    testlib_process_args(args)
 
-if __name__ == '__main__':
+    return args
+
+def runtests_main(testfiles):
     args = parse_args()
 
     testdir = args['path']
@@ -41,6 +62,7 @@ if __name__ == '__main__':
         keysenv = setup_keys(testdir, kdcenv)
 
         gssapienv = setup_gssapi_env(testdir, kdcenv)
+        gssapienv['TERM'] = os.environ['TERM']
 
         gssproxylog = os.path.join(testdir, 'gssproxy.log')
 
@@ -59,23 +81,16 @@ if __name__ == '__main__':
         basicconf["gpid"] = gproc.pid
         basicconf["keysenv"] = keysenv
 
-        testnum = 0
-        testfiles = [f for f in os.listdir(os.path.dirname(sys.argv[0])) \
-                     if f.endswith(".py") and f.startswith("t_")]
-        testfiles.sort()
         print("Tests to be run: " + ", ".join(testfiles))
         for f in testfiles:
             fmod = f[:-len(".py")]
             t = importlib.__import__(fmod)
 
-            basicconf['prefix'] = '%02d' % testnum
-            logfile = os.path.join(testdir, "%02d_%s.log" % (testnum, fmod))
-            basicconf['logfile'] = open(logfile, 'a')
+            basicconf['prefix'] = str(testlib.cmd_index)
+            basicconf['logpath'] = testdir
             r = t.run(testdir, gssapienv, basicconf)
             if r != 0:
                 errored = True
-
-            testnum += 1
     except Exception:
         traceback.print_exc()
         errored = True
@@ -87,3 +102,15 @@ if __name__ == '__main__':
         if errored:
             sys.exit(1)
         sys.exit(0)
+
+if __name__ == "__main__":
+    print("\n")
+    print("To pass arguments to the test suite, use CHECKARGS:")
+    print("    make check CHECKARGS='--debug-num=<num>'")
+    print("A full set of available options can be seen with --help")
+    print("\n")
+
+    testfiles = [f for f in os.listdir(os.path.dirname(sys.argv[0])) \
+                 if f.endswith(".py") and f.startswith("t_")]
+    testfiles.sort()
+    runtests_main(testfiles)

@@ -5,10 +5,13 @@ from testlib import *
 
 def run(testdir, env, conf):
     print("Testing setting credential options...", file=sys.stderr)
+    conf['prefix'] = str(cmd_index)
     path_prefix = os.path.join(testdir, 't' + conf['prefix'] + '_')
     init_ccache = path_prefix + 'sco_init.ccache'
 
-    logfile = conf['logfile']
+    logfile = os.path.join(conf['logpath'], "test_%d.log" % cmd_index)
+    logfile = open(logfile, 'a')
+
     testenv = env.copy()
     testenv.update({'KRB5CCNAME': init_ccache})
 
@@ -21,22 +24,15 @@ def run(testdir, env, conf):
         raise ValueError("Kinit %s failed" % USR_NAME)
 
 
-    cmd = ["./tests/t_setcredopt", USR_NAME, HOST_GSS, init_ccache]
+    cmd = " ".join(["./tests/t_setcredopt", USR_NAME, HOST_GSS, init_ccache])
 
     testenv.update({'KRB5CCNAME': path_prefix + 'sco.ccache',
                     'KRB5_KTNAME': os.path.join(testdir, PROXY_KTNAME),
                     'KRB5_TRACE': path_prefix + 'sco.trace',
                     'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'})
 
-    print("[COMMAND]\n%s\n[ENVIRONMENT]\n%s\n" % (cmd, testenv), file=logfile)
-    logfile.flush()
+    return run_testcase_cmd(testenv, conf, cmd, "Set cred options")
 
-    p1 = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile,
-                          env=testenv, preexec_fn=os.setsid)
-    try:
-        p1.wait(10)
-    except subprocess.TimeoutExpired:
-        # p1.returncode is set to None here
-        pass
-    print_return(p1.returncode, "Set cred options", False)
-    return p1.returncode
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_setcredopt.py"])

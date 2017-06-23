@@ -5,7 +5,7 @@ from testlib import *
 
 def run(testdir, env, conf, expected_failure=False):
     print("Testing basic acquire creds...", file=sys.stderr)
-    logfile = conf['logfile']
+    conf['prefix'] = str(cmd_index)
 
     svc_keytab = os.path.join(testdir, SVC_KTNAME)
     testenv = {'KRB5CCNAME': os.path.join(testdir, 't' + conf['prefix'] +
@@ -17,16 +17,10 @@ def run(testdir, env, conf, expected_failure=False):
                'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'}
     testenv.update(env)
 
-    cmd = ["./tests/t_acquire", conf['svc_name']]
-    print("[COMMAND]\n%s\n[ENVIRONMENT]\n%s\n" % (cmd, env), file=logfile)
-    logfile.flush()
+    cmd = "./tests/t_acquire " + conf['svc_name']
 
-    p1 = subprocess.Popen(cmd, stderr=subprocess.STDOUT, stdout=logfile,
-                          env=testenv, preexec_fn=os.setsid)
-    try:
-        p1.wait(10)
-    except subprocess.TimeoutExpired:
-        # p1.returncode is set to None here
-        pass
-    print_return(p1.returncode, "Acquire", expected_failure)
-    return p1.returncode if not expected_failure else int(not p1.returncode)
+    return run_testcase_cmd(testenv, conf, cmd, "Acquire", expected_failure)
+
+if __name__ == "__main__":
+    from runtests import runtests_main
+    runtests_main(["t_acquire.py"])
