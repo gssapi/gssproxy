@@ -30,6 +30,7 @@ if __name__ == '__main__':
 
     try:
         wrapenv = setup_wrappers(testdir)
+        write_ldap_krb5_config(testdir)
 
         ldapproc, ldapenv = setup_ldap(testdir, wrapenv)
         processes["LDAP(%d)" % ldapproc.pid] = ldapproc
