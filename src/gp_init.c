@@ -145,6 +145,7 @@ void init_proc_nfsd(struct gp_config *cfg)
     char buf[] = "1";
     bool enabled = false;
     int fd, ret;
+    static int poked = 0;
 
     /* check first if any service enabled kernel support */
     for (int i = 0; i < cfg->num_svcs; i++) {
@@ -154,7 +155,7 @@ void init_proc_nfsd(struct gp_config *cfg)
         }
     }
 
-    if (!enabled) {
+    if (!enabled || poked) {
         return;
     }
 
@@ -175,6 +176,7 @@ void init_proc_nfsd(struct gp_config *cfg)
         goto fail;
     }
 
+    poked = 1;
     close(fd);
     return;
 fail:

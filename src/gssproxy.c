@@ -140,6 +140,9 @@ static void hup_handler(verto_ctx *vctx, verto_ev *ev UNUSED)
         exit(ret);
     }
 
+    /* conditionally reload kernel interface */
+    init_proc_nfsd(gpctx->config);
+
     free_config(&old_config);
 
     GPDEBUG("New config loaded successfully.\n");
