@@ -171,13 +171,11 @@ void init_proc_nfsd(struct gp_config *cfg)
         ret = errno;
         GPDEBUG("Failed to write to %s: %d (%s)\n",
                 LINUX_PROC_USE_GSS_PROXY_FILE, ret, gp_strerror(ret));
-    }
-
-    close(fd);
-    if (ret != 0) {
+        close(fd);
         goto fail;
     }
 
+    close(fd);
     return;
 fail:
     GPDEBUG("Problem with kernel communication!  NFS server will not work\n");
