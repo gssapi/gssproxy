@@ -362,6 +362,8 @@ OM_uint32 gssi_delete_sec_context(OM_uint32 *minor_status,
         }
     }
 
+    free(ctx);
+
     return rmaj;
 }
 

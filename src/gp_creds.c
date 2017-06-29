@@ -1046,6 +1046,8 @@ uint32_t gp_count_tickets(uint32_t *min, gss_cred_id_t cred, uint32_t *ccsum)
             goto done;
         }
 
+        krb5_free_cred_contents(context, &creds);
+
         /* TODO: Should we do a real checksum over all creds->ticket data and
          * flags in future ? */
         (*ccsum)++;

@@ -132,5 +132,8 @@ done:
     gss_release_buffer(&ret_min, &in_token);
     gss_release_buffer(&ret_min, &out_token);
     gss_release_cred(&ret_min, &cred_handle);
+    gss_release_name(&ret_min, &target_name);
+    gss_delete_sec_context(&ret_min, &init_ctx, GSS_C_NO_BUFFER);
+    gss_delete_sec_context(&ret_min, &accept_ctx, GSS_C_NO_BUFFER);
     return ret;
 }

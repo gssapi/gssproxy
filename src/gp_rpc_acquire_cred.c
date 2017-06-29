@@ -130,17 +130,18 @@ int gp_acquire_cred(struct gp_call_ctx *gpcall,
         }
     }
 
-    acr->output_cred_handle = calloc(1, sizeof(gssx_cred));
-    if (!acr->output_cred_handle) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ENOMEM;
-        goto done;
-    }
 
     if (out_cred == in_cred) {
         acr->output_cred_handle = aca->input_cred_handle;
         aca->input_cred_handle = NULL;
     } else {
+        acr->output_cred_handle = calloc(1, sizeof(gssx_cred));
+        if (!acr->output_cred_handle) {
+            ret_maj = GSS_S_FAILURE;
+            ret_min = ENOMEM;
+            goto done;
+        }
+
         ret_maj = gp_export_gssx_cred(&ret_min, gpcall,
                                       &out_cred, acr->output_cred_handle);
         if (ret_maj) {
@@ -154,6 +155,10 @@ done:
 
     GPRPCDEBUG(gssx_res_acquire_cred, acr);
 
+    if (add_out_cred != &in_cred && add_out_cred != &out_cred)
+        gss_release_cred(&ret_min, add_out_cred);
+    if (in_cred != out_cred)
+        gss_release_cred(&ret_min, &in_cred);
     gss_release_cred(&ret_min, &out_cred);
     gss_release_oid_set(&ret_min, &use_mechs);
     gss_release_oid_set(&ret_min, &desired_mechs);

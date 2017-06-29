@@ -47,7 +47,7 @@ uint32_t gp_init_creds_with_keytab(uint32_t *min, const char *svc_name,
     krb5_keytab ktid = NULL;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry;
-    krb5_enctype *permitted;
+    krb5_enctype *permitted = NULL;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     int ret;
@@ -127,6 +127,7 @@ uint32_t gp_init_creds_with_keytab(uint32_t *min, const char *svc_name,
     ret_maj = GSS_S_COMPLETE;
 
 done:
+    krb5_free_enctypes(handle->context, permitted);
     if (ktid) {
         (void)krb5_kt_close(handle->context, ktid);
     }

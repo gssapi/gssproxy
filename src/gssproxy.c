@@ -160,7 +160,7 @@ int main(int argc, const char *argv[])
     verto_ctx *vctx;
     verto_ev *ev;
     int wait_fd;
-    int ret;
+    int ret = -1;
 
     /* initialize debug client id to 0 in the main thread */
     /* we do this early, before any code starts using debug statements */
@@ -194,13 +194,17 @@ int main(int argc, const char *argv[])
             fprintf(stderr, "\nInvalid option %s: %s\n\n",
                     poptBadOption(pc, 0), poptStrerror(opt));
             poptPrintUsage(pc, stderr, 0);
-            return 1;
+
+            ret = 1;
+            goto cleanup;
         }
     }
 
     if (opt_version) {
         puts(VERSION""DISTRO_VERSION""PRERELEASE_VERSION);
-        return 0;
+        poptFreeContext(pc);
+        ret = 0;
+        goto cleanup;
     }
 
     if (opt_debug || opt_debug_level > 0) {
@@ -211,7 +215,8 @@ int main(int argc, const char *argv[])
     if (opt_daemon && opt_interactive) {
         fprintf(stderr, "Option -i|--interactive is not allowed together with -D|--daemon\n");
         poptPrintUsage(pc, stderr, 0);
-        return 1;
+        ret = 0;
+        goto cleanup;
     }
 
     if (opt_interactive) {
@@ -225,7 +230,8 @@ int main(int argc, const char *argv[])
                                 opt_config_socket,
                                 opt_daemon);
     if (!gpctx->config) {
-        exit(EXIT_FAILURE);
+        ret = EXIT_FAILURE;
+        goto cleanup;
     }
 
     init_server(gpctx->config->daemonize, &wait_fd);
@@ -236,7 +242,8 @@ int main(int argc, const char *argv[])
     if (!vctx) {
         fprintf(stderr, "Failed to initialize event loop. "
                         "Is there at least one libverto backend installed?\n");
-        return 1;
+        ret = 1;
+        goto cleanup;
     }
     gpctx->vctx = vctx;
 
@@ -244,12 +251,13 @@ int main(int argc, const char *argv[])
     ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, hup_handler, SIGHUP);
     if (!ev) {
         fprintf(stderr, "Failed to register SIGHUP handler with verto!\n");
-        return 1;
+        ret = 1;
+        goto cleanup;
     }
 
     ret = init_sockets(vctx, NULL);
     if (ret != 0) {
-        return ret;
+        goto cleanup;
     }
 
     /* We need to tell nfsd that GSS-Proxy is available before it starts,
@@ -263,12 +271,14 @@ int main(int argc, const char *argv[])
 
     ret = drop_privs(gpctx->config);
     if (ret) {
-        exit(EXIT_FAILURE);
+        ret = EXIT_FAILURE;
+        goto cleanup;
     }
 
     ret = gp_workers_init(gpctx);
     if (ret) {
-        exit(EXIT_FAILURE);
+        ret = EXIT_FAILURE;
+        goto cleanup;
     }
 
     verto_run(vctx);
@@ -278,9 +288,17 @@ int main(int argc, const char *argv[])
 
     fini_server();
 
-    poptFreeContext(pc);
 
     free_config(&gpctx->config);
+    free(gpctx);
 
-    return 0;
+    ret = 0;
+
+cleanup:
+    poptFreeContext(pc);
+    free(opt_config_file);
+    free(opt_config_dir);
+    free(opt_config_socket);
+
+    return ret;
 }

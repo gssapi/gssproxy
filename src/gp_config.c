@@ -75,6 +75,8 @@ static void gp_service_free(struct gp_service *svc)
         free_cred_store_elements(&svc->krb5.store);
         gp_free_creds_handle(&svc->krb5.creds_handle);
     }
+    free(svc->socket);
+    free(svc->program);
     SELINUX_context_free(svc->selinux_ctx);
     memset(svc, 0, sizeof(struct gp_service));
 }
