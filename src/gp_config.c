@@ -823,17 +823,21 @@ static int gp_config_from_dir(const char *config_dir,
                              &error_list,
                              NULL);
     if (ret) {
-        if (error_list) {
-            uint32_t i;
-            uint32_t len = ref_array_getlen(error_list, &i);
-            for (i = 0; i < len; i++) {
-                GPDEBUG("Error when reading config directory: %s\n",
-                        (const char *) ref_array_get(error_list, i, NULL));
-            }
-            ref_array_destroy(error_list);
-        } else {
-            GPDEBUG("Error when reading config directory number: %d\n", ret);
+        uint32_t len;
+
+        if (!error_list) {
+            GPAUDIT("Error when reading config directory number: %d\n", ret);
+            return ret;
         }
+
+        len = ref_array_len(error_list);
+        for (uint32_t i = 0; i < len; i++) {
+            /* libini has an unfixable bug where error strings are (char **) */
+            GPAUDIT("Error when reading config directory: %s\n",
+                    *(char **)ref_array_get(error_list, i, NULL));
+        }
+
+        ref_array_destroy(error_list);
         return ret;
     }
 
