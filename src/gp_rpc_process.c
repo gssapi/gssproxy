@@ -372,9 +372,12 @@ int gp_rpc_process_call(struct gp_call_ctx *gpcall,
     xdrmem_create(&xdr_reply_ctx, reply_buffer, MAX_RPC_SIZE, XDR_ENCODE);
 
     /* decode request */
+    GPDEBUGN(3, "[status] Processing request [%p (%zu)]\n", inbuf, inlen);
     ret = gp_rpc_decode_call(&xdr_call_ctx, &xid, &proc, &arg, &acc, &rej);
     if (!ret) {
         /* execute request */
+        GPDEBUGN(3, "[status] Executing request %d (%s) from [%p (%zu)]\n",
+                 proc, gp_rpc_procname(proc), inbuf, inlen);
         ret = gp_rpc_execute(gpcall, proc, &arg, &res);
         if (ret) {
             acc = GP_RPC_SYSTEM_ERR;
@@ -388,6 +391,9 @@ int gp_rpc_process_call(struct gp_call_ctx *gpcall,
         /* return encoded buffer */
         ret = gp_rpc_return_buffer(&xdr_reply_ctx,
                                    reply_buffer, outbuf, outlen);
+        GPDEBUGN(3, "[status] Returned buffer %d (%s) from [%p (%zu)]: "
+                 "[%p (%zu)]\n", proc, gp_rpc_procname(proc), inbuf, inlen,
+                 *outbuf, *outlen);
     }
     /* free resources */
     gp_rpc_free_xdrs(proc, &arg, &res);

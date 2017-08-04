@@ -487,6 +487,8 @@ void gp_socket_send_data(verto_ctx *vctx, struct gp_conn *conn,
 
     wbuf = calloc(1, sizeof(struct gp_buffer));
     if (!wbuf) {
+        GPDEBUGN(3, "[status] OOM in gp_socket_send_data: %p (%zu)\n",
+                 buffer, buflen);
         /* too bad, must kill the client connection now */
         gp_conn_free(conn);
         return;
@@ -513,6 +515,8 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
 
     vecs = 0;
 
+    GPDEBUGN(3, "[status] Sending data: %p (%zu)\n", wbuf->data, wbuf->size);
+
     if (wbuf->pos == 0) {
         /* first write, send the buffer size as packet header */
         size = wbuf->size | FRAGMENT_BIT;
@@ -535,6 +539,9 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
             gp_socket_schedule_write(vctx, wbuf);
         } else {
             /* error on socket, close and release it */
+            GPDEBUGN(3, "[status] Error %d in gp_socket_write on writing for "
+                     "[%p (%zu:%zu)]\n", errno, wbuf->data, wbuf->pos,
+                     wbuf->size);
             gp_conn_free(wbuf->conn);
             gp_buffer_free(wbuf);
         }
@@ -544,12 +551,17 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
         if (wn < (ssize_t) sizeof(size)) {
             /* don't bother trying to handle sockets that can't
              * buffer even 4 bytes */
+            GPDEBUGN(3, "[status] Sending data [%p (%zu)]: failed with short "
+                     "write of %d\n", wbuf->data, wbuf->size, wn);
             gp_conn_free(wbuf->conn);
             gp_buffer_free(wbuf);
             return;
         }
         wn -= sizeof(size);
     }
+
+    GPDEBUGN(3, "[status] Sending data [%p (%zu)]: successful write of %d\n",
+             wbuf->data, wbuf->size, wn);
 
     wbuf->pos += wn;
     if (wbuf->size > wbuf->pos) {

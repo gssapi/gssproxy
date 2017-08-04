@@ -319,6 +319,7 @@ static void gp_handle_reply(verto_ctx *vctx, verto_ev *ev)
             break;
 
         case GP_QUERY_OUT:
+            GPDEBUGN(3, "[status] Handling query reply: %p (%zu)\n", q->buffer, q->buflen);
             gp_socket_send_data(vctx, q->conn, q->buffer, q->buflen);
             gp_query_free(q, false);
             break;
@@ -381,7 +382,11 @@ static void *gp_worker_main(void *pvt)
         gp_debug_set_conn_id(gp_conn_get_cid(q->conn));
 
         /* handle the client request */
+        GPDEBUGN(3, "[status] Handling query input: %p (%zu)\n", q->buffer,
+                 q->buflen);
         gp_handle_query(t->pool, q);
+        GPDEBUGN(3 ,"[status] Handling query output: %p (%zu)\n", q->buffer,
+                 q->buflen);
 
         /* now get lock on main queue, to play with the reply list */
         /* ======> POOL LOCK */
