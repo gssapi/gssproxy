@@ -62,7 +62,9 @@ def runtests_main(testfiles):
         keysenv = setup_keys(testdir, kdcenv)
 
         gssapienv = setup_gssapi_env(testdir, kdcenv)
-        gssapienv['TERM'] = os.environ['TERM']
+
+        if 'TERM' in os.environ:
+            gssapienv['TERM'] = os.environ['TERM']
 
         gssproxylog = os.path.join(testdir, 'gssproxy.log')
 
