@@ -82,6 +82,12 @@ if test x$have_libverto = x; then
     AC_MSG_ERROR([Could not find VERTO headers])
 fi
 
+AC_CHECK_LIB(verto, verto_free,,
+             AC_MSG_ERROR(["Error: libverto is not found or lacks verto_free"]))
+
+AC_CHECK_FUNCS(verto_cleanup,,
+             AC_MSG_WARN(["Warning: libverto lacks verto_cleanup function"]))
+
 #Check for libini_config
 PKG_CHECK_MODULES([LIBINI_CONFIG], [ini_config >= 1.2.0], [have_libini_config=1], [have_libini_config=])
 if test x$have_libini_config = x; then

@@ -299,5 +299,9 @@ cleanup:
     free(opt_config_dir);
     free(opt_config_socket);
 
+#ifdef HAVE_VERTO_CLEANUP
+    verto_cleanup();
+#endif
+
     return ret;
 }
