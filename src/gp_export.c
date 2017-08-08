@@ -686,6 +686,7 @@ export:
     case EXP_CTX_PARTIAL:
         /* this happens only when a init_sec_context call returns a partially
          * initialized context so we return only what we have, not much */
+        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->mech);
         ret = gp_conv_oid_to_gssx(mech, &out->mech);
         if (ret) {
             ret_maj = GSS_S_FAILURE;
