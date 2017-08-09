@@ -753,7 +753,7 @@ static int gp_config_from_file(const char *config_file,
                                0, /* metadata_flags, FIXME */
                                &file_ctx);
     if (ret) {
-        GPDEBUG("Failed to open config file: %d (%s)\n",
+        GPERROR("Failed to open config file: %d (%s)\n",
                 ret, gp_strerror(ret));
         ini_config_destroy(ini_config);
         return ret;
@@ -767,7 +767,7 @@ static int gp_config_from_file(const char *config_file,
     if (ret) {
         char **errors = NULL;
         /* we had a parsing failure */
-        GPDEBUG("Failed to parse config file: %d (%s)\n",
+        GPERROR("Failed to parse config file: %d (%s)\n",
                 ret, gp_strerror(ret));
         if (ini_config_error_count(ini_config)) {
             ini_config_get_errors(ini_config, &errors);
@@ -816,26 +816,25 @@ static int gp_config_from_dir(const char *config_dir,
                              INI_STOP_ON_ANY, /* error_level */
                              collision_flags,
                              INI_PARSE_NOWRAP,
-                             /* do not allow colliding sections with the same
-                              * name in different files */
-                             INI_MS_ERROR,
+                             /* allow sections with the same name in
+                              * different files, but log warnings */
+                             INI_MS_DETECT | INI_MS_PRESERVE,
                              &result_cfg,
                              &error_list,
                              NULL);
-    if (ret) {
+    if (error_list) {
         uint32_t len;
-
-        if (!error_list) {
-            GPAUDIT("Error when reading config directory number: %d\n", ret);
-            return ret;
-        }
-
         len = ref_array_len(error_list);
         for (uint32_t i = 0; i < len; i++) {
             /* libini has an unfixable bug where error strings are (char **) */
             GPAUDIT("Error when reading config directory: %s\n",
                     *(char **)ref_array_get(error_list, i, NULL));
         }
+        ref_array_destroy(error_list);
+    }
+
+    if (ret && ret != EEXIST) {
+        GPERROR("Error when reading config directory number: %d\n", ret);
 
         ref_array_destroy(error_list);
         return ret;
@@ -846,9 +845,7 @@ static int gp_config_from_dir(const char *config_dir,
         ini_config_destroy(*ini_config);
         *ini_config = result_cfg;
     }
-    if (error_list) {
-        ref_array_destroy(error_list);
-    }
+
     return 0;
 }
 
