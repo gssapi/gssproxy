@@ -1,4 +1,3 @@
-
 First off, run:
 $ autoreconf -f -i
 
@@ -26,23 +25,22 @@ additionally to a ISO C compiler:
     pkgconfig
     popt-devel
 
-For testing via $ make tests # you additionally need these three
-packages:
+For testing via $ make tests # you additionally need these packages:
 
     krb5-server
+    krb5-server-ldap
+    krb5-workstation
     nss_wrapper
+    openldap-clients
+    openldap-servers
     socket_wrapper
+    valgrind
 
-NOTE:
-The minimum supported Kerberos version is MIT Kerberos 1.11.2 as it includes
-[1] and [2]
-The keytab initiation feature where Gss-Proxy acquires crdentials on behalf
-of clients using a ketab will only be available in MIT in 1.12
-This patch [3] can be used to backport the feature in 1.11.2, this new feature
-simply allows combining two [4][5] features introduced in MIT 1.11
+NOTE: The minimum supported Kerberos version is MIT Kerberos 1.14 as it
+includes [1] for Microsoft interoperability.  gssproxy relies on the
+interposer mechanism [1] and so there is no version of gssproxy which will
+work before 1.11.  Various other features require newer versions of MIT krb5;
+patch out at your own risk.
 
-[1] http://k5wiki.kerberos.org/wiki/Projects/Interposer_Mechanism
-[2] https://github.com/krb5/krb5/commit/36c76aa3c625afc9291b9e1df071db51ccf37dab
-[3] https://github.com/krb5/krb5/commit/38cc076579888695a5820ceb44fe43020f5b61e1
-[4] http://k5wiki.kerberos.org/wiki/Projects/Credential_Store_extensions
-[5] http://k5wiki.kerberos.org/wiki/Projects/Keytab_initiation
+[1] https://github.com/krb5/krb5/commit/7e6965ae33338216650384ca559d49e90312087a
+[2] http://k5wiki.kerberos.org/wiki/Projects/Interposer_Mechanism
