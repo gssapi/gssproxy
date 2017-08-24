@@ -202,7 +202,6 @@ int main(int argc, const char *argv[])
 
     if (opt_version) {
         puts(VERSION""DISTRO_VERSION""PRERELEASE_VERSION);
-        poptFreeContext(pc);
         ret = 0;
         goto cleanup;
     }
