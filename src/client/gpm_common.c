@@ -185,7 +185,8 @@ static int gpm_release_sock(struct gpm_ctx *gpmctx)
     return pthread_mutex_unlock(&gpmctx->lock);
 }
 
-static void gpm_timer_close(struct gpm_ctx *gpmctx) {
+static void gpm_timer_close(struct gpm_ctx *gpmctx)
+{
     if (gpmctx->timerfd < 0) {
         return;
     }
@@ -194,7 +195,8 @@ static void gpm_timer_close(struct gpm_ctx *gpmctx) {
     gpmctx->timerfd = -1;
 }
 
-static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds) {
+static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds)
+{
     int ret;
     struct itimerspec its;
 
@@ -202,7 +204,8 @@ static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds) {
         gpm_timer_close(gpmctx);
     }
 
-    gpmctx->timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    gpmctx->timerfd = timerfd_create(CLOCK_MONOTONIC,
+                                     TFD_NONBLOCK | TFD_CLOEXEC);
     if (gpmctx->timerfd < 0) {
         return errno;
     }
@@ -222,7 +225,8 @@ static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds) {
     return 0;
 }
 
-static void gpm_epoll_close(struct gpm_ctx *gpmctx) {
+static void gpm_epoll_close(struct gpm_ctx *gpmctx)
+{
     if (gpmctx->epollfd < 0) {
         return;
     }
@@ -231,7 +235,8 @@ static void gpm_epoll_close(struct gpm_ctx *gpmctx) {
     gpmctx->epollfd = -1;
 }
 
-static int gpm_epoll_setup(struct gpm_ctx *gpmctx) {
+static int gpm_epoll_setup(struct gpm_ctx *gpmctx)
+{
     struct epoll_event ev;
     int ret;
 
@@ -257,7 +262,8 @@ static int gpm_epoll_setup(struct gpm_ctx *gpmctx) {
     return ret;
 }
 
-static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags) {
+static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
+{
     int ret;
     int epoll_ret;
     struct epoll_event ev;
