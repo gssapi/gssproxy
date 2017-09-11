@@ -562,8 +562,8 @@ static int gpm_send_recv_loop(struct gpm_ctx *gpmctx, char *send_buffer,
             ret = gpm_retry_socket(gpmctx);
 
             /* Free buffer and set it to NULL to prevent free(xdr_reply_ctx) */
-            free(recv_buffer);
-            recv_buffer = NULL;
+            free(*recv_buffer);
+            *recv_buffer = NULL;
 
             if (ret != 0)
                 return ret;
