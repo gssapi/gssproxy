@@ -28,15 +28,10 @@ file, because GSS-Proxy uses the effective uid to distinguish the services. On
 my installation, the uid is 48. Symbolic uids are also supported (e.g.,
 "httpd" or "apache").
 
-We add a new section to the ```/etc/gssproxy/gssproxy.conf``` configuration file. This section has to be before any section which might have ```allow_any_uid = yes```, namely gssproxy-0.3.0 in its ```service/nfs-client```:
-
-```
-[service/HTTP]
-  mechs = krb5
-  cred_store = keytab:/etc/gssproxy/http.keytab
-  cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
-  euid = 48
-```
+We add a new section to the gssproxy configuration.  To do this, copy the
+```examples/80-httpd.conf``` file to ```/etc/gssproxy/80-httpd.conf```.  (If
+you are using a monolithic config file at ```/etc/gssproxy/gssproxy.conf```,
+make sure the HTTP stanza preceeds any ```allow_any_uid=yes``` sections.)
 
 We then start the service:
 
