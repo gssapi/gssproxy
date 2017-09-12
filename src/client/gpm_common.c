@@ -665,8 +665,8 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
 {
     struct gpm_ctx *gpmctx;
     gp_rpc_msg msg;
-    XDR xdr_call_ctx;
-    XDR xdr_reply_ctx;
+    XDR xdr_call_ctx = {0};
+    XDR xdr_reply_ctx = {0};
     char *send_buffer = NULL;
     char *recv_buffer = NULL;
     uint32_t send_length;
