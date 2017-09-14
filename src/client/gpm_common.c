@@ -80,7 +80,6 @@ static int gpm_open_socket(struct gpm_ctx *gpmctx)
     struct sockaddr_un addr = {0};
     char name[PATH_MAX];
     int ret;
-    unsigned flags;
     int fd = -1;
 
     ret = get_pipe_name(name);
@@ -92,20 +91,8 @@ static int gpm_open_socket(struct gpm_ctx *gpmctx)
     strncpy(addr.sun_path, name, sizeof(addr.sun_path)-1);
     addr.sun_path[sizeof(addr.sun_path)-1] = '\0';
 
-    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    fd = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (fd == -1) {
-        ret = errno;
-        goto done;
-    }
-
-    ret = fcntl(fd, F_GETFD, &flags);
-    if (ret != 0) {
-        ret = errno;
-        goto done;
-    }
-
-    ret = fcntl(fd, F_SETFD, flags | O_NONBLOCK);
-    if (ret != 0) {
         ret = errno;
         goto done;
     }
