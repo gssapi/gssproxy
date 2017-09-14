@@ -287,26 +287,47 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
         gpm_epoll_close(gpmctx);
     } else if (epoll_ret == 1 && events[0].data.fd == gpmctx->timerfd) {
         /* Got an event which is only our timer */
-        ret = read(gpmctx->timerfd, &timer_read, sizeof(uint64_t));
-        if (ret == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-            /* In the case when reading from the timer failed, don't hide the
-             * timer error behind ETIMEDOUT such that it isn't retried */
-            ret = errno;
+        if ((events[0].events & EPOLLIN) == 0) {
+            /* We got an event which was not EPOLLIN; assume this is an error,
+             * and exit with EBADF: epoll_wait said timerfd had an event,
+             * but that event is not an EPOLIN event. */
+            ret = EBADF;
         } else {
-            /* If ret == 0, then we definitely timed out. Else, if ret == -1
-             * and errno == EAGAIN or errno == EWOULDBLOCK, we're in a weird
-             * edge case where epoll thinks the timer can be read, but it
-             * is blocking more; treat it like a TIMEOUT and retry, as
-             * nothing around us would handle EAGAIN from timer and retry
-             * it. */
-            ret = ETIMEDOUT;
+            ret = read(gpmctx->timerfd, &timer_read, sizeof(uint64_t));
+            if (ret == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
+                /* In the case when reading from the timer failed, don't hide the
+                 * timer error behind ETIMEDOUT such that it isn't retried */
+                ret = errno;
+            } else {
+                /* If ret == 0, then we definitely timed out. Else, if ret == -1
+                 * and errno == EAGAIN or errno == EWOULDBLOCK, we're in a weird
+                 * edge case where epoll thinks the timer can be read, but it
+                 * is blocking more; treat it like a TIMEOUT and retry, as
+                 * nothing around us would handle EAGAIN from timer and retry
+                 * it. */
+                ret = ETIMEDOUT;
+            }
         }
         gpm_epoll_close(gpmctx);
     } else {
         /* If ret == 2, then we ignore the timerfd; that way if the next
          * operation cannot be performed immediately, we timeout and retry.
-         * If ret == 1 and data.fd == gpmctx->fd, return 0. */
-        ret = 0;
+         * Always check the returned event of the socket fd. */
+        int fd_index = 0;
+        if (epoll_ret == 2 && events[fd_index].data.fd != gpmctx->fd) {
+            fd_index = 1;
+        }
+
+        if ((events[fd_index].events & event_flags) == 0) {
+            /* We cannot call EPOLLIN/EPOLLOUT at this time; assume that this
+             * is a fatal error; return with EBADFD to distinguish from
+             * EBADF in timer_fd case. */
+            ret = EBADFD;
+            gpm_epoll_close(gpmctx);
+        } else {
+            /* We definintely got a EPOLLIN/EPOLLOUT event; return success. */
+            ret = 0;
+        }
     }
 
     epoll_ret = epoll_ctl(gpmctx->epollfd, EPOLL_CTL_DEL, gpmctx->fd, NULL);
