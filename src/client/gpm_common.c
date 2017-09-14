@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 the GSS-PROXY contributors, see COPYING for license */
+/* Copyright (C) 2011,2017 the GSS-PROXY contributors, see COPYING for license */
 
 #include "gssapi_gpm.h"
 #include <sys/types.h>
@@ -419,10 +419,7 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
     ret = 0;
 
 done:
-    if (ret) {
-        /* on errors we can only close the fd and return */
-        gpm_close_socket(gpmctx);
-    }
+    /* we only need to return as gpm_retry_socket closes the socket */
     return ret;
 }
 
@@ -492,9 +489,10 @@ static int gpm_recv_buffer(struct gpm_ctx *gpmctx,
 
 done:
     if (ret) {
-        /* on errors we can only close the fd and return */
-        gpm_close_socket(gpmctx);
-        gpm_epoll_close(gpmctx);
+        /* on errors, free the buffer to prevent calling
+         * xdr_destroy(&xdr_reply_ctx); */
+        free(*buffer);
+        *buffer = NULL;
     }
     return ret;
 }
@@ -568,10 +566,6 @@ static int gpm_send_recv_loop(struct gpm_ctx *gpmctx, char *send_buffer,
         } else if (ret == ETIMEDOUT) {
             /* Close and reopen socket before trying again */
             ret = gpm_retry_socket(gpmctx);
-
-            /* Free buffer and set it to NULL to prevent free(xdr_reply_ctx) */
-            free(*recv_buffer);
-            *recv_buffer = NULL;
 
             if (ret != 0)
                 return ret;
