@@ -25,6 +25,13 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
     int exp_creds_type;
     uint32_t acpt_maj;
     uint32_t acpt_min;
+    struct gp_cred_check_handle gcch = {
+        .ctx = gpcall,
+        .options.options_len = arg->accept_sec_context.options.options_len,
+        .options.options_val = arg->accept_sec_context.options.options_val,
+    };
+    uint32_t gccn_before = 0;
+    uint32_t gccn_after = 0;
     int ret;
 
     asca = &arg->accept_sec_context;
@@ -52,6 +59,8 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
         if (ret_maj) {
             goto done;
         }
+
+        gccn_before = gp_check_sync_creds(&gcch, ach);
     }
 
     if (ach == GSS_C_NO_CREDENTIAL) {
@@ -146,6 +155,25 @@ int gp_accept_sec_context(struct gp_call_ctx *gpcall,
                                               src_name, oid,
                                               &ascr->options.options_len,
                                               &ascr->options.options_val);
+    if (ret_maj) {
+        goto done;
+    }
+
+    gccn_after = gp_check_sync_creds(&gcch, ach);
+
+    if (gccn_before != gccn_after) {
+        /* export creds back to client for sync up */
+        ret_maj = gp_export_sync_creds(&ret_min, gpcall, &ach,
+                                       &ascr->options.options_val,
+                                       &ascr->options.options_len);
+        if (ret_maj) {
+            /* not fatal, log and continue */
+            GPDEBUG("Failed to export sync creds (%d: %d)",
+                    (int)ret_maj, (int)ret_min);
+        }
+    }
+
+    ret_maj = GSS_S_COMPLETE;
 
 done:
     if (ret_maj == GSS_S_COMPLETE) {

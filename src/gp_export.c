@@ -268,7 +268,7 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
                          &enc_handle,
                          &data_out);
     if (ret) {
-        return EINVAL;
+        return ret;
     }
 
     *len = data_out.length;
@@ -446,8 +446,8 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
 {
     gss_buffer_desc token = GSS_C_EMPTY_BUFFER;
     struct gp_creds_handle *handle = NULL;
-    uint32_t ret_maj;
-    uint32_t ret_min;
+    uint32_t ret_maj = GSS_S_COMPLETE;
+    uint32_t ret_min = 0;
     int ret;
 
     handle = gp_service_get_creds_handle(gpcall->service);
@@ -469,8 +469,9 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
                             &cred->cred_handle_reference,
                             &token.length, token.value);
     if (ret) {
-        ret_maj = GSS_S_FAILURE;
-        ret_min = ENOENT;
+        /* Allow for re-issuance of the keytab. */
+        GPDEBUG("Stored ccache failed to decrypt; treating as empty\n");
+        *out = GSS_C_NO_CREDENTIAL;
         goto done;
     }
 
