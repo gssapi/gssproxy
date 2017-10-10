@@ -147,6 +147,7 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
     char cred_name[creds->desired_name.display_name.octet_string_len + 1];
     XDR xdrctx;
     bool xdrok;
+    const char *cc_type;
 
     *min = 0;
 
@@ -193,12 +194,19 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
     }
     cred.ticket.length = xdr_getpos(&xdrctx);
 
-    /* Always initialize and destroy any existing contents to avoid pileup of
-     * entries */
-    ret = krb5_cc_initialize(ctx, ccache, cred.client);
-    if (ret == 0) {
-        ret = krb5_cc_store_cred(ctx, ccache, &cred);
+    cc_type = krb5_cc_get_type(ctx, ccache);
+    if (strcmp(cc_type, "FILE") == 0) {
+        /* FILE ccaches don't handle updates properly: if they have the same
+         * principal name, they are blackholed.  We either have to change the
+         * name (at which point the file grows forever) or flash the cache on
+         * every update. */
+        ret = krb5_cc_initialize(ctx, ccache, cred.client);
+        if (ret != 0) {
+            goto done;
+        }
     }
+
+    ret = krb5_cc_store_cred(ctx, ccache, &cred);
 
 done:
     if (ctx) {
