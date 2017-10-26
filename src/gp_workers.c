@@ -314,6 +314,8 @@ static void gp_handle_reply(verto_ctx *vctx, verto_ev *ev)
         case GP_QUERY_IN:
             /* ?! fallback and kill client conn */
         case GP_QUERY_ERR:
+            GPDEBUGN(3, "[status] Handling query error, terminating CID %d.\n",
+                     gp_conn_get_cid(q->conn));
             gp_conn_free(q->conn);
             gp_query_free(q, true);
             break;
