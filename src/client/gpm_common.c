@@ -163,7 +163,9 @@ static int gpm_grab_sock(struct gpm_ctx *gpmctx)
         ret = gpm_open_socket(gpmctx);
     }
 
-    pthread_mutex_unlock(&gpmctx->lock);
+    if (ret) {
+        pthread_mutex_unlock(&gpmctx->lock);
+    }
     return ret;
 }
 
@@ -517,11 +519,6 @@ static struct gpm_ctx *gpm_get_ctx(void)
     int ret;
 
     pthread_once(&gpm_init_once_control, gpm_init_once);
-
-    ret = gpm_grab_sock(&gpm_global_ctx);
-    if (ret) {
-        return NULL;
-    }
 
     return &gpm_global_ctx;
 }
