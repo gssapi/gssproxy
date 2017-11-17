@@ -154,7 +154,7 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
     memset(&cred, 0, sizeof(cred));
 
     ret = krb5_init_context(&ctx);
-    if (ret) return ret;
+    if (ret) goto done;
 
     if (cred_store) {
         for (unsigned i = 0; i < cred_store->count; i++) {
