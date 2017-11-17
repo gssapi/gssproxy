@@ -136,6 +136,40 @@ bool gpp_creds_are_equal(gssx_cred *a, gssx_cred *b)
     return true;
 }
 
+static krb5_error_code gpp_construct_cred(gssx_cred *creds, krb5_context ctx,
+                                          krb5_creds *cred, char *cred_name)
+{
+    XDR xdrctx;
+    bool xdrok;
+    krb5_error_code ret = 0;
+
+    memset(cred, 0, sizeof(*cred));
+
+    memcpy(cred_name, creds->desired_name.display_name.octet_string_val,
+           creds->desired_name.display_name.octet_string_len);
+    cred_name[creds->desired_name.display_name.octet_string_len] = '\0';
+
+    ret = krb5_parse_name(ctx, cred_name, &cred->client);
+    if (ret) {
+        return ret;
+    }
+
+    ret = krb5_parse_name(ctx, GPKRB_SRV_NAME, &cred->server);
+    if (ret) {
+        return ret;
+    }
+
+    cred->ticket.data = malloc(GPKRB_MAX_CRED_SIZE);
+    xdrmem_create(&xdrctx, cred->ticket.data, GPKRB_MAX_CRED_SIZE,
+                  XDR_ENCODE);
+    xdrok = xdr_gssx_cred(&xdrctx, creds);
+    if (!xdrok) {
+        return ENOSPC;
+    }
+    cred->ticket.length = xdr_getpos(&xdrctx);
+    return 0;
+}
+
 uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
                                 gss_const_key_value_set_t cred_store,
                                 gssx_cred *creds)
@@ -145,16 +179,17 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
     krb5_creds cred;
     krb5_error_code ret;
     char cred_name[creds->desired_name.display_name.octet_string_len + 1];
-    XDR xdrctx;
-    bool xdrok;
     const char *cc_type;
 
     *min = 0;
 
-    memset(&cred, 0, sizeof(cred));
-
     ret = krb5_init_context(&ctx);
     if (ret) goto done;
+
+    ret = gpp_construct_cred(creds, ctx, &cred, cred_name);
+    if (ret) {
+        goto done;
+    }
 
     if (cred_store) {
         for (unsigned i = 0; i < cred_store->count; i++) {
@@ -174,25 +209,6 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
         ret = krb5_cc_default(ctx, &ccache);
         if (ret) goto done;
     }
-
-    memcpy(cred_name, creds->desired_name.display_name.octet_string_val,
-           creds->desired_name.display_name.octet_string_len);
-    cred_name[creds->desired_name.display_name.octet_string_len] = '\0';
-
-    ret = krb5_parse_name(ctx, cred_name, &cred.client);
-    if (ret) goto done;
-
-    ret = krb5_parse_name(ctx, GPKRB_SRV_NAME, &cred.server);
-    if (ret) goto done;
-
-    cred.ticket.data = malloc(GPKRB_MAX_CRED_SIZE);
-    xdrmem_create(&xdrctx, cred.ticket.data, GPKRB_MAX_CRED_SIZE, XDR_ENCODE);
-    xdrok = xdr_gssx_cred(&xdrctx, creds);
-    if (!xdrok) {
-        ret = ENOSPC;
-        goto done;
-    }
-    cred.ticket.length = xdr_getpos(&xdrctx);
 
     cc_type = krb5_cc_get_type(ctx, ccache);
     if (strcmp(cc_type, "FILE") == 0) {
