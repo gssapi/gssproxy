@@ -516,8 +516,6 @@ static uint32_t gpm_next_xid(struct gpm_ctx *gpmctx)
 
 static struct gpm_ctx *gpm_get_ctx(void)
 {
-    int ret;
-
     pthread_once(&gpm_init_once_control, gpm_init_once);
 
     return &gpm_global_ctx;
