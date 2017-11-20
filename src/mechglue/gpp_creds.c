@@ -170,7 +170,16 @@ static krb5_error_code gpp_construct_cred(gssx_cred *creds, krb5_context ctx,
     return 0;
 }
 
-uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
+/* Store creds from remote in a local ccache, updating where possible.
+ *
+ * If store_as_default_cred is true, the cred is made default for its
+ * collection, if there is one.  Note that if the ccache is not of a
+ * collection type, the creds will overwrite the ccache.
+ *
+ * If no "ccache" entry is specified in cred_store, the default ccache for a
+ * new context will be used.
+ */
+uint32_t gpp_store_remote_creds(uint32_t *min, bool store_as_default_cred,
                                 gss_const_key_value_set_t cred_store,
                                 gssx_cred *creds)
 {
@@ -179,7 +188,7 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
     krb5_creds cred;
     krb5_error_code ret;
     char cred_name[creds->desired_name.display_name.octet_string_len + 1];
-    const char *cc_type;
+    const char *cc_name;
 
     *min = 0;
 
@@ -191,38 +200,64 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
         goto done;
     }
 
-    if (cred_store) {
-        for (unsigned i = 0; i < cred_store->count; i++) {
-            if (strcmp(cred_store->elements[i].key, "ccache") == 0) {
-                ret = krb5_cc_resolve(ctx, cred_store->elements[i].value,
-                                      &ccache);
-                if (ret) goto done;
-                break;
-            }
+    for (unsigned i = 0; cred_store && i < cred_store->count; i++) {
+        if (strcmp(cred_store->elements[i].key, "ccache") == 0) {
+            /* krb5 creates new ccaches based off the default name. */
+            ret = krb5_cc_set_default_name(ctx,
+                                           cred_store->elements[i].value);
+            if (ret)
+                goto done;
+
+            break;
         }
-    }
-    if (!ccache) {
-        if (!default_creds) {
-            ret = ENOMEDIUM;
-            goto done;
-        }
-        ret = krb5_cc_default(ctx, &ccache);
-        if (ret) goto done;
     }
 
-    cc_type = krb5_cc_get_type(ctx, ccache);
-    if (strcmp(cc_type, "FILE") == 0) {
+    cc_name = krb5_cc_default_name(ctx);
+    if (strncmp(cc_name, "FILE:", 5) == 0 || !strchr(cc_name, ':')) {
         /* FILE ccaches don't handle updates properly: if they have the same
          * principal name, they are blackholed.  We either have to change the
          * name (at which point the file grows forever) or flash the cache on
          * every update. */
-        ret = krb5_cc_initialize(ctx, ccache, cred.client);
-        if (ret != 0) {
+        ret = krb5_cc_default(ctx, &ccache);
+        if (ret)
             goto done;
-        }
+
+        ret = krb5_cc_initialize(ctx, ccache, cred.client);
+        if (ret != 0)
+            goto done;
+
+        ret = krb5_cc_store_cred(ctx, ccache, &cred);
+        goto done;
     }
 
+    ret = krb5_cc_cache_match(ctx, cred.client, &ccache);
+    if (ret == KRB5_CC_NOTFOUND) {
+        /* A new ccache within the collection whose name is based off the
+         * default_name for the context.  krb5_cc_new_unique only accepts the
+         * leading component of a name as a type. */
+        char *cc_type;
+        const char *p;
+
+        p = strchr(cc_name, ':'); /* can't be FILE here */
+        cc_type = strndup(cc_name, p - cc_name);
+        if (!cc_type) {
+            ret = ENOMEM;
+            goto done;
+        }
+
+        ret = krb5_cc_new_unique(ctx, cc_type, NULL, &ccache);
+        free(cc_type);
+    }
+    if (ret)
+        goto done;
+
     ret = krb5_cc_store_cred(ctx, ccache, &cred);
+    if (ret)
+        goto done;
+
+    if (store_as_default_cred) {
+        ret = krb5_cc_switch(ctx, ccache);
+    }
 
 done:
     if (ctx) {

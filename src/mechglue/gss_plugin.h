@@ -76,7 +76,7 @@ uint32_t gpp_cred_handle_init(uint32_t *min, bool defcred, const char *ccache,
                               struct gpp_cred_handle **out_handle);
 uint32_t gpp_cred_handle_free(uint32_t *min, struct gpp_cred_handle *handle);
 bool gpp_creds_are_equal(gssx_cred *a, gssx_cred *b);
-uint32_t gpp_store_remote_creds(uint32_t *min, bool default_creds,
+uint32_t gpp_store_remote_creds(uint32_t *min, bool store_as_default_cred,
                                 gss_const_key_value_set_t cred_store,
                                 gssx_cred *creds);
 
