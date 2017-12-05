@@ -247,6 +247,13 @@ uint32_t gpp_store_remote_creds(uint32_t *min, bool store_as_default_cred,
 
         ret = krb5_cc_new_unique(ctx, cc_type, NULL, &ccache);
         free(cc_type);
+        if (ret)
+            goto done;
+
+        /* krb5_cc_new_unique() doesn't initialize, and we need to initialize
+         * before storing into the ccache.  Note that this will only clobber
+         * the ccache handle, not the whole collection. */
+        ret = krb5_cc_initialize(ctx, ccache, cred.client);
     }
     if (ret)
         goto done;
