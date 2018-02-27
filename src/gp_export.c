@@ -168,11 +168,10 @@ uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
                                  GP_CREDS_HANDLE_KEY_ENCTYPE, 0,
                                  &handle->key);
         if (ret == 0) {
-            ret = krb5_c_make_random_key(handle->context,
-                                         GP_CREDS_HANDLE_KEY_ENCTYPE,
+            ret = krb5_c_make_random_key(handle->context, handle->key->enctype,
                                          handle->key);
             GPDEBUG("Service: %s, Enckey: [ephemeral], Enctype: %d\n",
-                    svc_name, GP_CREDS_HANDLE_KEY_ENCTYPE);
+                    svc_name, handle->key->enctype);
         }
         if (ret) {
             ret_min = ret;
@@ -254,7 +253,7 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
 
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
-    enc_handle.enctype = GP_CREDS_HANDLE_KEY_ENCTYPE;
+    enc_handle.enctype = key->enctype;
     enc_handle.ciphertext.data = in->octet_string_val;
     enc_handle.ciphertext.length = in->octet_string_len;
 
