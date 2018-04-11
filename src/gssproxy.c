@@ -208,7 +208,7 @@ int main(int argc, const char *argv[])
 
     if (opt_debug || opt_debug_level > 0) {
         if (opt_debug_level == 0) opt_debug_level = 1;
-        gp_debug_args(opt_debug_level);
+        gp_debug_toggle(opt_debug_level);
     }
 
     if (opt_daemon && opt_interactive) {

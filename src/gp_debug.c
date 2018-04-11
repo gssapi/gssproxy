@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 the GSS-PROXY contributors, see COPYING for license */
+/* Copyright (C) 2011,2018 the GSS-PROXY contributors, see COPYING for license */
 
 #include "config.h"
 #include <stdbool.h>
@@ -7,35 +7,17 @@
 #include "gp_log.h"
 
 /* global debug switch */
-int gp_debug;
-
-int gp_debug_args(int level) {
-    static int args_level = 0;
-
-    if (level != 0) {
-        args_level = level;
-    }
-    return args_level;
-}
+int gp_debug = 0;
 
 void gp_debug_toggle(int level)
 {
-    static bool krb5_trace_set = false;
+    if (level <= gp_debug)
+        return;
 
-    /* Command line and environment options override config file */
-    gp_debug = gp_debug_args(0);
-    if (gp_debug == 0) {
-        gp_debug = level;
-    }
-    if (level >= 3) {
-        if (!getenv("KRB5_TRACE")) {
-            setenv("KRB5_TRACE", "/dev/stderr", 1);
-            krb5_trace_set = true;
-        }
-    } else if (krb5_trace_set) {
-        unsetenv("KRB5_TRACE");
-        krb5_trace_set = false;
-    }
+    if (level >= 3 && !getenv("KRB5_TRACE"))
+        setenv("KRB5_TRACE", "/dev/stderr", 1);
+
+    gp_debug = level;
     GPDEBUG("Debug Enabled (level: %d)\n", level);
 }
 

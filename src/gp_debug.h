@@ -1,4 +1,4 @@
-/* Copyright (C) 2011 the GSS-PROXY contributors, see COPYING for license */
+/* Copyright (C) 2011,2018 the GSS-PROXY contributors, see COPYING for license */
 
 #ifndef _GP_DEBUG_H_
 #define _GP_DEBUG_H_
@@ -10,7 +10,6 @@
 
 extern int gp_debug;
 
-int gp_debug_args(int level);
 void gp_debug_toggle(int);
 void gp_debug_printf(const char *format, ...);
 void gp_debug_time_printf(const char *format, ...);
