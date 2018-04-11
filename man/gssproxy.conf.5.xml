@@ -192,7 +192,10 @@
                 <varlistentry>
                     <term>debug (boolean)</term>
                     <listitem>
-                        <para>Enable debugging to syslog.</para>
+                        <para>
+                            Enable debugging to syslog.  Setting to true is
+                            identical to setting debug_level to 1.
+                        </para>
                         <para>Default: debug = false</para>
                     </listitem>
                 </varlistentry>

@@ -118,13 +118,35 @@
                     </para>
                 </listitem>
             </varlistentry>
+
             <varlistentry>
                 <term>
                     <option>-d</option>,<option>--debug</option>
                 </term>
                 <listitem>
                     <para>
-                        Turn on debugging.
+                        Turn on debugging.  This option is identical to
+                        --debug-level=1.
+                    </para>
+                </listitem>
+            </varlistentry>
+
+            <varlistentry>
+                <term>
+                    <option>--debug-level=</option>
+                </term>
+                <listitem>
+                    <para>
+                        Turn on debugging at the specified level.  0
+                        corresponds to no logging, while 1 turns on basic
+                        debug logging.  Level 2 increases verbosity, including
+                        more detailed credential verification.
+                    </para>
+                    <para>
+                        At level 3 and above, KRB5_TRACE output is logged.  If
+                        KRB5_TRACE was already set in the execution
+                        environment, trace output is sent to its value
+                        instead.
                     </para>
                 </listitem>
             </varlistentry>
