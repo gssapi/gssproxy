@@ -46,6 +46,7 @@ static verto_ev *setup_socket(char *sock_name, verto_ctx *vctx)
 
     ev = verto_add_io(vctx, vflags, accept_sock_conn, sock_ctx->fd);
     if (!ev) {
+        free(sock_ctx);
         return NULL;
     }
 
