@@ -1,25 +1,45 @@
 /* Copyright (C) 2011 the GSS-PROXY contributors, see COPYING for license */
 
 #include "gssapi_gpm.h"
+#include <pthread.h>
 
-__thread gssx_status *tls_last_status = NULL;
+static pthread_key_t gpm_last_status;
 
-/* Thread local storage for return status.
- * FIXME: it's not the most portable construct, so may need fixing in future */
+static void gpm_destroy_last_status(void *arg)
+{
+    gssx_status *status = (gssx_status *)arg;
+    xdr_free((xdrproc_t)xdr_gssx_status, (char *)status);
+    free(status);
+}
+
+void gpm_display_status_init_once(void)
+{
+    (void)pthread_key_create(&gpm_last_status, gpm_destroy_last_status);
+}
+
+/* Portable thread local storage for return status. */
 void gpm_save_status(gssx_status *status)
 {
+    gssx_status *last_status;
     int ret;
 
-    if (tls_last_status) {
-        xdr_free((xdrproc_t)xdr_gssx_status, (char *)tls_last_status);
-        free(tls_last_status);
+    last_status = (gssx_status *)pthread_getspecific(gpm_last_status);
+    if (last_status != NULL) {
+        /* store NULL first so we do not risk a double free if we are
+         * racing on a pthread_cancel */
+        pthread_setspecific(gpm_last_status, NULL);
+        gpm_destroy_last_status(last_status);
     }
 
-    ret = gp_copy_gssx_status_alloc(status, &tls_last_status);
-    if (ret) {
-        /* make sure tls_last_status is zeored on error */
-        tls_last_status = NULL;
+    ret = gp_copy_gssx_status_alloc(status, &last_status);
+    if (ret == 0) {
+        pthread_setspecific(gpm_last_status, last_status);
     }
+}
+
+gssx_status *gpm_get_saved_status(void)
+{
+    return (gssx_status *)pthread_getspecific(gpm_last_status);
 }
 
 /* This funciton is used to record internal mech errors that are
@@ -47,15 +67,16 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
                              OM_uint32 *message_context,
                              gss_buffer_t status_string)
 {
+    gssx_status *last_status = gpm_get_saved_status();
     utf8string tmp;
     int ret;
 
     switch(status_type) {
     case GSS_C_GSS_CODE:
-        if (tls_last_status &&
-            tls_last_status->major_status == status_value &&
-            tls_last_status->major_status_string.utf8string_len) {
-                ret = gp_copy_utf8string(&tls_last_status->major_status_string,
+        if (last_status &&
+            last_status->major_status == status_value &&
+            last_status->major_status_string.utf8string_len) {
+                ret = gp_copy_utf8string(&last_status->major_status_string,
                                          &tmp);
                 if (ret) {
                     *minor_status = ret;
@@ -70,9 +91,9 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
             return GSS_S_UNAVAILABLE;
         }
     case GSS_C_MECH_CODE:
-        if (tls_last_status &&
-            tls_last_status->minor_status == status_value &&
-            tls_last_status->minor_status_string.utf8string_len) {
+        if (last_status &&
+            last_status->minor_status == status_value &&
+            last_status->minor_status_string.utf8string_len) {
 
             if (*message_context) {
                 /* we do not support multiple messages for now */
@@ -80,7 +101,7 @@ OM_uint32 gpm_display_status(OM_uint32 *minor_status,
                 return GSS_S_FAILURE;
             }
 
-            ret = gp_copy_utf8string(&tls_last_status->minor_status_string,
+            ret = gp_copy_utf8string(&last_status->minor_status_string,
                                      &tmp);
             if (ret) {
                 *minor_status = ret;

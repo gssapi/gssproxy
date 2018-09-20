@@ -23,6 +23,7 @@ OM_uint32 gpm_release_name(OM_uint32 *minor_status,
 OM_uint32 gpm_release_buffer(OM_uint32 *minor_status,
                              gss_buffer_t buffer);
 
+void gpm_display_status_init_once(void);
 void gpm_save_status(gssx_status *status);
 void gpm_save_internal_status(uint32_t err, char *err_str);
 

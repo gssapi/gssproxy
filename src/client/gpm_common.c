@@ -55,6 +55,8 @@ static void gpm_init_once(void)
     gpm_global_ctx.next_xid = rand_r(&seedp);
 
     pthread_mutexattr_destroy(&attr);
+
+    gpm_display_status_init_once();
 }
 
 static int get_pipe_name(char *name)
