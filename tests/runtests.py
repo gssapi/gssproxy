@@ -4,11 +4,20 @@
 import argparse
 import importlib
 import signal
+import subprocess
 import sys
 import traceback
 
 import testlib
 from testlib import *
+
+def check_exec(name):
+    env = {'PATH': '/sbin:/bin:/usr/sbin:/usr/bin'}
+    ret = subprocess.call(["which", name], stdout=subprocess.DEVNULL, env=env)
+    if ret != 0:
+        print(f"Executable '{name}' not found in {env['PATH']}",
+              file=sys.stderr)
+        exit(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='GSS-Proxy Tests Environment')
@@ -39,6 +48,11 @@ def parse_args():
 
 def runtests_main(testfiles):
     args = parse_args()
+
+    for e in ["bash", "pkg-config", "zcat", "kinit", "krb5kdc", "kdb5_util",
+             "kadmin.local", "kdb5_ldap_util", "slapd", "slapadd",
+              "ldapmodify", "valgrind"]:
+        check_exec(e)
 
     testdir = args['path']
     if os.path.exists(testdir):
