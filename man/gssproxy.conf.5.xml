@@ -308,7 +308,12 @@
                 <varlistentry>
                     <term>krb5_principal (string)</term>
                     <listitem>
-                        <para>The krb5 principal to be used by this service.</para>
+                        <para>
+                            The krb5 principal to be used preferred for this
+                            service, if one isn't requested by the
+                            application.  Note that this does not enforce use
+                            of this specific name; it only sets a default.
+                        </para>
                         <para>Default: krb5_principal = </para>
                     </listitem>
                     </varlistentry>
