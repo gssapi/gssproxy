@@ -58,16 +58,6 @@
             </varlistentry>
             <varlistentry>
                 <term>
-                    <option>-i</option>,<option>--interactive</option>
-                </term>
-                <listitem>
-                    <para>
-                        Run in the foreground, don't become a daemon.
-                    </para>
-                </listitem>
-            </varlistentry>
-            <varlistentry>
-                <term>
                     <option>-c</option>,<option>--config</option>
                 </term>
                 <listitem>
@@ -109,18 +99,6 @@
             </varlistentry>
             <varlistentry>
                 <term>
-                    <option>-s</option>,<option>--socket</option>
-                </term>
-                <listitem>
-                    <para>
-                        Specify a custom default socket name. This socket will be used
-                        by all sections that do not define an explicit socket.
-                    </para>
-                </listitem>
-            </varlistentry>
-
-            <varlistentry>
-                <term>
                     <option>-d</option>,<option>--debug</option>
                 </term>
                 <listitem>
@@ -130,7 +108,6 @@
                     </para>
                 </listitem>
             </varlistentry>
-
             <varlistentry>
                 <term>
                     <option>--debug-level=</option>
@@ -150,7 +127,27 @@
                     </para>
                 </listitem>
             </varlistentry>
-
+            <varlistentry>
+                <term>
+                    <option>-i</option>,<option>--interactive</option>
+                </term>
+                <listitem>
+                    <para>
+                        Run in the foreground, don't become a daemon.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>-s</option>,<option>--socket</option>
+                </term>
+                <listitem>
+                    <para>
+                        Specify a custom default socket name. This socket will be used
+                        by all sections that do not define an explicit socket.
+                    </para>
+                </listitem>
+            </varlistentry>
             <varlistentry>
                 <term>
                     <option>--version</option>

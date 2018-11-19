@@ -141,15 +141,6 @@
                 </varlistentry>
 
                 <varlistentry>
-                    <term>cred_usage (string)</term>
-                    <listitem>
-                        <para>Allow to restrict the kind of operations permitted for this service.</para>
-                        <para>The allowed options are: initiate, accept, both</para>
-                        <para>Default: cred_usage = both </para>
-                    </listitem>
-                </varlistentry>
-
-                <varlistentry>
                     <term>cred_store (string)</term>
                     <listitem>
                         <para>This parameter allows to control in which way gssproxy should use the cred_store interface provided by GSSAPI. The parameter can be defined multiple times per service.</para>
@@ -190,6 +181,15 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>cred_usage (string)</term>
+                    <listitem>
+                        <para>Allow to restrict the kind of operations permitted for this service.</para>
+                        <para>The allowed options are: initiate, accept, both</para>
+                        <para>Default: cred_usage = both </para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>debug (boolean)</term>
                     <listitem>
                         <para>
@@ -220,18 +220,6 @@
                 </varlistentry>
 
                 <varlistentry>
-                    <term>euid (integer or string)</term>
-                    <listitem>
-                        <para>Either the numeric (e.g., 48) or symbolic (e.g.,
-                            apache) effective uid of a running process,
-			    required to identify a service.</para>
-                        <para>The "euid" parameter is imperative, any section
-                            without it will be discarded.</para>
-                        <para>Default: euid =</para>
-                    </listitem>
-                    </varlistentry>
-
-                <varlistentry>
                     <term>enforce_flags (string)</term>
                     <listitem>
                         <para>
@@ -254,6 +242,18 @@
 </programlisting>
                         </para>
                         <para>Default: enforce_flags =</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term>euid (integer or string)</term>
+                    <listitem>
+                        <para>Either the numeric (e.g., 48) or symbolic (e.g.,
+                            apache) effective uid of a running process,
+			    required to identify a service.</para>
+                        <para>The "euid" parameter is imperative, any section
+                            without it will be discarded.</para>
+                        <para>Default: euid =</para>
                     </listitem>
                 </varlistentry>
 
@@ -316,7 +316,7 @@
                         </para>
                         <para>Default: krb5_principal = </para>
                     </listitem>
-                    </varlistentry>
+                </varlistentry>
 
                 <varlistentry>
                     <term>mechs (string)</term>
@@ -326,7 +326,21 @@
                             without it will be discarded.</para>
                         <para>Default: mechs = </para>
                     </listitem>
-                    </varlistentry>
+                </varlistentry>
+
+                <varlistentry>
+                    <term>program (string)</term>
+                    <listitem>
+                        <para>If specified, this service will only match when
+                              the program being run is the specified string.
+                        </para>
+                        <para>Programs are assumed to be specified as
+                              canonical paths (i.e., no relative paths, no
+                              symlinks).  Additionally, the '|' character is
+                              reserved for future use and therefore forbidden.
+                        </para>
+                    </listitem>
+                </varlistentry>
 
                 <varlistentry>
                     <term>run_as_user (string)</term>
@@ -344,7 +358,7 @@
                               or euid instead.
                         </para>
                     </listitem>
-                    </varlistentry>
+                </varlistentry>
 
                 <varlistentry>
                     <term>socket (string)</term>
@@ -354,20 +368,6 @@
                         <para>When this parameter is not set, gssproxy will
                             use a compiled-in default.</para>
                     </listitem>
-                    </varlistentry>
-
-                <varlistentry>
-                    <term>program (string)</term>
-                    <listitem>
-                        <para>If specified, this service will only match when
-                              the program being run is the specified string.
-                        </para>
-                        <para>Programs are assumed to be specified as
-                              canonical paths (i.e., no relative paths, no
-                              symlinks).  Additionally, the '|' character is
-                              reserved for future use and therefore forbidden.
-                        </para>
-                    </listitem>
                 </varlistentry>
 
                 <varlistentry>
@@ -375,7 +375,7 @@
                         <listitem><para>Defines whether this service is considered trusted. Use with caution, this enables impersonation.</para>
                             <para>Default: trusted = false</para>
                         </listitem>
-                    </varlistentry>
+                </varlistentry>
 
                 <varlistentry>
                     <term>worker threads (integer)</term>
@@ -383,8 +383,7 @@
                         <para>Defines the amount of worker threads gssproxy will create at startup.</para>
                         <para>Default: worker threads = </para>
                     </listitem>
-                    </varlistentry>
-
+                </varlistentry>
             </variablelist>
         </para>
     </refsect1>
