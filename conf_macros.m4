@@ -62,7 +62,7 @@ AC_DEFUN([WITH_SOCKET_NAME],
 
 AC_DEFUN([WITH_PID_FILE],
   [ AC_ARG_WITH([pid-file],
-                [AC_HELP_STRING([--with-id-file=PATH],
+                [AC_HELP_STRING([--with-pid-file=PATH],
                                 [Name of the GSS Proxy pid file [/var/run/gssproxy.pid]]
                                )
                 ]
