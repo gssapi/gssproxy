@@ -1,17 +1,21 @@
 /* Copyright (C) 2011,2015 the GSS-PROXY contributors, see COPYING for license */
 
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <locale.h>
-#include <signal.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <pwd.h>
+#include <fcntl.h>
 #include <grp.h>
+#include <linux/capability.h>
+#include <locale.h>
+#include <pwd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/capability.h>
+#include <sys/prctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "gp_proxy.h"
 
 void init_server(bool daemonize, int *wait_fd)
@@ -223,6 +227,16 @@ int drop_privs(struct gp_config *cfg)
         return 0;
     }
 
+    /* Retain capabilities when changing UID to non-zero.  We drop the ones we
+     * don't need after the switch. */
+    ret = prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
+    if (ret) {
+        ret = errno;
+        GPDEBUG("Failed to set keep capabilities: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        return ret;
+    }
+
     ret = getpwnam_r(cfg->proxy_user, &pws, buf, 2048, &pw);
     if (ret) {
         GPDEBUG("Failed to look up proxy user: '%s'! [%d:%s]\n",
@@ -253,5 +267,139 @@ int drop_privs(struct gp_config *cfg)
         return ret;
     }
 
+    /* Now drop the capabilities we don't need, and turn PR_SET_KEEPCAPS back
+     * off. */
+    ret = drop_caps();
+    if (ret) {
+        return ret;
+    }
+
+    if (prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0)) {
+        ret = errno;
+        GPDEBUG("Failed to reset keep capabilities: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        return ret;
+    }
+
     return 0;
+}
+
+/* Remove all capabilties from the process.  (In order to manipulate our
+ * capability set, we need to have CAP_SETPCAP.) */
+int clear_bound_caps()
+{
+    cap_t caps = NULL;
+    cap_value_t cap = 0;
+    const cap_value_t setpcap_list[] = { CAP_SETPCAP };
+    int ret;
+
+    caps = cap_get_proc();
+    if (caps == NULL) {
+        ret = errno;
+        GPDEBUG("Failed to get current capabilities: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        goto done;
+    }
+
+    if (cap_set_flag(caps, CAP_EFFECTIVE, 1, setpcap_list, CAP_SET) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to set CAP_SETPCAP in effective set: [%d:%s]\n", ret,
+                gp_strerror(ret));
+        goto done;
+    }
+
+    if (cap_set_proc(caps) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to apply CAP_SETPCAP: [%d:%s]\n", ret,
+                gp_strerror(ret));
+        goto done;
+    }
+
+    /* Now that we have CAP_SETPCAP in the effective set, remove all other
+     * capabilities. */
+    while (CAP_IS_SUPPORTED(cap)) {
+        if (cap_drop_bound(cap) != 0) {
+            ret = errno;
+            GPDEBUG("Failed to drop bounding set capability: [%d:%s]\n",
+                    ret, gp_strerror(ret));
+            goto done;
+        }
+        cap++;
+    }
+    ret = 0;
+
+done:
+    if (caps && cap_free(caps) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to free capability state: [%d:%s]\n",
+                ret, gp_strerror(ret));
+    }
+    return ret;
+}
+
+/* For program name matching, we need to have CAP_SYS_PTRACE in order to read
+ * /proc/pid/exe.  Because we've set PR_SET_KEEPCAPS, every thread inherits
+ * the process set of its parent, so we drop everything but CAP_SYS_PTRACE. */
+int drop_caps()
+{
+    cap_t caps = NULL;
+    int ret;
+    const cap_value_t ptrace_list[] = { CAP_SYS_PTRACE };
+
+    /* Completely drop the bounding set. */
+    ret = clear_bound_caps();
+    if (ret) {
+        goto done;
+    }
+
+    ret = CAP_IS_SUPPORTED(CAP_SYS_PTRACE);
+    if (ret == -1) {
+        ret = errno;
+        GPDEBUG("Failed to check if CAP_SYS_PTRACE is supported: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        goto done;
+    } else if (!ret) {
+        GPDEBUG("Capability CAPS_SYS_PTRACE is not supported\n");
+        ret = EINVAL;
+        goto done;
+    }
+
+    /* Now, make an empty capabilitiy set and put CAP_SYS_PTRACE in it. */
+    caps = cap_init();
+    if (caps == NULL) {
+        ret = errno;
+        GPDEBUG("Failed to init capabilities: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        goto done;
+    }
+
+    if (cap_set_flag(caps, CAP_PERMITTED, 1, ptrace_list, CAP_SET) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to set permitted capabilities: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        goto done;
+    }
+
+    if (cap_set_flag(caps, CAP_EFFECTIVE, 1, ptrace_list, CAP_SET) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to set effective capabilities: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        goto done;
+    }
+
+    if (cap_set_proc(caps) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to apply capability set: [%d:%s]\n",
+                ret, gp_strerror(ret));
+        goto done;
+    }
+    ret = 0;
+
+done:
+    if (caps && cap_free(caps) == -1) {
+        ret = errno;
+        GPDEBUG("Failed to free capability state: [%d:%s]\n",
+                ret, gp_strerror(ret));
+    }
+    return ret;
 }

@@ -102,6 +102,8 @@ verto_ctx *init_event_loop(void);
 void init_proc_nfsd(struct gp_config *cfg);
 void write_pid(void);
 int drop_privs(struct gp_config *cfg);
+int drop_caps(void);
+int clear_bound_caps(void);
 
 /* from gp_socket.c */
 void free_unix_socket(verto_ctx *ctx, verto_ev *ev);

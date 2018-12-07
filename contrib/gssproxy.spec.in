@@ -40,6 +40,7 @@ BuildRequires: libselinux-devel
 BuildRequires: keyutils-libs-devel
 BuildRequires: libini_config-devel >= 1.2.0
 BuildRequires: libverto-devel
+BuildRequires: libcap-devel
 BuildRequires: popt-devel
 BuildRequires: findutils
 BuildRequires: systemd-units
