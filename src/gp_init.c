@@ -229,11 +229,6 @@ int drop_privs(struct gp_config *cfg)
     struct passwd *pw, pws;
     int ret;
 
-    if (cfg->proxy_user == NULL) {
-        /* not dropping privs */
-        return 0;
-    }
-
 #ifdef HAVE_CAP
     /* Retain capabilities when changing UID to non-zero.  We drop the ones we
      * don't need after the switch. */

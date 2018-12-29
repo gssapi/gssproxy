@@ -269,10 +269,14 @@ int main(int argc, const char *argv[])
      * so it can continue with dependencies and start nfsd */
     init_done(wait_fd);
 
-    ret = drop_privs(gpctx->config);
-    if (ret) {
-        ret = EXIT_FAILURE;
-        goto cleanup;
+    /* if config option "run_as_user" is missing, then it's no need to
+     * drop privileges */
+    if (gpctx->config->proxy_user) {
+        ret = drop_privs(gpctx->config);
+        if (ret) {
+            ret = EXIT_FAILURE;
+            goto cleanup;
+        }
     }
 
     ret = gp_workers_init(gpctx);
