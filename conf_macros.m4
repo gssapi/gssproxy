@@ -274,3 +274,20 @@ AC_DEFUN([WITH_HARDENING],
                )
     AM_CONDITIONAL([BUILD_HARDENING], [test x"$with_hardening" = xyes])
   ])
+
+AC_DEFUN([WITH_CAP],
+  [ AC_ARG_WITH([cap],
+                [AC_HELP_STRING([--with-cap],
+                                [Whether to build with libcap [no]]
+                               )
+                ],
+                [],
+                with_cap=no
+               )
+    if test x"$with_cap" = xyes; then
+        HAVE_CAP=1
+        AC_SUBST(HAVE_CAP)
+        AC_DEFINE_UNQUOTED([HAVE_CAP], [1], [Build with capabilities support])
+    fi
+  ])
+AM_CONDITIONAL([HAVE_CAP], [test x$with_cap = xyes])

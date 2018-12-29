@@ -1,20 +1,27 @@
 /* Copyright (C) 2011,2015 the GSS-PROXY contributors, see COPYING for license */
 
+#include <config.h>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
-#include <linux/capability.h>
 #include <locale.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/capability.h>
-#include <sys/prctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#ifdef HAVE_CAP
+
+#include <linux/capability.h>
+#include <sys/capability.h>
+#include <sys/prctl.h>
+
+#endif
 
 #include "gp_proxy.h"
 
@@ -227,6 +234,7 @@ int drop_privs(struct gp_config *cfg)
         return 0;
     }
 
+#ifdef HAVE_CAP
     /* Retain capabilities when changing UID to non-zero.  We drop the ones we
      * don't need after the switch. */
     ret = prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
@@ -236,6 +244,7 @@ int drop_privs(struct gp_config *cfg)
                 ret, gp_strerror(ret));
         return ret;
     }
+#endif
 
     ret = getpwnam_r(cfg->proxy_user, &pws, buf, 2048, &pw);
     if (ret) {
@@ -267,6 +276,7 @@ int drop_privs(struct gp_config *cfg)
         return ret;
     }
 
+#ifdef HAVE_CAP
     /* Now drop the capabilities we don't need, and turn PR_SET_KEEPCAPS back
      * off. */
     ret = drop_caps();
@@ -280,10 +290,12 @@ int drop_privs(struct gp_config *cfg)
                 ret, gp_strerror(ret));
         return ret;
     }
+#endif
 
     return 0;
 }
 
+#ifdef HAVE_CAP
 /* Remove all capabilties from the process.  (In order to manipulate our
  * capability set, we need to have CAP_SETPCAP.) */
 int clear_bound_caps()
@@ -403,3 +415,4 @@ done:
     }
     return ret;
 }
+#endif

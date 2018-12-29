@@ -88,10 +88,14 @@ AM_CPPFLAGS += \
     -DSYSCONFDIR=\"$(sysconfdir)\" \
     -DLOCALEDIR=\"$(localedir)\"
 
-GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS) $(GSSAPI_LIBS) $(GSSRPC_LIBS) $(CAP_LIBS)
+GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS) $(GSSAPI_LIBS) $(GSSRPC_LIBS)
 
 if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
+endif
+
+if HAVE_CAP
+    GSS_PROXY_LIBS += $(CAP_LIBS)
 endif
 
 GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c rpcgen/gp_xdr.c

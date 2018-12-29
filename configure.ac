@@ -280,12 +280,15 @@ AC_CHECK_LIB(gssrpc, gssrpc_xdrmem_create,,
              [$GSSAPI_LIBS $GSSRPC_LIBS])
 AC_SUBST([GSSRPC_LIBS])
 
-AC_CHECK_FUNC([prctl],,[AC_MSG_ERROR([Failed to find prctl])])
-AC_CHECK_LIB([cap], [cap_set_proc],[CAP_LIBS=-lcap],
-             [AC_MSG_ERROR(["Failed to find libcap symbols"])])
-AC_SUBST([CAP_LIBS])
-AC_CHECK_HEADERS([sys/capability.h],,
-                 [AC_MSG_ERROR([Could not find libcap headers])])
+WITH_CAP
+if test x$HAVE_CAP != x; then
+    AC_CHECK_FUNC([prctl],,[AC_MSG_ERROR([Failed to find prctl])])
+    AC_CHECK_LIB([cap], [cap_set_proc],[CAP_LIBS=-lcap],
+                 [AC_MSG_ERROR(["Failed to find libcap symbols"])])
+    AC_SUBST([CAP_LIBS])
+    AC_CHECK_HEADERS([sys/capability.h],,
+                     [AC_MSG_ERROR([Could not find libcap headers])])
+fi
 
 AC_CHECK_FUNCS([__secure_getenv secure_getenv])
 
