@@ -139,41 +139,14 @@ static void gpm_close_socket(struct gpm_ctx *gpmctx)
     gpmctx->fd = -1;
 }
 
-static int gpm_grab_sock(struct gpm_ctx *gpmctx)
+static void gpm_epoll_close(struct gpm_ctx *gpmctx)
 {
-    int ret;
-    pid_t p;
-    uid_t u;
-    gid_t g;
-
-    ret = pthread_mutex_lock(&gpmctx->lock);
-    if (ret) {
-        return ret;
+    if (gpmctx->epollfd < 0) {
+        return;
     }
 
-    /* Detect fork / setresuid and friends */
-    p = getpid();
-    u = geteuid();
-    g = getegid();
-
-    if (gpmctx->fd != -1 &&
-        (p != gpmctx->pid || u != gpmctx->uid || g != gpmctx->gid)) {
-        gpm_close_socket(gpmctx);
-    }
-
-    if (gpmctx->fd == -1) {
-        ret = gpm_open_socket(gpmctx);
-    }
-
-    if (ret) {
-        pthread_mutex_unlock(&gpmctx->lock);
-    }
-    return ret;
-}
-
-static int gpm_release_sock(struct gpm_ctx *gpmctx)
-{
-    return pthread_mutex_unlock(&gpmctx->lock);
+    close(gpmctx->epollfd);
+    gpmctx->epollfd = -1;
 }
 
 static void gpm_timer_close(struct gpm_ctx *gpmctx)
@@ -184,6 +157,13 @@ static void gpm_timer_close(struct gpm_ctx *gpmctx)
 
     close(gpmctx->timerfd);
     gpmctx->timerfd = -1;
+}
+
+static int gpm_release_sock(struct gpm_ctx *gpmctx)
+{
+    gpm_epoll_close(gpmctx);
+    gpm_timer_close(gpmctx);
+    return pthread_mutex_unlock(&gpmctx->lock);
 }
 
 static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds)
@@ -216,16 +196,6 @@ static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds)
     return 0;
 }
 
-static void gpm_epoll_close(struct gpm_ctx *gpmctx)
-{
-    if (gpmctx->epollfd < 0) {
-        return;
-    }
-
-    close(gpmctx->epollfd);
-    gpmctx->epollfd = -1;
-}
-
 static int gpm_epoll_setup(struct gpm_ctx *gpmctx)
 {
     struct epoll_event ev;
@@ -250,6 +220,50 @@ static int gpm_epoll_setup(struct gpm_ctx *gpmctx)
         return ret;
     }
 
+    return ret;
+}
+
+static int gpm_grab_sock(struct gpm_ctx *gpmctx)
+{
+    int ret;
+    pid_t p;
+    uid_t u;
+    gid_t g;
+
+    ret = pthread_mutex_lock(&gpmctx->lock);
+    if (ret) {
+        return ret;
+    }
+
+    /* Detect fork / setresuid and friends */
+    p = getpid();
+    u = geteuid();
+    g = getegid();
+
+    if (gpmctx->fd != -1 &&
+        (p != gpmctx->pid || u != gpmctx->uid || g != gpmctx->gid)) {
+        gpm_close_socket(gpmctx);
+    }
+
+    if (gpmctx->fd == -1) {
+        ret = gpm_open_socket(gpmctx);
+        if (ret) {
+            goto done;
+        }
+    }
+
+    /* setup timer */
+    ret = gpm_timer_setup(gpmctx, RESPONSE_TIMEOUT);
+    if (ret) {
+        goto done;
+    }
+    /* create epoll fd as well */
+    ret = gpm_epoll_setup(gpmctx);
+
+done:
+    if (ret) {
+        gpm_release_sock(gpmctx);
+    }
     return ret;
 }
 
@@ -530,11 +544,6 @@ static int gpm_send_recv_loop(struct gpm_ctx *gpmctx, char *send_buffer,
     int ret;
     int retry_count;
 
-    /* setup timer */
-    ret = gpm_timer_setup(gpmctx, RESPONSE_TIMEOUT);
-    if (ret)
-        return ret;
-
     for (retry_count = 0; retry_count < MAX_TIMEOUT_RETRY; retry_count++) {
         /* send to proxy */
         ret = gpm_send_buffer(gpmctx, send_buffer, send_length);
@@ -761,9 +770,6 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     }
 
 done:
-    gpm_timer_close(gpmctx);
-    gpm_epoll_close(gpmctx);
-
     if (sockgrab) {
         gpm_release_sock(gpmctx);
     }
