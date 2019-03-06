@@ -140,16 +140,6 @@ static void gpm_close_socket(struct gpm_ctx *gpmctx)
     gpmctx->fd = -1;
 }
 
-static void gpm_epoll_close(struct gpm_ctx *gpmctx)
-{
-    if (gpmctx->epollfd < 0) {
-        return;
-    }
-
-    close(gpmctx->epollfd);
-    gpmctx->epollfd = -1;
-}
-
 static void gpm_timer_close(struct gpm_ctx *gpmctx)
 {
     if (gpmctx->timerfd < 0) {
@@ -158,13 +148,6 @@ static void gpm_timer_close(struct gpm_ctx *gpmctx)
 
     close(gpmctx->timerfd);
     gpmctx->timerfd = -1;
-}
-
-static int gpm_release_sock(struct gpm_ctx *gpmctx)
-{
-    gpm_epoll_close(gpmctx);
-    gpm_timer_close(gpmctx);
-    return pthread_mutex_unlock(&gpmctx->lock);
 }
 
 static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds)
@@ -197,6 +180,16 @@ static int gpm_timer_setup(struct gpm_ctx *gpmctx, int timeout_seconds)
     return 0;
 }
 
+static void gpm_epoll_close(struct gpm_ctx *gpmctx)
+{
+    if (gpmctx->epollfd < 0) {
+        return;
+    }
+
+    close(gpmctx->epollfd);
+    gpmctx->epollfd = -1;
+}
+
 static int gpm_epoll_setup(struct gpm_ctx *gpmctx)
 {
     struct epoll_event ev;
@@ -222,6 +215,13 @@ static int gpm_epoll_setup(struct gpm_ctx *gpmctx)
     }
 
     return ret;
+}
+
+static int gpm_release_sock(struct gpm_ctx *gpmctx)
+{
+    gpm_epoll_close(gpmctx);
+    gpm_timer_close(gpmctx);
+    return pthread_mutex_unlock(&gpmctx->lock);
 }
 
 static int gpm_grab_sock(struct gpm_ctx *gpmctx)
