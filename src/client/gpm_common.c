@@ -14,6 +14,7 @@
 #define FRAGMENT_BIT (1 << 31)
 
 #define RESPONSE_TIMEOUT 15
+#define SAFETY_TIMEOUT RESPONSE_TIMEOUT * 10 * 1000
 #define MAX_TIMEOUT_RETRY 3
 
 struct gpm_ctx {
@@ -291,7 +292,7 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
     }
 
     do {
-        epoll_ret = epoll_wait(gpmctx->epollfd, events, 2, -1);
+        epoll_ret = epoll_wait(gpmctx->epollfd, events, 2, SAFETY_TIMEOUT);
     } while (epoll_ret < 0 && errno == EINTR);
 
     if (epoll_ret < 0) {
@@ -299,8 +300,6 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
         ret = errno;
         gpm_epoll_close(gpmctx);
     } else if (epoll_ret == 0) {
-        /* Shouldn't happen as timeout == -1; treat it like a timeout
-         * occurred. */
         ret = ETIMEDOUT;
         gpm_epoll_close(gpmctx);
     } else if (epoll_ret == 1 && events[0].data.fd == gpmctx->timerfd) {
