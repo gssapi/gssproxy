@@ -52,6 +52,9 @@ def runtests_main(testfiles):
     for e in ["bash", "pkg-config", "zcat", "kinit", "krb5kdc", "kdb5_util",
              "kadmin.local", "kdb5_ldap_util", "slapd", "slapadd",
               "ldapmodify", "valgrind"]:
+        if e == "valgrind" and not args['valgrind_cmd'].startswith('valgrind'):
+            continue
+
         check_exec(e)
 
     testdir = args['path']
