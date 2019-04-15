@@ -476,6 +476,10 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     }
 
     ret_maj = gss_import_cred(&ret_min, &token, out);
+    if (ret_maj) {
+        GPDEBUG("gss_import_cred failed when importing gssx cred\n");
+        goto done;
+    }
 
     /* check if there is any client option we need to set on credentials */
     gp_set_cred_options(cred, *out);
