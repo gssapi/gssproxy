@@ -449,6 +449,8 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     uint32_t ret_min = 0;
     int ret;
 
+    *out = GSS_C_NO_CREDENTIAL;
+
     handle = gp_service_get_creds_handle(gpcall->service);
     if (!handle) {
         ret_maj = GSS_S_FAILURE;
@@ -470,7 +472,6 @@ uint32_t gp_import_gssx_cred(uint32_t *min, struct gp_call_ctx *gpcall,
     if (ret) {
         /* Allow for re-issuance of the keytab. */
         GPDEBUG("Stored ccache failed to decrypt; treating as empty\n");
-        *out = GSS_C_NO_CREDENTIAL;
         goto done;
     }
 
