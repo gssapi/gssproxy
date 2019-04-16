@@ -193,6 +193,9 @@ done:
     return ret_maj;
 }
 
+/* We need to include a length in our payloads because krb5_c_decrypt() will
+ * pad the contents for some enctypes, and gss_import_cred() doesn't like
+ * having extra bytes on tokens. */
 static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
                              size_t len, void *buf, octet_string *out)
 {
@@ -200,9 +203,27 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     krb5_data data_in;
     krb5_enc_data enc_handle;
     size_t cipherlen;
+    char *packed = NULL;
+    uint32_t netlen;
 
-    data_in.length = len;
-    data_in.data = buf;
+    if (len > (uint32_t)(-1)) {
+        /* Needs to fit in 4 bytes of payload, so... */
+        ret = ENOMEM;
+        goto done;
+    }
+
+    packed = malloc(len);
+    if (!packed) {
+        ret = errno;
+        goto done;
+    }
+
+    netlen = htonl(len);
+    memcpy(packed, (uint8_t *)&netlen, 4);
+    memcpy(packed + 4, buf, len);
+
+    data_in.length = len + 4;
+    data_in.data = packed;
 
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
@@ -240,16 +261,19 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     }
 
 done:
+    free(packed);
     free(enc_handle.ciphertext.data);
     return ret;
 }
 
+/* See comment above on gp_encrypt_buffer(). */
 static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
-                             octet_string *in, size_t *len, void *buf)
+                             octet_string *in, size_t *len, char *buf)
 {
     int ret;
     krb5_data data_out;
     krb5_enc_data enc_handle;
+    uint32_t netlen;
 
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
@@ -270,7 +294,10 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
         return ret;
     }
 
-    *len = data_out.length;
+    /* And handle the padding. */
+    memcpy(&netlen, buf, 4);
+    *len = ntohl(netlen);
+    memmove(buf, buf + 4, *len);
 
     return 0;
 }
