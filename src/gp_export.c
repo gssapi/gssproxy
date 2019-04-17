@@ -193,9 +193,15 @@ done:
     return ret_maj;
 }
 
-/* We need to include a length in our payloads because krb5_c_decrypt() will
- * pad the contents for some enctypes, and gss_import_cred() doesn't like
- * having extra bytes on tokens. */
+#define ENC_MIN_PAD_LEN 8
+
+/* We need to pad our payloads because krb5_c_decrypt() may pad the
+ * contents for some enctypes, and gss_import_cred() doesn't like
+ * having extra bytes on tokens.
+ * Explicit padding and depadding is used in order to maintain backwards
+ * compatibility over upgrades (and downgrades), it would have been
+ * better if we simply had a better formatting of the returned blob
+ * so we could simply change a "blob version" number */
 static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
                              size_t len, void *buf, octet_string *out)
 {
@@ -203,8 +209,9 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     krb5_data data_in;
     krb5_enc_data enc_handle;
     size_t cipherlen;
-    char *packed = NULL;
-    uint32_t netlen;
+    size_t padcheck;
+    uint8_t pad = 0;
+    char *padded = NULL;
 
     if (len > (uint32_t)(-1)) {
         /* Needs to fit in 4 bytes of payload, so... */
@@ -212,27 +219,71 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
         goto done;
     }
 
-    packed = malloc(len);
-    if (!packed) {
-        ret = errno;
+    ret = krb5_c_encrypt_length(context,
+                                key->enctype,
+                                len, &cipherlen);
+    if (ret) {
         goto done;
     }
 
-    netlen = htonl(len);
-    memcpy(packed, (uint8_t *)&netlen, 4);
-    memcpy(packed + 4, buf, len);
-
-    data_in.length = len + 4;
-    data_in.data = packed;
-
-    memset(&enc_handle, '\0', sizeof(krb5_enc_data));
-
+    /* try again with len + 1 to see if padding is required */
     ret = krb5_c_encrypt_length(context,
                                 key->enctype,
-                                data_in.length,
-                                &cipherlen);
+                                len + 1, &padcheck);
     if (ret) {
         goto done;
+    }
+    if (padcheck == cipherlen) {
+        int i;
+        /* padding required */
+        pad = ENC_MIN_PAD_LEN;
+        /* always add enough padding that it makes it extremely unlikley
+         * legitimate plaintext will be incorrectly depadded in the
+         * decrypt function */
+        ret = krb5_c_encrypt_length(context,
+                                    key->enctype,
+                                    len + pad, &cipherlen);
+        if (ret) {
+            goto done;
+        }
+        /* we support only block sizes up to 16 bytes as this is the largest
+         * supported block size in krb ciphers for now */
+        for (i = 0; i < 15; i++) {
+            /* find the point at which padcheck increases, that's when we
+             * cross a blocksize boundary internally and we can calculate
+             * the padding that will be used */
+            ret = krb5_c_encrypt_length(context,
+                                        key->enctype,
+                                        len + pad + i + 1, &padcheck);
+            if (ret) {
+                goto done;
+            }
+            if (padcheck > cipherlen) {
+                pad += i;
+                break;
+            }
+        }
+        if (i > 15) {
+            ret = EINVAL;
+            goto done;
+        }
+    }
+
+    if (pad != 0) {
+        padded = malloc(len + pad);
+        if (!padded) {
+            ret = errno;
+            goto done;
+        }
+
+        memcpy(padded, buf, len);
+        memset(padded + len, pad, pad);
+
+        data_in.length = len + pad;
+        data_in.data = padded;
+    } else {
+        data_in.length = len;
+        data_in.data = buf;
     }
 
     enc_handle.ciphertext.length = cipherlen;
@@ -261,7 +312,7 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     }
 
 done:
-    free(packed);
+    free(padded);
     free(enc_handle.ciphertext.data);
     return ret;
 }
@@ -273,7 +324,8 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
     int ret;
     krb5_data data_out;
     krb5_enc_data enc_handle;
-    uint32_t netlen;
+    uint8_t pad;
+    int i, j;
 
     memset(&enc_handle, '\0', sizeof(krb5_enc_data));
 
@@ -295,9 +347,19 @@ static int gp_decrypt_buffer(krb5_context context, krb5_keyblock *key,
     }
 
     /* And handle the padding. */
-    memcpy(&netlen, buf, 4);
-    *len = ntohl(netlen);
-    memmove(buf, buf + 4, *len);
+    i = data_out.length - 1;
+    pad = data_out.data[i];
+    if (pad >= ENC_MIN_PAD_LEN && pad < i) {
+        j = pad;
+        while (j > 0) {
+            j--;
+            if (pad != data_out.data[i - j]) break;
+        }
+        if (j == 0) {
+            data_out.length -= pad;
+        }
+    }
+    *len = data_out.length;
 
     return 0;
 }
