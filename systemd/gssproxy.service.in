@@ -2,7 +2,7 @@
 Description=GSSAPI Proxy Daemon
 # GSSPROXY will not be started until syslog is
 After=syslog.target
-Before=nfs-secure.service nfs-secure-server.service
+Before=rpc-gssd.service
 
 [Service]
 Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
