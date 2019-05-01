@@ -300,6 +300,7 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
                          &data_in,
                          &enc_handle);
     if (ret) {
+        free(enc_handle.ciphertext.data);
         ret = EINVAL;
         goto done;
     }
@@ -308,12 +309,12 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
                                enc_handle.ciphertext.data,
                                out);
     if (ret) {
+        free(enc_handle.ciphertext.data);
         goto done;
     }
 
 done:
     free(padded);
-    free(enc_handle.ciphertext.data);
     return ret;
 }
 
