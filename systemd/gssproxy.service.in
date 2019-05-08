@@ -10,7 +10,7 @@ ExecStart=@sbindir@/gssproxy -D
 # These two should be used with traditional UNIX forking daemons
 # consult systemd.service(5) for more details
 Type=forking
-PIDFile=@localstatedir@/run/gssproxy.pid
+PIDFile=/run/gssproxy.pid
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
