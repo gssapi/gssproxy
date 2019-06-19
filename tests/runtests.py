@@ -12,7 +12,7 @@ import testlib
 from testlib import *
 
 def check_exec(name):
-    env = {'PATH': '/sbin:/bin:/usr/sbin:/usr/bin'}
+    env = {'PATH': '/sbin:/bin:/usr/sbin:/usr/bin:/usr/lib/mit/sbin'}
     ret = subprocess.call(["which", name], stdout=subprocess.DEVNULL, env=env)
     if ret != 0:
         print(f"Executable '{name}' not found in {env['PATH']}",
