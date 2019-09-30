@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+/* global logging switch */
+bool gp_syslog_status = false;
+
 void gp_logging_init(void)
 {
     openlog("gssproxy",
@@ -55,7 +58,9 @@ void gp_log_status(gss_OID mech, uint32_t maj, uint32_t min)
 {
     char buf[MAX_LOG_LINE];
 
-    gp_fmt_status(mech, maj, min, buf, MAX_LOG_LINE);
+    if (!gp_syslog_status)
+        return;
 
-    GPERROR("%s\n", buf);
+    gp_fmt_status(mech, maj, min, buf, MAX_LOG_LINE);
+    syslog(LOG_DEBUG, "%s\n", buf);
 }

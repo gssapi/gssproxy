@@ -374,6 +374,16 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>syslog_status (boolean)</term>
+                    <listitem>
+                        <para>Enable per-call debugging output to the syslog.
+                        This may be useful for investigating problems in
+                        applications using gssproxy.</para>
+                        <para>Default: syslog_status = false</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>trusted (boolean)</term>
                         <listitem><para>Defines whether this service is considered trusted. Use with caution, this enables impersonation.</para>
                             <para>Default: trusted = false</para>
