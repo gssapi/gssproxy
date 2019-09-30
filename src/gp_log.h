@@ -3,8 +3,11 @@
 #ifndef _GP_LOG_H_
 #define _GP_LOG_H_
 
+#include <stdbool.h>
 #include <syslog.h>
 #include <gssapi/gssapi.h>
+
+extern bool gp_syslog_status;
 
 #define MAX_LOG_LINE 1024
 #define GPERROR(...) syslog(LOG_ERR, __VA_ARGS__);

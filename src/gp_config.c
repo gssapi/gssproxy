@@ -611,6 +611,12 @@ int load_config(struct gp_config *cfg)
         goto done;
     }
 
+    ret = gp_config_get_string(ctx, "gssproxy", "syslog_status", &tmpstr);
+    if (ret == 0)
+        gp_syslog_status = gp_boolean_is_true(tmpstr);
+    else if (ret != ENOENT)
+        goto done;
+
     ret = gp_config_get_string(ctx, "gssproxy", "run_as_user", &tmpstr);
     if (ret == 0) {
         cfg->proxy_user = strdup(tmpstr);

@@ -150,6 +150,14 @@
             </varlistentry>
             <varlistentry>
                 <term>
+                    <option>--syslog-status</option>
+                </term>
+                <listitem>
+                    <para>Enable additional logging to syslog.</para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
                     <option>--version</option>
                 </term>
                 <listitem>

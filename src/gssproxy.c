@@ -158,6 +158,7 @@ int main(int argc, const char *argv[])
     int opt_version = 0;
     int opt_debug = 0;
     int opt_debug_level = 0;
+    int opt_syslog_status = 0;
     verto_ctx *vctx;
     verto_ev *ev;
     int wait_fd;
@@ -183,6 +184,8 @@ int main(int argc, const char *argv[])
          _("Enable debugging"), NULL}, \
         {"debug-level", '\0', POPT_ARG_INT, &opt_debug_level, 0, \
          _("Set debugging level"), NULL}, \
+        {"syslog-status", '\0', POPT_ARG_NONE, &opt_syslog_status, 0, \
+         _("Enable GSSAPI status logging to syslog"), NULL}, \
         {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
          _("Print version number and exit"), NULL }, \
         POPT_TABLEEND
@@ -211,6 +214,9 @@ int main(int argc, const char *argv[])
         if (opt_debug_level == 0) opt_debug_level = 1;
         gp_debug_toggle(opt_debug_level);
     }
+
+    if (opt_syslog_status)
+        gp_syslog_status = true;
 
     if (opt_daemon && opt_interactive) {
         fprintf(stderr, "Option -i|--interactive is not allowed together with -D|--daemon\n");
