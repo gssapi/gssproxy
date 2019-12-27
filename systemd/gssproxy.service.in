@@ -1,7 +1,7 @@
 [Unit]
 Description=GSSAPI Proxy Daemon
 # GSSPROXY will not be started until syslog is
-After=syslog.target
+After=syslog.target network.target
 Before=rpc-gssd.service
 
 [Service]
