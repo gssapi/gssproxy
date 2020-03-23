@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <sys/random.h>
 #include <sys/timerfd.h>
 
 #define FRAGMENT_BIT (1 << 31)
@@ -41,7 +42,9 @@ pthread_once_t gpm_init_once_control = PTHREAD_ONCE_INIT;
 static void gpm_init_once(void)
 {
     pthread_mutexattr_t attr;
-    unsigned int seedp;
+    char *buf = (char *)&gpm_global_ctx.next_xid;
+    size_t len = sizeof(gpm_global_ctx.next_xid);
+    size_t ret = 0;
 
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -52,8 +55,9 @@ static void gpm_init_once(void)
     gpm_global_ctx.epollfd = -1;
     gpm_global_ctx.timerfd = -1;
 
-    seedp = time(NULL) + getpid() + pthread_self();
-    gpm_global_ctx.next_xid = rand_r(&seedp);
+    while(ret < len) {
+        ret += getrandom(buf + ret, len - ret, 0);
+    }
 
     pthread_mutexattr_destroy(&attr);
 
