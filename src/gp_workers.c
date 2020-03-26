@@ -369,6 +369,7 @@ static void *gp_worker_main(void *pvt)
             /* wait for next query */
             pthread_cond_wait(&t->cond_wakeup, &t->cond_mutex);
             if (t->pool->shutdown) {
+                pthread_mutex_unlock(&t->cond_mutex);
                 pthread_exit(NULL);
             }
         }
