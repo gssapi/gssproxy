@@ -122,7 +122,9 @@ void gp_conn_free(struct gp_conn *conn)
         close(conn->us.sd);
     }
     free(conn->program);
-    SELINUX_context_free(conn->selinux_ctx);
+    if (conn->selinux_ctx) {
+        SELINUX_context_free(conn->selinux_ctx);
+    }
     free(conn);
 }
 
@@ -635,7 +637,8 @@ void accept_sock_conn(verto_ctx *vctx, verto_ev *ev)
                 conn->creds.ucred.uid,
                 conn->creds.ucred.gid);
     }
-    if (conn->creds.type & CRED_TYPE_SELINUX) {
+    if ((conn->creds.type & CRED_TYPE_SELINUX) &&
+        (conn->selinux_ctx != NULL)) {
         GPDEBUG(" (context = %s)",
                 SELINUX_context_str(conn->selinux_ctx));
     }
