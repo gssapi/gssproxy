@@ -1,0 +1,41 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+    ubuntu:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                name: [ubuntu-clang, ubuntu-gcc]
+                include:
+                    - name: ubuntu-clang
+                      compiler: clang
+                      cflags: -Wall -Wextra -Werror -Wno-cast-align -Wno-unused-parameter -Wno-missing-braces
+                    - name: ubuntu-gcc
+                      compiler: gcc
+                      cflags: -Wall -Wextra -Werror -Wno-unused-parameter -Wno-format-truncation -Wno-restrict
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
+            - name: Install dependencies
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y build-essential autopoint clang gcc docbook-{xsl,xml} libxml2-utils xml-core xsltproc lib{krb5,ini-config,keyutils,popt,selinux1,verto}-dev lib{nss,socket}-wrapper python3{,-colorama} valgrind krb5-{kdc,admin-server,kdc-ldap} ldap-utils slapd apparmor-utils
+            - name: Configure
+              env:
+                  CC: ${{ matrix.compiler }}
+              run: |
+                  autoreconf -fiv
+                  ./configure CC=$(which $CC)
+            - name: Build
+              env:
+                  CFLAGS: ${{ matrix.cflags }}
+              run: |
+                  make -s CFLAGS="$CFLAGS"
+            - name: Test
+              env:
+                  CFLAGS: ${{ matrix.cflags }}
+              run: |
+                  sudo aa-complain $(which slapd)
+                  make check CFALGS="$CFLAGS"
