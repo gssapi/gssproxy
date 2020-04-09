@@ -55,7 +55,7 @@ sha512sum gssproxy-0.1.0.tar.gz > gssproxy-0.1.0.tar.gz.sha512sum.txt
 
 ## Publish the release
 
-- Upload tarball and checksum to Pagure release page
+- Upload tarball and checksum to GitHub release page
 
 - Copy the content of the new-release page into a mail and announce on the
   gssproxy mailinglist
