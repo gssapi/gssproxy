@@ -304,7 +304,6 @@ gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs)
     struct gpp_special_oid_list *item;
     gss_OID n;
     uint32_t maj, min;
-    int i;
 
     item = gpp_get_special_oids();
 
@@ -312,7 +311,7 @@ gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs)
     if (maj) {
         return GSS_C_NO_OID_SET;
     }
-    for (i = 0; i < mechs->count; i++) {
+    for (size_t i = 0; i < mechs->count; i++) {
         while (item) {
             if (gpp_is_special_oid(&mechs->elements[i])) {
                 maj = gss_add_oid_set_member(&min,
