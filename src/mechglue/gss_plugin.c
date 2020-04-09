@@ -219,7 +219,7 @@ static inline void gpp_add_special_oids(struct gpp_special_oid_list *item)
     }
 }
 
-static const gss_OID gpp_new_special_mech(const gss_OID n)
+static gss_OID gpp_new_special_mech(const gss_OID n)
 {
     gss_const_OID base = &gssproxy_mech_interposer;
     struct gpp_special_oid_list *item;
@@ -249,7 +249,7 @@ static const gss_OID gpp_new_special_mech(const gss_OID n)
     return (const gss_OID)&item->special_oid;
 }
 
-const gss_OID gpp_special_mech(const gss_OID mech_type)
+gss_OID gpp_special_mech(const gss_OID mech_type)
 {
     struct gpp_special_oid_list *item = NULL;
 
@@ -278,7 +278,7 @@ const gss_OID gpp_special_mech(const gss_OID mech_type)
     return gpp_new_special_mech(mech_type);
 }
 
-const gss_OID gpp_unspecial_mech(const gss_OID mech_type)
+gss_OID gpp_unspecial_mech(const gss_OID mech_type)
 {
     struct gpp_special_oid_list *item = NULL;
 
