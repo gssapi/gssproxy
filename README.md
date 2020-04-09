@@ -1,7 +1,7 @@
 This is the gss-proxy project.
 
 Documentation lives in the [docs folder of this
-repository](https://pagure.io/gssproxy/blob/master/f/docs).
+repository](https://github.com/gssapi/gssproxy/tree/master/docs).
 
 The goal is to have a GSS-API proxy, with standardizable protocol and a
 (somewhat portable) reference client and server implementation.  There
