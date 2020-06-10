@@ -37,7 +37,10 @@
             of the form "##-foo.conf" (that is, start with two numbers
             followed by a dash, and end in ".conf").  Files not conforming to
             this will be ignored unless specifically requested through command
-            line parameters.
+            line parameters.  Within a single file, any duplicate values or
+            sections will be merged.  Across multiple files, duplicates will
+            generate a warning, and the first value encountered will take
+            precedence (i.e., there is no merging).
         </para>
     </refsect1>
 
