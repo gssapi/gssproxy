@@ -199,6 +199,8 @@ static int gpm_epoll_setup(struct gpm_ctx *gpmctx)
     struct epoll_event ev;
     int ret;
 
+    memset(&ev, 0, sizeof(ev));
+
     if (gpmctx->epollfd >= 0) {
         gpm_epoll_close(gpmctx);
     }
@@ -279,6 +281,10 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
     struct epoll_event ev;
     struct epoll_event events[2];
     uint64_t timer_read;
+
+    memset(&ev, 0, sizeof(ev));
+    memset(&events[0], 0, sizeof(events[0]));
+    memset(&events[1], 0, sizeof(events[1]));
 
     if (gpmctx->epollfd < 0) {
         ret = gpm_epoll_setup(gpmctx);
