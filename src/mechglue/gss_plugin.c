@@ -76,6 +76,7 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
     gss_OID_set interposed_mechs;
     OM_uint32 maj, min;
     char *envval;
+    gss_OID_set special_mechs;
 
     /* avoid looping in the gssproxy daemon by avoiding to interpose
      * any mechanism */
@@ -118,7 +119,8 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
     }
 
     /* while there also initiaize special_mechs */
-    (void)gpp_special_available_mechs(interposed_mechs);
+    special_mechs = gpp_special_available_mechs(interposed_mechs);
+    (void)gss_release_oid_set(&min, &special_mechs);
 
 done:
     if (maj != 0) {
