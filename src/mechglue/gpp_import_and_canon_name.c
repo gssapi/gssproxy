@@ -257,6 +257,8 @@ OM_uint32 gssi_release_name(OM_uint32 *minor_status,
         return GSS_S_BAD_NAME;
     }
 
+    (void)gss_release_oid(&rmin, &name->mech_type);
+
     rmaj = gpm_release_name(&rmin, &name->remote);
 
     if (name->local) {
