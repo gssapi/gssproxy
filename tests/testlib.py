@@ -11,7 +11,7 @@ import subprocess
 import sys
 import time
 
-testcase_wait = 15
+testcase_wait = 30
 cmd_index = 0
 
 debug_all = False
@@ -717,8 +717,11 @@ def update_gssproxy_conf(testdir, env, template):
     with open(conf, 'w+') as f:
         f.write(text)
 
-def setup_gssproxy(testdir, logfile, env):
+def setup_gssproxy(testdir, env):
     global debug_gssproxy, valgrind_cmd
+
+    gssproxylog = os.path.join(testdir, 'gssproxy.log')
+    logfile = open(gssproxylog, "a")
 
     gssproxy = os.path.join(testdir, 'gssproxy')
     if os.path.exists(gssproxy):
@@ -750,4 +753,36 @@ def setup_gssproxy(testdir, logfile, env):
         print("Attach and start debugging, then press enter to continue.")
         input()
 
+    gssproxy_reload(testdir, gproc.pid, {
+        'signal': 0 , 'key': 'Initialization complete' })
+
     return gproc, socket
+
+def gssproxy_reload(testdir, pid, action=None):
+
+    if action is None:
+        action = dict()
+    sig = action.get('signal', signal.SIGHUP)
+    key = action.get('key', 'New config loaded successfully')
+
+    gssproxylog = os.path.join(testdir, 'gssproxy.log')
+    logsize = os.stat(gssproxylog).st_size
+
+    # Send signal ...
+    os.kill(pid, sig)
+
+    if key == '':
+        return
+
+    # ... and Wait for the reload to happen
+    with open(gssproxylog, 'r') as logfile:
+        logfile.seek(logsize)
+        # Try for 30 seconds max in increments of 100ms
+        for retries in range(0, 300):
+            lines = logfile.readlines()
+            for line in lines:
+                if key in line:
+                    return
+            time.sleep(0.1)
+
+    raise Exception("timed out while waiting for gssproxy to reload")

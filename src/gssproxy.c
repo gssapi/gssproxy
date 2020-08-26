@@ -150,6 +150,11 @@ static void hup_handler(verto_ctx *vctx, verto_ev *ev UNUSED)
     return;
 }
 
+static void init_event(verto_ctx *vctx UNUSED, verto_ev *ev UNUSED)
+{
+    GPDEBUG("Initialization complete.\n");
+}
+
 int main(int argc, const char *argv[])
 {
     int opt;
@@ -287,6 +292,17 @@ int main(int argc, const char *argv[])
 
     ret = gp_workers_init(gpctx);
     if (ret) {
+        ret = EXIT_FAILURE;
+        goto cleanup;
+    }
+
+    /* Schedule an event to run as soon as the event loop is started
+     * This is useful in debug to know that all initialization is done.
+     * Might be used in future to schdule startup one offs that do not
+     * need to be done synchronously */
+    ev = verto_add_timeout(vctx, VERTO_EV_FLAG_NONE, init_event, 1);
+    if (!ev) {
+        fprintf(stderr, "Failed to register init_event with verto!\n");
         ret = EXIT_FAILURE;
         goto cleanup;
     }

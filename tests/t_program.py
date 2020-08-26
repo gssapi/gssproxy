@@ -30,8 +30,7 @@ def run(testdir, env, conf):
     sys.stderr.write("  ")
     conf["prefix"] = prefix + "_1"
     update_gssproxy_conf(testdir, conf["keysenv"], GSSPROXY_PROGRAM)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1)
+    gssproxy_reload(testdir, conf['gpid'])
     retval |= run_acquire_test(testdir, env, conf)
 
     print("Testing negative program name matching...", file=sys.stderr)
@@ -39,14 +38,12 @@ def run(testdir, env, conf):
     conf["prefix"] = prefix + "_2"
     bad_progdir = GSSPROXY_PROGRAM.replace("${PROGDIR}", "//bad/path")
     update_gssproxy_conf(testdir, conf["keysenv"], bad_progdir)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1)
+    gssproxy_reload(testdir, conf['gpid'])
     retval |= run_acquire_test(testdir, env, conf, expected_failure=True)
 
     # be a good citizen and clean up after ourselves
     update_gssproxy_conf(testdir, conf["keysenv"], GSSPROXY_CONF_TEMPLATE)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1)
+    gssproxy_reload(testdir, conf['gpid'])
 
     print_return(retval, -1, "Program", False)
     return retval

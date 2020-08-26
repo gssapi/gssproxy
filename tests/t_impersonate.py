@@ -56,8 +56,7 @@ def run(testdir, env, conf):
     keysenv = conf["keysenv"].copy()
     keysenv['KRB5_KTNAME'] = os.path.join(testdir, PROXY_KTNAME)
     update_gssproxy_conf(testdir, keysenv, IMPERSONATE_CONF_TEMPLATE)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, conf['gpid'])
 
     rets = []
 
@@ -119,8 +118,7 @@ def run(testdir, env, conf):
 
     # Reset back gssproxy conf
     update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_TEMPLATE)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, conf['gpid'])
 
     e = [r for r in rets if r != 0]
     if len(e) > 0:

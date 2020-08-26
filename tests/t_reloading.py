@@ -14,8 +14,7 @@ def run(testdir, env, basicconf):
     print("Testing basic SIGHUP with no change", file=sys.stderr)
     sys.stderr.write("  ")
     basicconf['prefix'] += prefix + "_1"
-    os.kill(basicconf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, basicconf['gpid'])
     r = run_basic_test(testdir, env, basicconf)
     rets.append(r)
 
@@ -23,8 +22,7 @@ def run(testdir, env, basicconf):
     sys.stderr.write("  ")
     basicconf['prefix'] = prefix + "_2"
     update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_MINIMAL_TEMPLATE)
-    os.kill(basicconf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, basicconf['gpid'])
     r = run_basic_test(testdir, env, basicconf, True)
     rets.append(r)
 
@@ -32,8 +30,7 @@ def run(testdir, env, basicconf):
     sys.stderr.write("  ")
     basicconf['prefix'] = prefix + "_3"
     update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_TEMPLATE)
-    os.kill(basicconf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, basicconf['gpid'])
     r = run_basic_test(testdir, env, basicconf)
     rets.append(r)
 
@@ -42,16 +39,14 @@ def run(testdir, env, basicconf):
     basicconf['prefix'] = prefix + "_4"
     update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_SOCKET_TEMPLATE)
     env['GSSPROXY_SOCKET'] += "2"
-    os.kill(basicconf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, basicconf['gpid'])
     r = run_basic_test(testdir, env, basicconf)
     rets.append(r)
 
     # restore old configuration
     env['GSSPROXY_SOCKET'] = env['GSSPROXY_SOCKET'][:-1]
     update_gssproxy_conf(testdir, keysenv, GSSPROXY_CONF_TEMPLATE)
-    os.kill(basicconf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, basicconf['gpid'])
 
     e = [r for r in rets if r != 0]
     if len(e) > 0:

@@ -32,7 +32,7 @@ def parse_args():
                               "--args")
     parser.add_argument('--debug-num', default=-1, type=int,
                         help="Specify the testcase number to debug")
-    parser.add_argument('--timeout', default=15, type=int,
+    parser.add_argument('--timeout', default=30, type=int,
                         help="Specify test case timeout limit")
     parser.add_argument('--valgrind-cmd', default="valgrind " +
                         "--track-origins=yes",
@@ -83,15 +83,10 @@ def runtests_main(testfiles):
         if 'TERM' in os.environ:
             gssapienv['TERM'] = os.environ['TERM']
 
-        gssproxylog = os.path.join(testdir, 'gssproxy.log')
-
-        logfile = open(gssproxylog, "a")
-
         gssproxyenv = keysenv
         gssproxyenv['KRB5_TRACE'] = os.path.join(testdir, 'gssproxy.trace')
 
-        gproc, gpsocket = setup_gssproxy(testdir, logfile, gssproxyenv)
-        time.sleep(5) #Give time to gssproxy to fully start up
+        gproc, gpsocket = setup_gssproxy(testdir, gssproxyenv)
         processes['GSS-Proxy(%d)' % gproc.pid] = gproc
         gssapienv['GSSPROXY_SOCKET'] = gpsocket
 

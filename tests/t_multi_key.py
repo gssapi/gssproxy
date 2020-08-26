@@ -33,8 +33,7 @@ def run(testdir, env, conf):
     p1env['client_name'] = MULTI_UPN
     p1env['KRB5_KTNAME'] = os.path.join(testdir, MULTI_KTNAME)
     update_gssproxy_conf(testdir, p1env, GSSPROXY_MULTI_TEMPLATE)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, conf['gpid'])
     r1 = run_basic_test(testdir, env, conf)
 
     print("Testing multiple keys Keytab with second principal",
@@ -48,8 +47,7 @@ def run(testdir, env, conf):
     p2env['client_name'] = MULTI_SVC
     p2env['KRB5_KTNAME'] = os.path.join(testdir, MULTI_KTNAME)
     update_gssproxy_conf(testdir, p2env, GSSPROXY_MULTI_TEMPLATE)
-    os.kill(conf["gpid"], signal.SIGHUP)
-    time.sleep(1) #Let gssproxy reload everything
+    gssproxy_reload(testdir, conf['gpid'])
     r2 = run_basic_test(testdir, env, conf)
 
     if r1 != 0:
