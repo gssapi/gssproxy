@@ -15,9 +15,11 @@
 #define discard_const(ptr) ((void *)((uintptr_t)(ptr)))
 
 #define DEBUG(...) do { \
-    char msg[4096]; \
-    snprintf(msg, 4096, __VA_ARGS__); \
-    fprintf(stderr, "%s[%s:%d]: %s", argv[0], __FUNCTION__, __LINE__, msg); \
+    char _msg[4096]; \
+    int _snret; \
+    _snret = snprintf(_msg, 4096, __VA_ARGS__); \
+    fprintf(stderr, "%s[%s:%d]: %s", argv[0], __FUNCTION__, __LINE__, _msg); \
+    if (_snret >= 4096) fprintf(stderr, " [TRUNCATED]\n"); \
     fflush(stderr); \
 } while(0);
 
