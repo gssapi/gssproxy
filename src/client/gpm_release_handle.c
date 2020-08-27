@@ -106,5 +106,7 @@ rel_done:
     gpm_free_xdrs(GSSX_RELEASE_HANDLE, &uarg, &ures);
 done:
     xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)r);
+    free(r);
+    *context_handle = NULL;
     return ret;
 }
