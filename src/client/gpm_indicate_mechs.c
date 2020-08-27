@@ -390,7 +390,7 @@ OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
     uint32_t ret_min;
     uint32_t ret_maj;
     uint32_t discard;
-    gss_OID name_type = GSS_C_NO_OID;
+    gss_OID_desc name_type;
     int present;
 
     if (!minor_status) {
@@ -407,19 +407,14 @@ OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
         return GSS_S_FAILURE;
     }
 
-    ret_min = gp_conv_gssx_to_oid_alloc(&input_name->name_type, &name_type);
-    if (ret_min) {
-        ret_maj = GSS_S_FAILURE;
-        goto done;
-    }
-
     ret_maj = gss_create_empty_oid_set(&ret_min, mech_types);
     if (ret_maj) {
         goto done;
     }
 
+    gp_conv_gssx_to_oid(&input_name->name_type, &name_type);
     for (unsigned i = 0; i < global_mechs.info_len; i++) {
-        ret_maj = gss_test_oid_set_member(&ret_min, name_type,
+        ret_maj = gss_test_oid_set_member(&ret_min, &name_type,
                                           global_mechs.info[i].name_types,
                                           &present);
         if (ret_maj) {
@@ -437,7 +432,6 @@ OM_uint32 gpm_inquire_mechs_for_name(OM_uint32 *minor_status,
     }
 
 done:
-    gss_release_oid(&discard, &name_type);
     if (ret_maj) {
         gss_release_oid_set(&discard, mech_types);
         *minor_status = ret_min;
