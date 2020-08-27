@@ -775,6 +775,7 @@ static uint32_t get_impersonator_fallback(uint32_t *min, gss_cred_id_t cred,
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     char *memcache = NULL;
+    char **ptr = &memcache;
     krb5_context context = NULL;
     krb5_ccache ccache = NULL;
     krb5_data config;
@@ -791,7 +792,7 @@ static uint32_t get_impersonator_fallback(uint32_t *min, gss_cred_id_t cred,
     gss_key_value_element_desc ccelement = { "ccache", NULL };
     gss_key_value_set_desc cred_store = { 1, &ccelement };
 
-    err = asprintf(&memcache, "MEMORY:cred_allowed_%p", &memcache);
+    err = asprintf(&memcache, "MEMORY:cred_allowed_%p", ptr);
     if (err == -1) {
         memcache = NULL;
         ret_min = ENOMEM;
@@ -991,6 +992,7 @@ uint32_t gp_count_tickets(uint32_t *min, gss_cred_id_t cred, uint32_t *ccsum)
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     char *memcache = NULL;
+    char **ptr = &memcache;
     krb5_context context = NULL;
     krb5_ccache ccache = NULL;
     krb5_cc_cursor cursor = NULL;
@@ -1008,7 +1010,7 @@ uint32_t gp_count_tickets(uint32_t *min, gss_cred_id_t cred, uint32_t *ccsum)
     gss_key_value_element_desc ccelement = { "ccache", NULL };
     gss_key_value_set_desc cred_store = { 1, &ccelement };
 
-    err = asprintf(&memcache, "MEMORY:cred_allowed_%p", &memcache);
+    err = asprintf(&memcache, "MEMORY:cred_allowed_%p", ptr);
     if (err == -1) {
         memcache = NULL;
         ret_min = ENOMEM;
