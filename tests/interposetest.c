@@ -71,6 +71,8 @@ static int gptest_inq_context(gss_ctx_id_t ctx)
     DEBUG("Context validity: %d sec.\n", time_rec);
 
 done:
+    (void)gss_release_name(&min, &src_name);
+    (void)gss_release_name(&min, &targ_name);
     (void)gss_release_buffer(&min, &sname);
     (void)gss_release_buffer(&min, &tname);
     (void)gss_release_buffer(&min, &mechstr);
@@ -274,7 +276,7 @@ void run_client(struct aproc *data)
         gp_log_failure(GSS_C_NO_OID, ret_maj, ret_min);
         goto done;
     }
-    fprintf(stdout, "Client, RECV: [%s]\n", buffer);
+    fprintf(stdout, "Client, RECV: [%*s]\n", buflen, buffer);
 
     /* test gss_wrap_iov_length */
 
@@ -837,19 +839,22 @@ int main(int argc, const char *main_argv[])
 
     if (opt_version) {
         puts(VERSION""DISTRO_VERSION""PRERELEASE_VERSION);
-        return 0;
+        ret = 0;
+        goto done;
     }
 
     if (opt_target == NULL) {
         fprintf(stderr, "Missing target!\n");
         poptPrintUsage(pc, stderr, 0);
-        return 1;
+        ret = 1;
+        goto done;
     }
 
     if (!opt_all) {
-            return run_cli_srv_test(PROXY_LOCAL_ONLY,
-                                    PROXY_LOCAL_ONLY,
-                                    opt_target);
+        ret = run_cli_srv_test(PROXY_LOCAL_ONLY,
+                               PROXY_LOCAL_ONLY,
+                               opt_target);
+        goto done;
     }
 
     for (i=0; i<4; i++) {
@@ -861,10 +866,13 @@ int main(int argc, const char *main_argv[])
                     lookup_gssproxy_behavior(k),
                     ret ? "failed" : "succeeded");
             if (ret) {
-                return ret;
+                goto done;
             }
         }
     }
 
+done:
+    poptFreeContext(pc);
+    free(opt_target);
     return ret;
 }

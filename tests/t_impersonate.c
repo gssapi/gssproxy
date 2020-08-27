@@ -12,9 +12,9 @@ int main(int argc, const char *argv[])
     gss_ctx_id_t accept_ctx = GSS_C_NO_CONTEXT;
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
-    gss_name_t user_name;
-    gss_name_t proxy_name;
-    gss_name_t target_name;
+    gss_name_t user_name = GSS_C_NO_NAME;
+    gss_name_t proxy_name = GSS_C_NO_NAME;
+    gss_name_t target_name = GSS_C_NO_NAME;
     gss_OID_set_desc oid_set = { 1, discard_const(gss_mech_krb5) };
     uint32_t ret_maj;
     uint32_t ret_min;
@@ -207,9 +207,14 @@ int main(int argc, const char *argv[])
     ret = 0;
 
 done:
+    gss_release_name(&ret_min, &user_name);
+    gss_release_name(&ret_min, &proxy_name);
+    gss_release_name(&ret_min, &target_name);
     gss_release_buffer(&ret_min, &in_token);
     gss_release_buffer(&ret_min, &out_token);
     gss_release_cred(&ret_min, &impersonator_cred_handle);
     gss_release_cred(&ret_min, &cred_handle);
+    gss_delete_sec_context(&ret_min, &accept_ctx, GSS_C_NO_BUFFER);
+    gss_delete_sec_context(&ret_min, &init_ctx, GSS_C_NO_BUFFER);
     return ret;
 }

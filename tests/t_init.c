@@ -82,6 +82,8 @@ int main(int argc, const char *argv[])
         goto done;
     }
 
+    gss_release_buffer(&ret_min, &out_token);
+
     ret = t_recv_buffer(STDIN_FD, buffer, &buflen);
     if (ret != 0) {
         DEBUG("Failed to read token from STDIN\n");
