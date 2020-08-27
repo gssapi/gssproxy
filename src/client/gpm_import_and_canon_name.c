@@ -2,6 +2,26 @@
 
 #include "gssapi_gpm.h"
 
+static int gpm_name_oid_to_static(gss_OID name_type, gss_OID *name_static)
+{
+#define ret_static(b) \
+    if (gss_oid_equal(name_type, b)) { \
+        *name_static = b; \
+        return 0; \
+    }
+    ret_static(GSS_C_NT_USER_NAME);
+    ret_static(GSS_C_NT_MACHINE_UID_NAME);
+    ret_static(GSS_C_NT_STRING_UID_NAME);
+    ret_static(GSS_C_NT_HOSTBASED_SERVICE_X);
+    ret_static(GSS_C_NT_HOSTBASED_SERVICE);
+    ret_static(GSS_C_NT_ANONYMOUS);
+    ret_static(GSS_C_NT_EXPORT_NAME);
+    ret_static(GSS_C_NT_COMPOSITE_EXPORT);
+    ret_static(GSS_KRB5_NT_PRINCIPAL_NAME);
+    ret_static(gss_nt_krb5_name);
+    return ENOENT;
+}
+
 OM_uint32 gpm_display_name(OM_uint32 *minor_status,
                            gssx_name *in_name,
                            gss_buffer_t output_name_buffer,
@@ -57,7 +77,9 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
     }
 
     if (output_name_type) {
-        ret = gp_conv_gssx_to_oid_alloc(&in_name->name_type, output_name_type);
+        gss_OID_desc oid;
+        gp_conv_gssx_to_oid(&in_name->name_type, &oid);
+        ret = gpm_name_oid_to_static(&oid, output_name_type);
         if (ret) {
             gss_release_buffer(&discard, output_name_buffer);
             ret_min = ret;
@@ -285,7 +307,9 @@ OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
     }
 
     if (MN_mech != NULL) {
-        ret = gp_conv_gssx_to_oid_alloc(&name->name_type, MN_mech);
+        gss_OID_desc oid;
+        gp_conv_gssx_to_oid(&name->name_type, &oid);
+        ret = gpm_name_oid_to_static(&oid, MN_mech);
         if (ret) {
             *minor_status = ret;
             return GSS_S_FAILURE;

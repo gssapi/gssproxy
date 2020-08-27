@@ -10,6 +10,7 @@
 #include <string.h>
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_ext.h>
+#include <gssapi/gssapi_krb5.h>
 #include "rpcgen/gp_rpc.h"
 #include "rpcgen/gss_proxy.h"
 #include "src/gp_common.h"

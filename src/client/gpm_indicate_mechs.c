@@ -95,20 +95,6 @@ static uint32_t gpm_copy_gss_buffer(uint32_t *minor_status,
     return GSS_S_COMPLETE;
 }
 
-static bool gpm_equal_oids(gss_const_OID a, gss_const_OID b)
-{
-    int ret;
-
-    if (a->length == b->length) {
-        ret = memcmp(a->elements, b->elements, a->length);
-        if (ret == 0) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 static void gpmint_indicate_mechs(void)
 {
     union gp_rpc_arg uarg;
@@ -313,7 +299,7 @@ int gpm_mech_to_static(gss_OID mech_type, gss_OID *mech_static)
 
     *mech_static = GSS_C_NO_OID;
     for (size_t i = 0; i < global_mechs.mech_set->count; i++) {
-        if (gpm_equal_oids(&global_mechs.mech_set->elements[i], mech_type)) {
+        if (gss_oid_equal(&global_mechs.mech_set->elements[i], mech_type)) {
             *mech_static = &global_mechs.mech_set->elements[i];
             return 0;
         }
@@ -383,7 +369,7 @@ OM_uint32 gpm_inquire_names_for_mech(OM_uint32 *minor_status,
     }
 
     for (unsigned i = 0; i < global_mechs.info_len; i++) {
-        if (!gpm_equal_oids(global_mechs.info[i].mech, mech_type)) {
+        if (!gss_oid_equal(global_mechs.info[i].mech, mech_type)) {
             continue;
         }
         ret_maj = gpm_copy_gss_OID_set(&ret_min,
@@ -481,7 +467,7 @@ OM_uint32 gpm_inquire_attrs_for_mech(OM_uint32 *minor_status,
     }
 
     for (unsigned i = 0; i < global_mechs.info_len; i++) {
-        if (!gpm_equal_oids(global_mechs.info[i].mech, mech)) {
+        if (!gss_oid_equal(global_mechs.info[i].mech, mech)) {
             continue;
         }
 
@@ -540,7 +526,7 @@ OM_uint32 gpm_inquire_saslname_for_mech(OM_uint32 *minor_status,
     }
 
     for (unsigned i = 0; i < global_mechs.info_len; i++) {
-        if (!gpm_equal_oids(global_mechs.info[i].mech, desired_mech)) {
+        if (!gss_oid_equal(global_mechs.info[i].mech, desired_mech)) {
             continue;
         }
         ret_maj = gpm_copy_gss_buffer(&ret_min,
@@ -598,7 +584,7 @@ OM_uint32 gpm_display_mech_attr(OM_uint32 *minor_status,
     }
 
     for (unsigned i = 0; i < global_mechs.desc_len; i++) {
-        if (!gpm_equal_oids(global_mechs.desc[i].attr, mech_attr)) {
+        if (!gss_oid_equal(global_mechs.desc[i].attr, mech_attr)) {
             continue;
         }
         ret_maj = gpm_copy_gss_buffer(&ret_min,
