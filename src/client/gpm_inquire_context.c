@@ -51,7 +51,9 @@ OM_uint32 gpm_inquire_context(OM_uint32 *minor_status,
     }
 
     if (mech_type) {
-        ret = gp_conv_gssx_to_oid_alloc(&context_handle->mech, mech_type);
+        gss_OID_desc mech;
+        gp_conv_gssx_to_oid(&context_handle->mech, &mech);
+        ret = gpm_mech_to_static(&mech, mech_type);
         if (ret) {
             if (src_name) {
                 (void)gpm_release_name(&tmp_min, src_name);
