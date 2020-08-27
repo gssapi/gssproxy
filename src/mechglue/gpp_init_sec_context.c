@@ -215,7 +215,7 @@ done:
     *context_handle = (gss_ctx_id_t)ctx_handle;
 
     if (claimant_cred_handle == GSS_C_NO_CREDENTIAL) {
-        free(cred_handle);
+        (void)gpp_cred_handle_free(&min, cred_handle);
     }
     return maj;
 }

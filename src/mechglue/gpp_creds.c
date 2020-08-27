@@ -895,7 +895,7 @@ done:
     if (maj == GSS_S_COMPLETE) {
         *cred_handle = (gss_cred_id_t)cred;
     } else {
-        free(cred);
+        (void)gpp_cred_handle_free(&min, cred);
     }
     (void)gss_release_buffer(&min, &wrap_token);
     return maj;
