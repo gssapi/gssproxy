@@ -21,7 +21,6 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     gssx_res_accept_sec_context *res = &ures.accept_sec_context;
     gssx_ctx *ctx = NULL;
     gssx_name *name = NULL;
-    gss_OID_desc *mech = NULL;
     gss_buffer_t outbuf = NULL;
     uint32_t ret_maj;
     int ret;
@@ -70,15 +69,6 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
         goto done;
     }
 
-    if (mech_type) {
-        if (res->status.mech.octet_string_len) {
-            ret = gp_conv_gssx_to_oid_alloc(&res->status.mech, &mech);
-            if (ret) {
-                goto done;
-            }
-        }
-    }
-
     ctx = res->context_handle;
     /* we are stealing the delegated creds on success, so we do not want
      * it to be freed by xdr_free */
@@ -101,8 +91,14 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     }
 
     if (mech_type) {
-        *mech_type = mech;
+        gss_OID_desc mech;
+        gp_conv_gssx_to_oid(&res->status.mech, &mech);
+        ret = gpm_mech_to_static(&mech, mech_type);
+        if (ret) {
+            goto done;
+        }
     }
+
     if (src_name) {
         *src_name = name;
     }
@@ -144,10 +140,6 @@ done:
         if (name) {
             xdr_free((xdrproc_t)xdr_gssx_name, (char *)name);
             free(name);
-        }
-        if (mech) {
-            free(mech->elements);
-            free(mech);
         }
         if (outbuf) {
             free(outbuf->value);

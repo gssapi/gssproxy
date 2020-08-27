@@ -27,6 +27,9 @@ void gpm_display_status_init_once(void);
 void gpm_save_status(gssx_status *status);
 void gpm_save_internal_status(uint32_t err, char *err_str);
 
+int gpm_mech_to_static(gss_OID mech_type, gss_OID *mech_static);
+bool gpm_mech_is_static(gss_OID mech_type);
+
 OM_uint32 gpm_display_status(OM_uint32 *minor_status,
                              OM_uint32 status_value,
                              int status_type,

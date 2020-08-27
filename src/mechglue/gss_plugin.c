@@ -376,6 +376,11 @@ OM_uint32 gssi_internal_release_oid(OM_uint32 *minor_status, gss_OID *oid)
         item = gpp_next_special_oids(item);
     }
 
+    if (gpm_mech_is_static(*oid)) {
+        *oid = GSS_C_NO_OID;
+        return GSS_S_COMPLETE;
+    }
+
     /* none matched, it's not ours */
     return GSS_S_CONTINUE_NEEDED;
 }

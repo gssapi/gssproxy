@@ -43,7 +43,6 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
     gssx_arg_init_sec_context *arg = &uarg.init_sec_context;
     gssx_res_init_sec_context *res = &ures.init_sec_context;
     gssx_ctx *ctx = NULL;
-    gss_OID_desc *mech = NULL;
     gss_buffer_t outbuf = NULL;
     uint32_t ret_maj = GSS_S_COMPLETE;
     uint32_t ret_min = 0;
@@ -100,11 +99,12 @@ OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
 
     /* return values */
     if (actual_mech_type) {
-        if (res->status.mech.octet_string_len) {
-            ret = gp_conv_gssx_to_oid_alloc(&res->status.mech, &mech);
-            if (ret) {
-                goto done;
-            }
+        gss_OID_desc mech;
+        gp_conv_gssx_to_oid(&res->status.mech, &mech);
+        ret = gpm_mech_to_static(&mech, actual_mech_type);
+        if (ret) {
+            gpm_save_internal_status(ret, gp_strerror(ret));
+            goto done;
         }
     }
 
@@ -151,9 +151,6 @@ done:
     gpm_free_xdrs(GSSX_INIT_SEC_CONTEXT, &uarg, &ures);
 
     if (ret_maj == GSS_S_COMPLETE || ret_maj == GSS_S_CONTINUE_NEEDED) {
-        if (actual_mech_type) {
-            *actual_mech_type = mech;
-        }
         if (outbuf) {
             *output_token = *outbuf;
             free(outbuf);
@@ -169,10 +166,6 @@ done:
             xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ctx);
             free(ctx);
             ctx = NULL;
-        }
-        if (mech) {
-            free(mech->elements);
-            free(mech);
         }
         if (outbuf) {
             free(outbuf->value);

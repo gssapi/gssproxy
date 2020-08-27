@@ -300,6 +300,40 @@ static int gpmint_init_global_mechs(void)
     return 0;
 }
 
+/* GSSAPI requires some APIs to return "static" mechs that callers do not need
+ * to free. So match a radom mech and return from our global "static" array */
+int gpm_mech_to_static(gss_OID mech_type, gss_OID *mech_static)
+{
+    int ret;
+
+    ret = gpmint_init_global_mechs();
+    if (ret) {
+        return ret;
+    }
+
+    *mech_static = GSS_C_NO_OID;
+    for (size_t i = 0; i < global_mechs.mech_set->count; i++) {
+        if (gpm_equal_oids(&global_mechs.mech_set->elements[i], mech_type)) {
+            *mech_static = &global_mechs.mech_set->elements[i];
+            return 0;
+        }
+    }
+    /* TODO: potentially in future add the mech to the list if missing */
+    return ENOENT;
+}
+
+bool gpm_mech_is_static(gss_OID mech_type)
+{
+    if (global_mechs.mech_set) {
+        for (size_t i = 0; i < global_mechs.mech_set->count; i++) {
+            if (&global_mechs.mech_set->elements[i] == mech_type) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 OM_uint32 gpm_indicate_mechs(OM_uint32 *minor_status, gss_OID_set *mech_set)
 {
     uint32_t ret_min;
