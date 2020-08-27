@@ -65,6 +65,8 @@ enum gpp_behavior gpp_get_behavior(void)
     return behavior;
 }
 
+static void gpp_init_special_available_mechs(const gss_OID_set mechs);
+
 /* 2.16.840.1.113730.3.8.15.1 */
 const gss_OID_desc gssproxy_mech_interposer = {
     .length = 11,
@@ -76,7 +78,6 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
     gss_OID_set interposed_mechs;
     OM_uint32 maj, min;
     char *envval;
-    gss_OID_set special_mechs;
 
     /* avoid looping in the gssproxy daemon by avoiding to interpose
      * any mechanism */
@@ -119,8 +120,7 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
     }
 
     /* while there also initiaize special_mechs */
-    special_mechs = gpp_special_available_mechs(interposed_mechs);
-    (void)gss_release_oid_set(&min, &special_mechs);
+    gpp_init_special_available_mechs(interposed_mechs);
 
 done:
     if (maj != 0) {
@@ -307,13 +307,13 @@ gss_OID_set gpp_special_available_mechs(const gss_OID_set mechs)
     gss_OID n;
     uint32_t maj, min;
 
-    item = gpp_get_special_oids();
-
     maj = gss_create_empty_oid_set(&min, &amechs);
     if (maj) {
         return GSS_C_NO_OID_SET;
     }
     for (size_t i = 0; i < mechs->count; i++) {
+        item = gpp_get_special_oids();
+
         while (item) {
             if (gpp_is_special_oid(&mechs->elements[i])) {
                 maj = gss_add_oid_set_member(&min,
@@ -352,6 +352,27 @@ done:
         (void)gss_release_oid_set(&min, &amechs);
     }
     return amechs;
+}
+
+static void gpp_init_special_available_mechs(const gss_OID_set mechs)
+{
+    struct gpp_special_oid_list *item;
+
+    for (size_t i = 0; i < mechs->count; i++) {
+        item = gpp_get_special_oids();
+
+        while (item) {
+            if (gpp_is_special_oid(&mechs->elements[i]) ||
+                gpp_special_equal(&item->special_oid, &mechs->elements[i])) {
+                break;
+            }
+            item = gpp_next_special_oids(item);
+        }
+        if (item == NULL) {
+            /* not found, add to static list */
+            (void)gpp_new_special_mech(&mechs->elements[i]);
+        }
+    }
 }
 
 OM_uint32 gssi_internal_release_oid(OM_uint32 *minor_status, gss_OID *oid)
