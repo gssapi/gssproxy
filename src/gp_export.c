@@ -308,10 +308,9 @@ static int gp_encrypt_buffer(krb5_context context, krb5_keyblock *key,
     ret = gp_conv_octet_string(enc_handle.ciphertext.length,
                                enc_handle.ciphertext.data,
                                out);
-    if (ret) {
-        free(enc_handle.ciphertext.data);
-        goto done;
-    }
+    /* the conversion function copies the data, so free our copy
+     * unconditionally, or we leak */
+    free(enc_handle.ciphertext.data);
 
 done:
     free(padded);
