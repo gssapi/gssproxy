@@ -76,8 +76,8 @@ static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
             return 1;
         }
 
-        gpctx->sock_ev = ev;
         verto_del(gpctx->sock_ev);
+        gpctx->sock_ev = ev;
     } else {
         /* free_config will erase the socket name; update it accordingly */
         sock_ctx = verto_get_private(gpctx->sock_ev);
