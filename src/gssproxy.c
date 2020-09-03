@@ -15,6 +15,8 @@ const int vflags =
 char *opt_config_file = NULL;
 char *opt_config_dir = NULL;
 char *opt_config_socket = NULL;
+char *opt_extract_ccache = NULL;
+char *opt_dest_ccache = NULL;
 int opt_daemon = 0;
 
 struct gssproxy_ctx *gpctx;
@@ -193,6 +195,12 @@ int main(int argc, const char *argv[])
          _("Enable GSSAPI status logging to syslog"), NULL}, \
         {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
          _("Print version number and exit"), NULL }, \
+        {"extract-ccache", '\0', POPT_ARG_STRING|POPT_ARGFLAG_DOC_HIDDEN, \
+         &opt_extract_ccache, 0, \
+        _("Extract a gssproxy encrypted ccache"), NULL },
+        {"into-ccache", '\0', POPT_ARG_STRING|POPT_ARGFLAG_DOC_HIDDEN, \
+        &opt_dest_ccache, 0, \
+        _("Destination ccache for extracted ccache"), NULL },
         POPT_TABLEEND
     };
 
@@ -218,6 +226,11 @@ int main(int argc, const char *argv[])
     if (opt_debug || opt_debug_level > 0) {
         if (opt_debug_level == 0) opt_debug_level = 1;
         gp_debug_toggle(opt_debug_level);
+    }
+
+    if (opt_extract_ccache) {
+        ret = extract_ccache(opt_extract_ccache, opt_dest_ccache);
+        goto cleanup;
     }
 
     if (opt_syslog_status)
@@ -325,6 +338,8 @@ cleanup:
     free(opt_config_file);
     free(opt_config_dir);
     free(opt_config_socket);
+    free(opt_extract_ccache);
+    free(opt_dest_ccache);
 
 #ifdef HAVE_VERTO_CLEANUP
     verto_cleanup();

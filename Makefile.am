@@ -178,6 +178,7 @@ gssproxy_SOURCES = \
     src/gp_rpc_wrap.c \
     src/gp_rpc_unwrap.c \
     src/gp_rpc_wrap_size_limit.c \
+    src/extract_ccache.c \
     src/gssproxy.c
 
 proxymech_la_SOURCES = \

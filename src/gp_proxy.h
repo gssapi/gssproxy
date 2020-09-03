@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <gssapi/gssapi_ext.h>
+#include <gssapi/gssapi_krb5.h>
 #include "verto.h"
 #include "gp_common.h"
 #include "gp_selinux.h"
@@ -18,7 +19,10 @@
 
 #define GP_CRED_KRB5    0x01
 
-struct gp_creds_handle;
+struct gp_creds_handle {
+    krb5_context context;
+    krb5_keyblock *key;
+};
 
 struct gp_cred_krb5 {
     char *principal;
@@ -143,5 +147,7 @@ uint32_t gp_init_creds_handle(uint32_t *min, const char *svc_name,
                               const char *keytab,
                               struct gp_creds_handle **out);
 void gp_free_creds_handle(struct gp_creds_handle **in);
+
+int extract_ccache(char *ccache_name, char *dest_ccache);
 
 #endif /* _GP_PROXY_H_ */

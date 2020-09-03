@@ -40,6 +40,9 @@
     ptr = NULL; \
 } while(0)
 
+#define GPKRB_SRV_NAME "Encrypted/Credentials/v1@X-GSSPROXY:"
+#define ENC_MIN_PAD_LEN 8
+
 /* max out at 1MB for now */
 #define MAX_RPC_SIZE 1024*1024
 

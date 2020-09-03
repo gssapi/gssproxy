@@ -9,17 +9,11 @@
 #include "gp_export.h"
 #include "gp_debug.h"
 #include "gp_proxy.h"
-#include <gssapi/gssapi_krb5.h>
 #include <pwd.h>
 #include <grp.h>
 #include <pthread.h>
 
 #define GP_CREDS_HANDLE_KEY_ENCTYPE ENCTYPE_AES256_CTS_HMAC_SHA1_96
-
-struct gp_creds_handle {
-    krb5_context context;
-    krb5_keyblock *key;
-};
 
 void gp_free_creds_handle(struct gp_creds_handle **in)
 {
@@ -192,8 +186,6 @@ done:
 
     return ret_maj;
 }
-
-#define ENC_MIN_PAD_LEN 8
 
 /* We need to pad our payloads because krb5_c_decrypt() may pad the
  * contents for some enctypes, and gss_import_cred() doesn't like

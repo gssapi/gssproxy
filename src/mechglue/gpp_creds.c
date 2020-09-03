@@ -3,8 +3,6 @@
 #include "gss_plugin.h"
 #include <gssapi/gssapi_krb5.h>
 
-#define GPKRB_SRV_NAME "Encrypted/Credentials/v1@X-GSSPROXY:"
-
 uint32_t gpp_cred_handle_init(uint32_t *min, bool defcred, const char *ccache,
                               struct gpp_cred_handle **out_handle)
 {
