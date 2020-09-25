@@ -73,11 +73,6 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
             h--;
             xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&mi->mech);
             continue;
-#if 0
-            ret_maj = GSS_S_FAILURE;
-            ret_min = EINVAL;
-            goto done;
-#endif
         }
 
         ret = gp_conv_oid_set_to_gssx(name_types, &mi->name_types);

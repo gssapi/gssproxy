@@ -125,21 +125,13 @@ done:
 
 static void gpm_close_socket(struct gpm_ctx *gpmctx)
 {
-    int ret;
-
-    do {
-        ret = close(gpmctx->fd);
-        /* in theory we should retry to close() on EINTR,
-         * but on same system the fd will be invalid after
-         * close() has been called, so closing again may
-         * cause a race with another thread that just happend
-         * to open an unrelated file descriptor.
-         * So until POSIX finally amends language around close()
-         * and at least the Linux kernel changes its behavior,
-         * it is better to risk a leak than closing an unrelated
-         * file descriptor */
-        ret = 0;
-    } while (ret == EINTR);
+    /* In theory, we should retry close() on EINTR, but the fd will be invalid
+     * after close() has been called, so closing again may cause a race with
+     * another thread that just happend to open an unrelated file descriptor.
+     * So until POSIX finally amends language around close() and at least the
+     * Linux kernel changes its behavior, it is better to risk a leak than
+     * closing an unrelated file descriptor. */
+    close(gpmctx->fd);
 
     gpmctx->fd = -1;
 }
