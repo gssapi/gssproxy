@@ -222,10 +222,11 @@ OM_uint32 gpm_duplicate_name(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
-                                gssx_name *input_name,
-                                const gss_OID mech_type,
-                                gssx_name **output_name)
+static OM_uint32 gpm_int_canonicalize_name(OM_uint32 *minor_status,
+                                           gssx_name *input_name,
+                                           const gss_OID mech_type,
+                                           const char *special_query,
+                                           void **output_name)
 {
     union gp_rpc_arg uarg;
     union gp_rpc_res ures;
@@ -233,6 +234,9 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
     gssx_res_import_and_canon_name *res = &ures.import_and_canon_name;
     uint32_t ret_maj;
     uint32_t ret_min;
+    struct gssx_option *val = NULL;
+    gssx_buffer *name = NULL;
+    bool localname = false;
     int ret;
 
     if (!minor_status) {
@@ -240,11 +244,15 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
     }
     *minor_status = 0;
 
-    if (!input_name || !mech_type) {
+    if (!input_name) {
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
     if (!output_name) {
         return GSS_S_CALL_INACCESSIBLE_WRITE;
+    }
+
+    if (special_query && strcmp(special_query, LOCALNAME_OPTION) == 0) {
+        localname = true;
     }
 
     memset(arg, 0, sizeof(gssx_arg_import_and_canon_name));
@@ -261,6 +269,17 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
         goto done;
     }
 
+    if (localname) {
+        ret = gp_add_option(&arg->options.options_val,
+                            &arg->options.options_len,
+                            LOCALNAME_OPTION,
+                            sizeof(LOCALNAME_OPTION),
+                            NULL, 0);
+        if (ret) {
+            goto done;
+        }
+    }
+
     /* execute proxy request */
     ret = gpm_make_call(GSSX_IMPORT_AND_CANON_NAME, &uarg, &ures);
     if (ret) {
@@ -275,9 +294,33 @@ OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
         goto done;
     }
 
-    /* steal output_name */
-    *output_name = res->output_name;
-    res->output_name = NULL;
+    if (!localname) {
+        /* steal output_name */
+        *(gssx_name **)output_name = res->output_name;
+        res->output_name = NULL;
+        ret = 0;
+        goto done;
+    }
+
+    gp_options_find(val, res->options,
+                    LOCALNAME_OPTION, sizeof(LOCALNAME_OPTION));
+    if (!val) {
+        ret = ENOTSUP;
+        goto done;
+    }
+
+    name = malloc(sizeof(gssx_buffer));
+    if (!name) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    /* steal value */
+    *name = val->value;
+    memset(&val->value, 0, sizeof(gssx_buffer));
+    *(gssx_buffer **)output_name = name;
+
+    ret = 0;
 
 done:
     if (ret) {
@@ -287,6 +330,15 @@ done:
     gpm_free_xdrs(GSSX_IMPORT_AND_CANON_NAME, &uarg, &ures);
     *minor_status = ret_min;
     return ret_maj;
+}
+
+OM_uint32 gpm_canonicalize_name(OM_uint32 *minor_status,
+                                gssx_name *input_name,
+                                const gss_OID mech_type,
+                                gssx_name **output_name)
+{
+    return gpm_int_canonicalize_name(minor_status, input_name, mech_type,
+                                     NULL, (void **)output_name);
 }
 
 OM_uint32 gpm_inquire_name(OM_uint32 *minor_status,
@@ -409,4 +461,23 @@ done:
     gss_release_oid(&ret_min, &type1);
     gss_release_oid(&ret_min, &type2);
     return ret_maj;
+}
+
+OM_uint32 gpm_localname(OM_uint32 *minor_status,
+                        gssx_name *input_name,
+                        const gss_OID mech_type,
+                        gss_buffer_t localname)
+{
+    gssx_buffer *output = NULL;
+    uint32_t maj;
+
+    maj = gpm_int_canonicalize_name(minor_status, input_name, mech_type,
+                                    LOCALNAME_OPTION, (void **)&output);
+    if (maj != GSS_S_COMPLETE) return maj;
+
+    /* steal result */
+    gp_conv_gssx_to_buffer(output, localname);
+
+    free(output);
+    return GSS_S_COMPLETE;
 }

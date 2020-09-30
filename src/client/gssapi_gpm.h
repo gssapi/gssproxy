@@ -150,6 +150,10 @@ OM_uint32 gpm_compare_name(OM_uint32 *minor_status,
                            gssx_name *name1,
                            gssx_name *name2,
                            int *name_equal);
+OM_uint32 gpm_localname(OM_uint32 *minor_status,
+                        gssx_name *input_name,
+                        const gss_OID mech_type,
+                        gss_buffer_t localname);
 
 OM_uint32 gpm_init_sec_context(OM_uint32 *minor_status,
                                gssx_cred *cred_handle,
