@@ -123,6 +123,8 @@ do { \
 #define CRED_SYNC_DEFAULT "default"
 #define CRED_SYNC_PAYLOAD "sync_creds"
 
+#define LOCALNAME_OPTION "localname"
+
 #define GPKRB_MAX_CRED_SIZE 1024 * 512
 
 uint32_t gp_add_option(gssx_option **options_val, u_int *options_len,

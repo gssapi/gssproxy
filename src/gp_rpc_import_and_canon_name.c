@@ -17,6 +17,8 @@ int gp_import_and_canon_name(struct gp_call_ctx *gpcall UNUSED,
     gss_OID mech = GSS_C_NO_OID;
     gss_name_t import_name = GSS_C_NO_NAME;
     gss_name_t output_name = GSS_C_NO_NAME;
+    gss_buffer_desc localname = GSS_C_EMPTY_BUFFER;
+    struct gssx_option *val = NULL;
     uint32_t ret_maj = 0;
     uint32_t ret_min = 0;
     int ret;
@@ -46,6 +48,31 @@ int gp_import_and_canon_name(struct gp_call_ctx *gpcall UNUSED,
             ret_min = ret;
             goto done;
         }
+    }
+
+    /* We implement gss_localname in this function via a special option */
+    gp_options_find(val, icna->options,
+                    LOCALNAME_OPTION, sizeof(LOCALNAME_OPTION));
+    if (val) {
+        ret_maj = gss_localname(&ret_min, import_name, mech, &localname);
+        if (ret_maj) {
+            goto done;
+        }
+        ret_min = gp_add_option(&icnr->options.options_val,
+                                &icnr->options.options_len,
+                                LOCALNAME_OPTION,
+                                sizeof(LOCALNAME_OPTION),
+                                localname.value,
+                                localname.length);
+        if (ret_min) {
+            ret_maj = GSS_S_FAILURE;
+        }
+
+        goto done;
+    }
+
+    /* regular import/canon part */
+    if (mech != GSS_C_NO_OID) {
 
         ret_maj = gss_canonicalize_name(&ret_min, import_name,
                                         mech, &output_name);
@@ -71,5 +98,6 @@ done:
     gss_release_oid(&ret_min, &mech);
     gss_release_name(&ret_min, &import_name);
     gss_release_name(&ret_min, &output_name);
+    gss_release_buffer(&ret_min, &localname);
     return ret;
 }

@@ -53,19 +53,32 @@ OM_uint32 gssi_localname(OM_uint32 *minor_status, const gss_name_t name,
         return GSS_S_CALL_INACCESSIBLE_READ;
     }
 
-    /* FIXME: implement remote localname lookup ? Only local for now */
     gpname = (struct gpp_name_handle *)name;
-    if (gpname->remote && !gpname->local) {
-        maj = gpp_name_to_local(&min, gpname->remote,
-                                mech_type, &gpname->local);
-        if (maj) {
-            goto done;
-        }
+    if (!gpname->local && !gpname->remote) {
+        return GSS_S_CALL_INACCESSIBLE_READ;
     }
 
-    maj = gss_localname(&min, gpname->local,
-                        gpp_special_mech(mech_type),
-                        localname);
+    if (gpname->remote) {
+        maj = gpm_localname(&min, gpname->remote,
+                            mech_type, localname);
+        if (maj == GSS_S_COMPLETE) {
+            goto done;
+        } else if (maj == GSS_S_FAILURE && min == ENOTSUP) {
+            /* fallback to local */
+            if (!gpname->local) {
+                maj = gpp_name_to_local(&min, gpname->remote,
+                                        mech_type, &gpname->local);
+                if (maj) {
+                    goto done;
+                }
+            }
+        }
+    }
+    if (gpname->local) {
+        maj = gss_localname(&min, gpname->local,
+                            gpp_special_mech(mech_type),
+                            localname);
+    }
 
 done:
     *minor_status = gpp_map_error(min);
