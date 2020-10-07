@@ -33,6 +33,13 @@ t_init_SOURCES = \
 t_init_LDADD = \
     $(GSSAPI_LIBS)
 
+t_names_SOURCES = \
+    t_utils.c \
+    t_names.c
+
+t_names_LDADD = \
+    $(GSSAPI_LIBS)
+
 t_setcredopt_SOURCES = \
     t_utils.c \
     t_setcredopt.c
@@ -46,6 +53,7 @@ check_PROGRAMS = \
     t_impersonate \
     t_accept \
     t_init \
+    t_names \
     t_setcredopt \
     $(NULL)
 
