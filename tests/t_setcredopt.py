@@ -29,6 +29,7 @@ def run(testdir, env, conf):
     testenv.update({'KRB5CCNAME': path_prefix + 'sco.ccache',
                     'KRB5_KTNAME': os.path.join(testdir, PROXY_KTNAME),
                     'KRB5_TRACE': path_prefix + 'sco.trace',
+                    'GSS_USE_PROXY': 'yes',
                     'GSSPROXY_BEHAVIOR': 'REMOTE_FIRST'})
 
     return run_testcase_cmd(testenv, conf, cmd, "Set cred options")

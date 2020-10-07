@@ -50,6 +50,10 @@ def run(testdir, env, conf):
     gssproxy_reload(testdir, conf['gpid'])
     r2 = run_basic_test(testdir, env, conf)
 
+    # Reset back gssproxy conf
+    update_gssproxy_conf(testdir, conf["keysenv"], GSSPROXY_CONF_TEMPLATE)
+    gssproxy_reload(testdir, conf['gpid'])
+
     if r1 != 0:
         return r1
     elif r2 != 0:
