@@ -451,6 +451,8 @@ SVC_KTNAME = "kdc.gssproxy.keytab"
 KEY_TYPE = "aes256-cts-hmac-sha1-96:normal"
 USR2_NAME = "user2"
 USR2_PWD = "usrpwd"
+USR3_NAME = "names"
+USR3_KTNAME = "names.gssproxy.keytab"
 MULTI_KTNAME = "multi.gssproxy.keytab"
 MULTI_UPN = "multi$"
 MULTI_SVC = "multi/%s" % WRAP_HOSTNAME
@@ -516,6 +518,14 @@ def setup_keys(testdir, env):
         kadmin_local(cmd, env, logfile)
 
     cmd = "addprinc -pw %s %s" % (USR2_PWD, USR2_NAME)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+
+    usr3_keytab = os.path.join(testdir, USR3_KTNAME)
+    cmd = "addprinc -randkey -e %s %s" % (KEY_TYPE, USR3_NAME)
+    with (open(testlog, 'a')) as logfile:
+        kadmin_local(cmd, env, logfile)
+    cmd = "ktadd -k %s -e %s %s" % (usr3_keytab, KEY_TYPE, USR3_NAME)
     with (open(testlog, 'a')) as logfile:
         kadmin_local(cmd, env, logfile)
 
