@@ -268,12 +268,11 @@ done:
 
 static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
 {
-    int ret;
+    int ret = -1;
     int epoll_ret;
     struct epoll_event ev;
     struct epoll_event events[2];
     uint64_t timer_read;
-    int fd_index = 0;
 
     memset(&ev, 0, sizeof(ev));
     memset(&events[0], 0, sizeof(events[0]));
@@ -293,6 +292,11 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
         goto done;
     }
 
+    /* There are two timing mechanisms in use here.  First, we establish a
+     * timerfd in gpm_epoll_setup(); this is for the whole request lifetime.
+     * We also have a timeout on the epoll_wait() call in case something has
+     * gone wrong with our timerfd manipulation.  This is probably
+     * unnecessary. */
     do {
         epoll_ret = epoll_wait(gpmctx->epollfd, events, 2, SAFETY_TIMEOUT);
     } while (epoll_ret < 0 && errno == EINTR);
@@ -304,16 +308,8 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
     } else if (epoll_ret == 0) {
         ret = ETIMEDOUT;
         goto done;
-    } else if (epoll_ret == 1 && events[0].data.fd == gpmctx->timerfd) {
-        /* Got an event which is only our timer */
-        if ((events[0].events & EPOLLIN) == 0) {
-            /* We got an event which was not EPOLLIN; assume this is an error,
-             * and exit with EBADF: epoll_wait said timerfd had an event, but
-             * that event is not an EPOLIN event. */
-            ret = EBADF;
-            goto done;
-        }
-
+    } else if (epoll_ret == 2 || events[0].data.fd == gpmctx->timerfd) {
+        /* Timer fired - service it. */
         ret = read(gpmctx->timerfd, &timer_read, sizeof(uint64_t));
         if (ret == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
             /* In the case when reading from the timer failed, don't hide the
@@ -331,13 +327,7 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
         goto done;
     }
 
-    /* If ret == 2, then we ignore the timerfd; that way if the next operation
-     * cannot be performed immediately, we timeout and retry.  Always check
-     * the returned event of the socket fd. */
-    if (epoll_ret == 2 && events[fd_index].data.fd != gpmctx->fd)
-        fd_index = 1;
-
-    if ((events[fd_index].events & event_flags) == 0) {
+    if ((events[0].events & event_flags) == 0) {
         /* We cannot call EPOLLIN/EPOLLOUT at this time; assume that this is a
          * fatal error; return with EBADFD to distinguish from EBADF in
          * timer_fd case. */
@@ -345,9 +335,12 @@ static int gpm_epoll_wait(struct gpm_ctx *gpmctx, uint32_t event_flags)
         goto done;
     }
 
-    /* We definintely got a EPOLLIN/EPOLLOUT event; return success. */
+    /* We definintely got a EPOLLIN/EPOLLOUT event on gpmctx->fd; return
+     * success. */
     ret = 0;
 done:
+    /* Always delete the file descriptor.  Either we timed out, and are about
+     * to hang up, or we're about to service it and will re-add later. */
     epoll_ret = epoll_ctl(gpmctx->epollfd, EPOLL_CTL_DEL, gpmctx->fd, NULL);
     if (epoll_ret == -1) {
         /* If we previously had an error, expose that error instead of
