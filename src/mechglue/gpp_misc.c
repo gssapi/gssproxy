@@ -2,21 +2,19 @@
 
 #include "gss_plugin.h"
 
+/* NOTE: The mech_invoke() methods are intrinsically intended to only
+ * influence local process beahvior, or act on local process memory.
+ * Therefore there is no point in even trying to proxy it. Always bridge
+ * it back to the local mechanism. We'll handle specific desired_objects
+ * in future if any exist that make sense to be proxied */
 OM_uint32 gssi_mech_invoke(OM_uint32 *minor_status,
                            const gss_OID desired_mech,
                            const gss_OID desired_object,
                            gss_buffer_t value)
 {
-    enum gpp_behavior behavior;
     OM_uint32 maj, min;
 
     GSSI_TRACE();
-
-    /* FIXME: implement remote invoke mech, only local for now */
-    behavior = gpp_get_behavior();
-    if (behavior == GPP_REMOTE_ONLY) {
-        return GSS_S_UNAVAILABLE;
-    }
 
     maj = gssspi_mech_invoke(&min, gpp_special_mech(desired_mech),
                              desired_object, value);
