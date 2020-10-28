@@ -176,6 +176,12 @@ OM_uint32 gssi_inquire_mech_for_saslname(OM_uint32 *minor_status,
                                          gss_OID *mech_type)
 {
     GSSI_TRACE();
-    /* FIXME: How to call into mechglue ? */
+    /* NOTE: in general it doesn't make a lot of sense to provide this
+     * function unless we make it possible to export an entire mechanism
+     * via interposer functions that is not available in the main library.
+     * That is because any saslname we can interpose is actually going to
+     * be properly resolved by the main mechanism, and when later the
+     * returned mechanism type is used in some call we will properly
+     * interpose as configured. */
     return GSS_S_UNAVAILABLE;
 }
