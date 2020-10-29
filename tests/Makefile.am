@@ -71,7 +71,10 @@ EXTRA_DIST = \
     t_impersonate.py \
     t_interpose.py \
     t_multi_key.py \
+    t_names.py \
+    t_program.py \
     t_reloading.py \
+    t_setcredopt.py \
     $(NULL)
 
 all: $(check_PROGRAMS)
