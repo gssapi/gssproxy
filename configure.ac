@@ -136,7 +136,7 @@ static int write_to_file(char *path, char *text)
         return 1;
 
     bytes = fprintf(f, "%s", text);
-    if (bytes != strlen(text))
+    if (bytes < 0 || (size_t)bytes != strlen(text))
         return 1;
 
     return fclose(f);
