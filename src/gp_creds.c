@@ -600,6 +600,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
     gss_ctx_id_t initiator_context = GSS_C_NO_CONTEXT;
     gss_ctx_id_t acceptor_context = GSS_C_NO_CONTEXT;
     gss_name_t target_name = GSS_C_NO_NAME;
+    gss_name_t compare_name = GSS_C_NO_NAME;
     gss_buffer_desc init_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc accept_token = GSS_C_EMPTY_BUFFER;
     gss_cred_id_t input_cred;
@@ -667,6 +668,42 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
             if (ret_maj) {
                 goto done;
             }
+
+            if (req_name != GSS_C_NO_NAME) {
+                int equal = 0;
+
+                ret_maj = gss_inquire_cred(&ret_min, impersonator_cred,
+                                           &compare_name, NULL, NULL, NULL);
+                if (ret_maj) {
+                    goto done;
+                }
+
+                ret_maj = gss_compare_name(&ret_min, compare_name,
+                                           req_name, &equal);
+                if (ret_maj) {
+                    goto done;
+                }
+
+                /* if impersonator credential retrieval yielded the requested
+                 * client name, we do not need to impersonate. Also, with MIT
+                 * krb5 an attempt to impersonate oneself gives an error "KDC
+                 * has no support for padata type" */
+                if (equal) {
+                     ret_maj = gss_acquire_cred_from(&ret_min, req_name,
+                                                     GSS_C_INDEFINITE,
+                                                     &desired_mechs, cred_usage,
+                                                     &cred_store, &user_cred,
+                                                     actual_mechs, NULL);
+                     if (ret_maj == GSS_S_COMPLETE) {
+                         *output_cred_handle = user_cred;
+                         user_cred = GSS_C_NO_CREDENTIAL;
+                         goto done;
+                     }
+
+                     /* fall on through, if failed */
+                 }
+            }
+
             input_cred = impersonator_cred;
             break;
         case ACQ_IMPNAME:
@@ -750,6 +787,7 @@ done:
         }
     }
     free_cred_store_elements(&cred_store);
+    gss_release_name(&discard, &compare_name);
     gss_release_cred(&discard, &impersonator_cred);
     gss_release_cred(&discard, &user_cred);
     gss_release_name(&discard, &target_name);
