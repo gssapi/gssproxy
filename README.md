@@ -23,4 +23,4 @@ have at least one libverto event library installed (e.g. libverto-tevent).
 
 We have a
 [mailing list](https://lists.fedorahosted.org/archives/list/gss-proxy@lists.fedorahosted.org/)
-and an IRC channel (#gssproxy on [Freenode](https://webchat.freenode.net)).
+and an IRC channel (#gssapi on [libera.chat](https://libera.chat/)).
