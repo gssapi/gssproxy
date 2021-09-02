@@ -611,6 +611,8 @@ int load_config(struct gp_config *cfg)
         goto done;
     }
 
+    gp_debug_toggle(tmp_dbg_lvl);
+
     ret = gp_config_get_string(ctx, "gssproxy", "syslog_status", &tmpstr);
     if (ret == 0)
         gp_syslog_status = gp_boolean_is_true(tmpstr);
@@ -640,7 +642,6 @@ done:
     if (ret != 0) {
         GPERROR("Error reading configuration %d: %s", ret, gp_strerror(ret));
     }
-    gp_debug_toggle(tmp_dbg_lvl);
     gp_config_close(ctx);
     safefree(ctx);
     return ret;
