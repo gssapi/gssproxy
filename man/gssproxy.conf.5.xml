@@ -332,6 +332,21 @@
                 </varlistentry>
 
                 <varlistentry>
+                    <term>min_lifetime (integer)</term>
+                    <listitem>
+                        <para>Minimum lifetime of a cached credential, in seconds.</para>
+                        <para>If non-zero, when gssproxy is deciding whether to use
+                            a cached credential, it will compare the lifetime of the
+                            cached credential to this value.  If the lifetime of the
+                            cached credential is lower, gssproxy will treat the cached
+                            credential as expired and will attempt to obtain a new
+                            credential.
+                        </para>
+                        <para>Default: min_lifetime = 15</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>program (string)</term>
                     <listitem>
                         <para>If specified, this service will only match when
