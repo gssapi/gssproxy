@@ -7,3 +7,4 @@
   allow_any_uid = yes
   trusted = yes
   euid = 0
+  min_lifetime = 60

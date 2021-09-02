@@ -32,6 +32,7 @@ struct gp_flag_def flag_names[] = {
 
 #define DEFAULT_FILTERED_FLAGS GSS_C_DELEG_FLAG
 #define DEFAULT_ENFORCED_FLAGS 0
+#define DEFAULT_MIN_LIFETIME 15
 
 static void free_str_array(const char ***a, int *count)
 {
@@ -536,6 +537,17 @@ static int load_services(struct gp_config *cfg, struct gp_ini_context *ctx)
                 if (!cfg->svcs[n]->program) {
                     ret = ENOMEM;
                     goto done;
+                }
+            }
+
+            cfg->svcs[n]->min_lifetime = DEFAULT_MIN_LIFETIME;
+            ret = gp_config_get_int(ctx, secname, "min_lifetime", &valnum);
+            if (ret == 0) {
+                if (valnum >= 0) {
+                    cfg->svcs[n]->min_lifetime = valnum;
+                } else {
+                    GPDEBUG("Invalid value '%d' for min_lifetime in [%s], ignoring.\n",
+                            valnum, secname);
                 }
             }
         }

@@ -492,6 +492,7 @@ done:
 }
 
 static uint32_t gp_check_cred(uint32_t *min,
+                              struct gp_service *svc,
                               gss_cred_id_t in_cred,
                               gssx_name *desired_name,
                               gss_cred_usage_t cred_usage)
@@ -563,7 +564,14 @@ static uint32_t gp_check_cred(uint32_t *min,
     if (lifetime == 0) {
         ret_maj = GSS_S_CREDENTIALS_EXPIRED;
     } else {
-        ret_maj = GSS_S_COMPLETE;
+        if (svc->min_lifetime && lifetime < svc->min_lifetime) {
+            GPDEBUG("%s: lifetime (%u) less than min_lifetime (%u) "
+                    "for service \"%s\" - returning\n",
+                    __func__, lifetime, svc->min_lifetime, svc->name);
+            ret_maj = GSS_S_CREDENTIALS_EXPIRED;
+        } else {
+            ret_maj = GSS_S_COMPLETE;
+        }
     }
 
 done:
@@ -622,7 +630,7 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
          * function completely */
 
         /* just check if it is a valid krb5 cred */
-        ret_maj = gp_check_cred(&ret_min, in_cred, desired_name, cred_usage);
+        ret_maj = gp_check_cred(&ret_min, gpcall->service, in_cred, desired_name, cred_usage);
         if (ret_maj == GSS_S_COMPLETE) {
             return GSS_S_COMPLETE;
         } else if (ret_maj == GSS_S_CREDENTIALS_EXPIRED ||
