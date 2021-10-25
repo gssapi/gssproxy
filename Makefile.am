@@ -244,7 +244,7 @@ noinst_DATA = \
     examples/gssproxy.conf \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
-    examples/99-nfs-client.conf \
+    examples/99-network-fs-clients.conf \
     examples/mech
 
 edit_cmd = $(SED) \
@@ -265,7 +265,7 @@ EXTRA_DIST = \
     examples/gssproxy.conf.in \
     examples/24-nfs-server.conf.in \
     examples/80-httpd.conf.in \
-    examples/99-nfs-client.conf.in \
+    examples/99-network-fs-clients.conf.in \
     examples/mech.in
 
 systemd/gssproxy.service: systemd/gssproxy.service.in Makefile
@@ -317,7 +317,7 @@ CLEANFILES = *.X */*.X */*/*.X \
     examples/gssproxy.conf \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
-    examples/99-nfs-client.conf \
+    examples/99-network-fs-clients.conf \
     systemd/gssproxy.service
 
 check: all $(check_PROGRAMS)
