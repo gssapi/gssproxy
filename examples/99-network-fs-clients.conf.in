@@ -1,4 +1,4 @@
-[service/nfs-client]
+[service/network-fs-clients]
   mechs = krb5
   cred_store = keytab:/etc/krb5.keytab
   cred_store = ccache:FILE:@gpclidir@/krb5cc_%U

@@ -73,7 +73,7 @@ rm -f %{buildroot}%{_libdir}/gssproxy/proxymech.la
 install -d -m755 %{buildroot}%{_sysconfdir}/gssproxy
 install -m644 examples/gssproxy.conf %{buildroot}%{_sysconfdir}/gssproxy/gssproxy.conf
 install -m644 examples/24-nfs-server.conf %{buildroot}%{_sysconfdir}/gssproxy/24-nfs-server.conf
-install -m644 examples/99-nfs-client.conf %{buildroot}%{_sysconfdir}/gssproxy/99-nfs-client.conf
+install -m644 examples/99-network-fs-clients.conf %{buildroot}%{_sysconfdir}/gssproxy/99-network-fs-clients.conf
 mkdir -p %{buildroot}%{_sysconfdir}/gss/mech.d
 install -m644 examples/mech %{buildroot}%{_sysconfdir}/gss/mech.d/gssproxy.conf
 mkdir -p %{buildroot}%{gpstatedir}/rcache
@@ -93,7 +93,7 @@ rm -rf %{buildroot}
 %attr(700,root,root) %dir %{gpstatedir}/rcache
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/gssproxy.conf
 %attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/24-nfs-server.conf
-%attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/99-nfs-client.conf
+%attr(0600,root,root) %config(noreplace) /%{_sysconfdir}/gssproxy/99-network-fs-clients.conf
 %attr(0644,root,root) %config(noreplace) /%{_sysconfdir}/gss/mech.d/gssproxy.conf
 %{_libdir}/gssproxy/proxymech.so
 %{_mandir}/man5/gssproxy.conf.5*
