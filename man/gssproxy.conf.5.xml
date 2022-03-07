@@ -216,7 +216,7 @@
                             At level 3 and above, KRB5_TRACE output is logged.
                             If KRB5_TRACE was already set in the execution
                             environment, trace output is sent to its value
-                            instead.
+		            instead. Refer to docs/KRB5_TRACE.md for more information.
                         </para>
                         <para>Default: 1 if debug is true, otherwise 0</para>
                     </listitem>
