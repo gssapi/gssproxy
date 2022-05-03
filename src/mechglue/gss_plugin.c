@@ -73,22 +73,27 @@ const gss_OID_desc gssproxy_mech_interposer = {
     .elements = "\140\206\110\001\206\370\102\003\010\017\001"
 };
 
-gss_OID_set gss_mech_interposer(gss_OID mech_type)
+static bool enabled(void)
 {
-    gss_OID_set interposed_mechs;
-    OM_uint32 maj, min;
     char *envval;
+    bool ret = GSS_ALWAYS_INTERPOSE;
 
     /* avoid looping in the gssproxy daemon by avoiding to interpose
      * any mechanism */
     envval = gp_getenv("GSS_USE_PROXY");
-    if (!envval) {
-        return NULL;
+    if (envval) {
+        ret = gp_boolean_is_true(envval);
     }
 
-    if (!gp_boolean_is_true(envval)) {
-        return NULL;
-    }
+    return ret;
+}
+
+gss_OID_set gss_mech_interposer(gss_OID mech_type)
+{
+    gss_OID_set interposed_mechs;
+    OM_uint32 maj, min;
+
+    if (!enabled()) return NULL;
 
     interposed_mechs = NULL;
     maj = 0;

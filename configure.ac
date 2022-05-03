@@ -292,6 +292,18 @@ fi
 
 AC_CHECK_FUNCS([__secure_getenv secure_getenv])
 
+AC_ARG_ENABLE([always-interpose],
+              [AC_HELP_STRING([--enable-always-interpose],
+                              [Whether to build with interposer always enabled [no]]
+                             )],
+              [always_interpose=$enableval],
+              [always_interpose=no])
+if test x$always_interpose != xno; then
+    AC_DEFINE_UNQUOTED(GSS_ALWAYS_INTERPOSE, true, [Interposer always enabled by default])
+else
+    AC_DEFINE_UNQUOTED(GSS_ALWAYS_INTERPOSE, false, [Interposer not enabled by default])
+fi
+
 WITH_INITSCRIPT
 if test x$initscript = xsystemd; then
     WITH_SYSTEMD_UNIT_DIR
