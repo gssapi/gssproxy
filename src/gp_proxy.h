@@ -98,9 +98,10 @@ struct gp_config *read_config(char *config_file, char *config_dir,
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
 void free_config(struct gp_config **config);
 void free_cred_store_elements(gss_key_value_set_desc *cs);
+struct gp_config *userproxy_config(char *socket_name, int opt_daemonize);
 
 /* from gp_init.c */
-void init_server(bool daemonize, int *wait_fd);
+void init_server(bool daemonize, int userproxy, int *wait_fd);
 void init_done(int wait_fd);
 void fini_server(void);
 verto_ctx *init_event_loop(void);

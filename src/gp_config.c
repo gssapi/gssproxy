@@ -1149,3 +1149,98 @@ int gp_config_close(struct gp_ini_context *ctx)
 
     return 0;
 }
+
+/* synthesize a simplified config for use in user sessions */
+struct gp_config *userproxy_config(char *socket_name, int opt_daemonize)
+{
+    struct gp_config *cfg;
+    int ret;
+
+    cfg = calloc(1, sizeof(struct gp_config));
+    if (!cfg) {
+        return NULL;
+    }
+
+    if (socket_name) {
+        cfg->socket_name = strdup(socket_name);
+    } else {
+        char *envdir = gp_getenv("XDG_RUNTIME_DIR");
+        char *sockdir = NULL;
+
+        ret = asprintf(&sockdir, "%s/gssproxy", envdir);
+        if (ret == -1) {
+            ret = ENOMEM;
+            goto done;
+        }
+
+        errno = 0;
+        ret = mkdir(sockdir, 0700);
+        if (ret == -1 && errno != EEXIST) {
+            free(sockdir);
+            ret = errno;
+            goto done;
+        }
+        free(sockdir);
+
+        ret = asprintf(&cfg->socket_name, "%s/gssproxy/default.sock", envdir);
+        if (ret == -1) {
+            cfg->socket_name = NULL;
+        }
+    }
+
+    if (cfg->socket_name == NULL) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    switch (opt_daemonize) {
+    case 0:
+        /* daemonize by default */
+    case 1:
+        cfg->daemonize = true;
+        break;
+    case 2:
+        cfg->daemonize = false;
+        break;
+    }
+
+    cfg->num_workers = GP_USER_PROXY_WORKERS;
+
+    cfg->svcs = calloc(1, sizeof(struct gp_service *));
+    if (!cfg->svcs) {
+        ret = ENOMEM;
+        goto done;
+    }
+
+    cfg->svcs[0] = calloc(1, sizeof(struct gp_service));
+    if (!cfg->svcs[0]) {
+        ret = ENOMEM;
+        goto done;
+    }
+    cfg->num_svcs++;
+
+
+    cfg->svcs[0]->name = strdup(GP_USER_PROXY_SERVICE);
+    if (!cfg->svcs[0]->name) {
+        ret = ENOMEM;
+        goto done;
+    }
+    cfg->svcs[0]->euid = geteuid();
+    cfg->svcs[0]->allow_cc_sync = true;
+    cfg->svcs[0]->mechs = GP_CRED_KRB5;
+    cfg->svcs[0]->cred_usage = GSS_C_BOTH;
+    cfg->svcs[0]->filter_flags = DEFAULT_FILTERED_FLAGS;
+    cfg->svcs[0]->enforce_flags = DEFAULT_ENFORCED_FLAGS;
+    cfg->svcs[0]->min_lifetime = DEFAULT_MIN_LIFETIME;
+
+    ret = setup_krb5_creds_handle(cfg->svcs[0]);
+
+done:
+    if (ret) {
+        /* recursively frees cfg */
+        free_config(&cfg);
+        return NULL;
+    }
+
+    return cfg;
+}

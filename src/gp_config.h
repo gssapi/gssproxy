@@ -3,6 +3,9 @@
 #ifndef _GSS_CONFIG_H_
 #define _GSS_CONFIG_H_
 
+#define GP_USER_PROXY_WORKERS 2
+#define GP_USER_PROXY_SERVICE "user-proxy"
+
 struct gp_ini_context {
     void *private_data;
 };
