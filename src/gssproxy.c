@@ -166,6 +166,7 @@ int main(int argc, const char *argv[])
     int opt_debug = 0;
     int opt_debug_level = 0;
     int opt_syslog_status = 0;
+    int opt_userproxy = 0;
     verto_ctx *vctx;
     verto_ev *ev;
     int wait_fd;
@@ -187,6 +188,8 @@ int main(int argc, const char *argv[])
          _("Specify a non-default config directory"), NULL}, \
         {"socket", 's', POPT_ARG_STRING, &opt_config_socket, 0, \
          _("Specify a custom default socket"), NULL}, \
+        {"userproxy", 'u', POPT_ARG_NONE, &opt_userproxy, 0, \
+         _("Simplified user session proxy"), NULL}, \
         {"debug", 'd', POPT_ARG_NONE, &opt_debug, 0, \
          _("Enable debugging"), NULL}, \
         {"debug-level", '\0', POPT_ARG_INT, &opt_debug_level, 0, \
@@ -249,18 +252,24 @@ int main(int argc, const char *argv[])
 
     gpctx = calloc(1, sizeof(struct gssproxy_ctx));
 
-    gpctx->config = read_config(opt_config_file,
-                                opt_config_dir,
-                                opt_config_socket,
-                                opt_daemon);
+    if (opt_userproxy) {
+        gpctx->config = userproxy_config(opt_config_socket, opt_daemon);
+    } else {
+        gpctx->config = read_config(opt_config_file,
+                                    opt_config_dir,
+                                    opt_config_socket,
+                                    opt_daemon);
+    }
     if (!gpctx->config) {
         ret = EXIT_FAILURE;
         goto cleanup;
     }
 
-    init_server(gpctx->config->daemonize, &wait_fd);
+    init_server(gpctx->config->daemonize, opt_userproxy, &wait_fd);
 
-    write_pid();
+    if (!opt_userproxy) {
+        write_pid();
+    }
 
     vctx = init_event_loop();
     if (!vctx) {
@@ -272,11 +281,14 @@ int main(int argc, const char *argv[])
     gpctx->vctx = vctx;
 
     /* Add SIGHUP here so that gpctx is in scope for the handler */
-    ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, hup_handler, SIGHUP);
-    if (!ev) {
-        fprintf(stderr, "Failed to register SIGHUP handler with verto!\n");
-        ret = 1;
-        goto cleanup;
+    if (!opt_userproxy) {
+        ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST,
+                              hup_handler, SIGHUP);
+        if (!ev) {
+            fprintf(stderr, "Failed to register SIGHUP handler with verto!\n");
+            ret = 1;
+            goto cleanup;
+        }
     }
 
     ret = init_sockets(vctx, NULL);
@@ -287,7 +299,9 @@ int main(int argc, const char *argv[])
     /* We need to tell nfsd that GSS-Proxy is available before it starts,
      * as nfsd needs to know GSS-Proxy is in use before the first time it
      * needs to call accept_sec_context. */
-    init_proc_nfsd(gpctx->config);
+    if (!opt_userproxy) {
+        init_proc_nfsd(gpctx->config);
+    }
 
     /* Now it is safe to tell the init system that we're done starting up,
      * so it can continue with dependencies and start nfsd */

@@ -25,7 +25,7 @@
 
 #include "gp_proxy.h"
 
-void init_server(bool daemonize, int *wait_fd)
+void init_server(bool daemonize, int userproxy, int *wait_fd)
 {
     pid_t pid, sid;
     int ret;
@@ -70,6 +70,12 @@ void init_server(bool daemonize, int *wait_fd)
             exit(EXIT_FAILURE);
         }
     }
+
+    /* we set none of the following in userproxy mode, as the user proxy
+     * is intended to work as a user process in a regular user session
+     * proxing for other user processes like flatpak based applications
+     * that run effectively in a separate container */
+    if (userproxy) return;
 
     ret = chdir("/");
     if (ret == -1) {
