@@ -76,167 +76,7 @@ m4_include([external/selinux.m4])
 m4_include([external/libkeyutils.m4])
 m4_include([external/systemd.m4])
 m4_include([external/ax_pthread.m4])
-
-PKG_CHECK_MODULES([VERTO], [libverto >= 0.2.2], [have_libverto=1], [have_libverto=])
-if test x$have_libverto = x; then
-    AC_MSG_ERROR([Could not find VERTO headers])
-fi
-
-AC_CHECK_LIB(verto, verto_free,,
-             AC_MSG_ERROR(["Error: libverto is not found or lacks verto_free"]))
-
-AC_CHECK_FUNCS(verto_cleanup,,
-             AC_MSG_WARN(["Warning: libverto lacks verto_cleanup function"]))
-
-#Check for libini_config
-PKG_CHECK_MODULES([LIBINI_CONFIG], [ini_config >= 1.2.0], [have_libini_config=1], [have_libini_config=])
-if test x$have_libini_config = x; then
-    AC_MSG_WARN([Could not find LIBINI_CONFIG headers])
-else
-    INI_CONFIG_CFLAGS="`$PKG_CONFIG --cflags ini_config`"
-    INI_CONFIG_LIBS="`$PKG_CONFIG --libs ini_config`"
-    AC_CHECK_LIB(ini_config, ini_config_file_open, [],
-                 [AC_MSG_WARN([ini_config library must support ini_config_file_open])],
-                 [$INI_CONFIG_LIBS])
-    AC_CHECK_LIB(ini_config, ini_config_augment, [],
-                 [AC_MSG_WARN([ini_config library must support ini_config_augment])],
-                 [$INI_CONFIG_LIBS])
-fi
-
-if test x$have_libini_config = x1; then
-    INI_CFLAGS="$INI_CONFIG_CFLAGS"
-    INI_LIBS="$INI_CONFIG_LIBS"
-else
-    AC_MSG_ERROR([ini_config development packages not available])
-fi
-
-AC_SUBST(INI_LIBS)
-AC_SUBST(INI_CFLAGS)
-
-AC_CHECK_LIB(ref_array, ref_array_destroy, [],
-             [AC_MSG_WARN([ref_array library must support ref_array_destroy])],
-             [$INI_CONFIG_LIBS])
-
-AC_RUN_IFELSE([AC_LANG_SOURCE([[
-/* See: https://pagure.io/SSSD/ding-libs/pull-request/3172 */
-#include <linux/limits.h>
-#include <string.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <ini_configobj.h>
-#include <ini_config.h>
-
-static int write_to_file(char *path, char *text)
-{
-    FILE *f = fopen(path, "w");
-    int bytes = 0;
-    if (f == NULL)
-        return 1;
-
-    bytes = fprintf(f, "%s", text);
-    if (bytes < 0 || (size_t)bytes != strlen(text))
-        return 1;
-
-    return fclose(f);
-}
-
-int main(void)
-{
-    char base_path[PATH_MAX];
-    char augment_path[PATH_MAX];
-
-    char config_base[] =
-        "[section]\n"
-        "key1 = first\n"
-        "key2 = exists\n";
-
-    char config_augment[] =
-        "[section]\n"
-        "key1 = augment\n"
-        "key3 = exists\n";
-
-    char *builddir;
-
-    struct ini_cfgobj *in_cfg, *result_cfg;
-    struct ini_cfgfile *file_ctx;
-
-    uint32_t merge_flags = INI_MS_DETECT | INI_MS_PRESERVE;
-
-    int ret;
-
-    builddir = getenv("builddir");
-    if (builddir == NULL) {
-        builddir = strdup(".");
-    }
-
-    snprintf(base_path, PATH_MAX, "%s/tmp_augment_base.conf", builddir);
-    snprintf(augment_path, PATH_MAX, "%s/tmp_augment_augment.conf", builddir);
-
-    ret = write_to_file(base_path, config_base);
-    if (ret != 0) {
-        ret = 1;
-        goto cleanup;
-    }
-
-    ret = write_to_file(augment_path, config_augment);
-    if (ret != 0) {
-        goto cleanup;
-    }
-
-    /* Match only augment.conf */
-    const char *m_patterns[] = { "^tmp_augment_augment.conf$", NULL };
-
-     /* Match all sections */
-    const char *m_sections[] = { ".*", NULL };
-
-    /* Create config collection */
-    ret = ini_config_create(&in_cfg);
-    if (ret != EOK)
-        goto cleanup;
-
-    /* Open base.conf */
-    ret = ini_config_file_open(base_path, 0, &file_ctx);
-    if (ret != EOK)
-        goto cleanup;
-
-    /* Seed in_cfg with base.conf */
-    ret = ini_config_parse(file_ctx, 1, 0, 0, in_cfg);
-    if (ret != EOK)
-        goto cleanup;
-
-    /* Update base.conf with augment.conf */
-    ret = ini_config_augment(in_cfg,
-                             builddir,
-                             m_patterns,
-                             m_sections,
-                             NULL,
-                             INI_STOP_ON_NONE,
-                             0,
-                             INI_PARSE_NOSPACE|INI_PARSE_NOTAB,
-                             merge_flags,
-                             &result_cfg,
-                             NULL,
-                             NULL);
-    /* We always expect EEXIST due to DETECT being set. */
-    if (ret != EEXIST)
-        goto cleanup;
-
-    ret = 0;
-
-cleanup:
-    remove(base_path);
-    remove(augment_path);
-
-    /* Per autoconf guidelines */
-    if (ret != 0)
-        ret = 1;
-
-    return ret;
-}
-]])]
-,, [AC_MSG_ERROR(["ini_config library must support extended INI_MS_DETECT. See: https://pagure.io/SSSD/ding-libs/pull-request/3172"])])
+m4_include([external/dinglibs.m4])
 
 AX_PTHREAD(,[AC_MSG_ERROR([Could not find Pthreads support])])
 
@@ -280,17 +120,57 @@ AC_CHECK_LIB(gssrpc, gssrpc_xdrmem_create,,
              [$GSSAPI_LIBS $GSSRPC_LIBS])
 AC_SUBST([GSSRPC_LIBS])
 
-WITH_CAP
-if test x$HAVE_CAP != x; then
-    AC_CHECK_FUNC([prctl],,[AC_MSG_ERROR([Failed to find prctl])])
-    AC_CHECK_LIB([cap], [cap_set_proc],[CAP_LIBS=-lcap],
-                 [AC_MSG_ERROR(["Failed to find libcap symbols"])])
-    AC_SUBST([CAP_LIBS])
-    AC_CHECK_HEADERS([sys/capability.h],,
-                     [AC_MSG_ERROR([Could not find libcap headers])])
-fi
-
 AC_CHECK_FUNCS([__secure_getenv secure_getenv])
+
+AC_ARG_ENABLE([only-gss-module],
+              [AC_HELP_STRING([--enable-only-gss-module],
+                              [Whether to build only the gss module code [no]]
+                             )],
+              [only_gss_module=$enableval],
+              [only_gss_module=no])
+
+WITH_INITSCRIPT
+
+if test x$only_gss_module != xyes; then
+    WITH_POPT
+
+    PKG_CHECK_MODULES([VERTO], [libverto >= 0.2.2],
+      [
+        AC_CHECK_LIB(verto, verto_free,,
+            AC_MSG_ERROR(["Error: libverto is not found or lacks verto_free"]))
+        AC_CHECK_FUNCS(verto_cleanup,,
+            AC_MSG_WARN(["Warning: libverto lacks verto_cleanup function"]))
+      ], [
+        AC_MSG_ERROR([Could not find VERTO headers])
+      ])
+
+
+    WITH_LIBINI_CONFIG
+    WITH_REF_ARRAY
+
+    INI_CFLAGS="$INI_CONFIG_CFLAGS"
+    INI_LIBS="$INI_CONFIG_LIBS"
+    AC_SUBST(INI_LIBS)
+    AC_SUBST(INI_CFLAGS)
+
+    WITH_CAP
+    if test x$HAVE_CAP != x; then
+        AC_CHECK_FUNC([prctl],,[AC_MSG_ERROR([Failed to find prctl])])
+        AC_CHECK_LIB([cap], [cap_set_proc],[CAP_LIBS=-lcap],
+                     [AC_MSG_ERROR(["Failed to find libcap symbols"])])
+        AC_SUBST([CAP_LIBS])
+        AC_CHECK_HEADERS([sys/capability.h],,
+                         [AC_MSG_ERROR([Could not find libcap headers])])
+    fi
+
+    if test x$initscript = xsystemd; then
+        WITH_SYSTEMD_UNIT_DIR
+    fi
+    if test x$HAVE_SYSTEMD_UNIT != x; then
+        AM_CHECK_SYSTEMD
+    fi
+fi
+AM_CONDITIONAL([BUILD_PROXY], [test x$only_gss_module != xyes ])
 
 AC_ARG_ENABLE([always-interpose],
               [AC_HELP_STRING([--enable-always-interpose],
@@ -304,9 +184,8 @@ else
     AC_DEFINE_UNQUOTED(GSS_ALWAYS_INTERPOSE, false, [Interposer not enabled by default])
 fi
 
-WITH_INITSCRIPT
-if test x$initscript = xsystemd; then
-    WITH_SYSTEMD_UNIT_DIR
+if test x$HAVE_SELINUX != x; then
+    AM_CHECK_SELINUX
 fi
 
 if test x$HAVE_MANPAGES != x; then
@@ -318,14 +197,6 @@ if test x$HAVE_MANPAGES != x; then
 fi
 AM_CONDITIONAL([HAVE_MANPAGES], [test "x$HAVE_MANPAGES" != "x"])
 AM_CONDITIONAL([HAVE_PO4A], [test "x$PO4A" != "xno"])
-
-if test x$HAVE_SELINUX != x; then
-    AM_CHECK_SELINUX
-fi
-
-if test x$HAVE_SYSTEMD_UNIT != x; then
-    AM_CHECK_SYSTEMD
-fi
 
 AC_PATH_PROG([DOXYGEN], [doxygen], [false])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test x$DOXYGEN != xfalse ])
