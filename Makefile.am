@@ -55,16 +55,20 @@ dist_pkgconfig_DATA =
 
 ACLOCAL_AMFLAGS = -I m4 -I .
 
+if BUILD_PROXY
 sbin_PROGRAMS = \
     gssproxy
 
 check_PROGRAMS = \
     cli_srv_comm interposetest
+endif
 
 gssplib_LTLIBRARIES = \
     proxymech.la
 
+if BUILD_PROXY
 dist_noinst_SCRIPTS = tests/scripts/dlopen.sh
+endif
 
 dist_noinst_DATA =
 
@@ -79,16 +83,23 @@ AM_CPPFLAGS += \
     -I$(srcdir) \
     -Iinclude \
     -I. \
-    $(POPT_CFLAGS) \
     $(GSSAPI_CFLAGS) \
-    $(INI_CFLAGS) \
     -DLIBDIR=\"$(libdir)\" \
     -DVARDIR=\"$(localstatedir)\" \
     -DSHLIBEXT=\"$(SHLIBEXT)\" \
     -DSYSCONFDIR=\"$(sysconfdir)\" \
     -DLOCALEDIR=\"$(localedir)\"
 
-GSS_PROXY_LIBS = $(POPT_LIBS) $(KRB5_LIBS) $(VERTO_LIBS) $(INI_LIBS) $(GSSAPI_LIBS) $(GSSRPC_LIBS)
+if BUILD_PROXY
+    AM_CPPFLAGS += \
+    	$(POPT_CFLAGS) \
+	$(INI_CFLAGS)
+endif
+
+GSS_PROXY_LIBS = $(KRB5_LIBS) $(GSSAPI_LIBS) $(GSSRPC_LIBS)
+
+if BUILD_PROXY
+    GSS_PROXY_LIBS += $(POPT_LIBS) $(VERTO_LIBS) $(INI_LIBS)
 
 if BUILD_SELINUX
     GSS_PROXY_LIBS += $(SELINUX_LIBS)
@@ -96,6 +107,8 @@ endif
 
 if HAVE_CAP
     GSS_PROXY_LIBS += $(CAP_LIBS)
+endif
+
 endif
 
 GP_RPCGEN_OBJ = rpcgen/gp_rpc_xdr.c rpcgen/gss_proxy_xdr.c rpcgen/gp_xdr.c
@@ -153,6 +166,7 @@ dist_noinst_HEADERS = \
 # Program Binaries #
 ####################
 
+if BUILD_PROXY
 gssproxy_SOURCES = \
     src/gp_config.c \
     src/gp_init.c \
@@ -180,6 +194,7 @@ gssproxy_SOURCES = \
     src/gp_rpc_wrap_size_limit.c \
     src/extract_ccache.c \
     src/gssproxy.c
+endif
 
 proxymech_la_SOURCES = \
     src/gp_conv.c \
@@ -192,6 +207,7 @@ proxymech_la_LDFLAGS = \
     -avoid-version \
     -module
 
+if BUILD_PROXY
 cli_srv_comm_SOURCES = \
     src/gp_conv.c \
     src/gp_debug.c \
@@ -215,11 +231,14 @@ cli_srv_comm_LDADD = \
 
 interposetest_LDADD = \
     $(GSS_PROXY_LIBS)
+endif
 
 dist_noinst_DATA += \
     m4
 
+if BUILD_PROXY
 noinst_PROGRAMS = cli_srv_comm interposetest
+endif
 
 ################
 # TRANSLATIONS #
@@ -234,10 +253,12 @@ endif
 # Installation Extras #
 #######################
 
+if BUILD_PROXY
 systemdunit_DATA =
 if HAVE_SYSTEMD_UNIT
     systemdunit_DATA += \
         systemd/gssproxy.service
+endif
 endif
 
 noinst_DATA = \
@@ -246,6 +267,7 @@ noinst_DATA = \
     examples/80-httpd.conf \
     examples/99-network-fs-clients.conf \
     examples/mech
+
 
 edit_cmd = $(SED) \
     -e 's|@sbindir[@]|$(sbindir)|g' \
@@ -304,8 +326,10 @@ endif
 
 install-exec-hook: installgsspdirs
 	mkdir -p doc $(DESTDIR)/$(docdir); cp -a doc $(DESTDIR)/$(docdir)/
+if BUILD_PROXY
 if HAVE_SYSTEMD_UNIT
 	mkdir -p $(DESTDIR)$(systemdunitdir)
+endif
 endif
 
 clean-local:
