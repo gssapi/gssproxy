@@ -54,9 +54,19 @@
                 <term>b) gssproxy environment variable</term>
                 <listitem>
                     <para>
-                        The interposer plugin will not forward to the
-                        gssproxy daemon unless the environment variable
-                        named <emphasis>GSS_USE_PROXY=yes</emphasis> is set.
+                        With default build options the interposer plugin will
+                        not forward to the gssproxy daemon unless the
+                        environment variable named <emphasis>GSS_USE_PROXY=yes
+                        </emphasis> is set.
+                    </para>
+                    <para>
+                        This behavior default may be controlled at build time
+                        and can be set to always forward unless the environment
+                        variable is set to <emphasis>GSS_USE_PROXY=no
+                        </emphasis>
+                    </para>
+                    <para>The current setting for always forwarding is:
+                    @GPP_ALWAYS_FORWARD@
                     </para>
                 </listitem>
             </varlistentry>

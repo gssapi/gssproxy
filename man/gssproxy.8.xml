@@ -139,6 +139,20 @@
             </varlistentry>
             <varlistentry>
                 <term>
+                    <option>-u</option>,<option>--userproxy</option>
+                </term>
+                <listitem>
+                    <para>
+                        Run gssproxy in userproxy mode. This mode ignores
+                        configuration files, and listens on a socket in
+                        $XDG_RUNTIME_DIR/gssproxy/default.sock instead.
+                        See the project documentation for more information
+                        on the behavior of this mode.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
                     <option>-s</option>,<option>--socket</option>
                 </term>
                 <listitem>
