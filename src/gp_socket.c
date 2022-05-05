@@ -18,6 +18,10 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#ifdef HAVE_SYSTEMD_DAEMON
+#include <systemd/sd-daemon.h>
+#endif
+
 #define FRAGMENT_BIT (1 << 31)
 
 struct unix_sock_conn {
@@ -170,6 +174,55 @@ void free_unix_socket(verto_ctx *ctx UNUSED, verto_ev *ev)
     sock_ctx = verto_get_private(ev);
     free(sock_ctx);
 }
+
+#ifdef HAVE_SYSTEMD_DAEMON
+int init_activation_socket(struct gssproxy_ctx *gpctx,
+                           struct gp_sock_ctx **sock_ctx)
+{
+    int num_fds;
+    int ret = 0;
+
+    num_fds = sd_listen_fds(0);
+    if (num_fds > 1) {
+        GPDEBUG("Received too many socket from systemd\n");
+        ret = E2BIG;
+    } else if (num_fds == 1) {
+        struct gp_sock_ctx *_sock_ctx;
+        int fd = -1;
+
+        _sock_ctx = calloc(1, sizeof(struct gp_sock_ctx));
+        if (!_sock_ctx) {
+            ret = ENOMEM;
+            goto done;
+        }
+
+        fd = SD_LISTEN_FDS_START + 0;
+
+        ret = set_status_flags(fd, O_NONBLOCK);
+        if (ret != 0) {
+            GPDEBUG("Failed to set O_NONBLOCK on %d!\n", fd);
+            safefree(_sock_ctx);
+            goto done;
+        }
+
+        ret = set_fd_flags(fd, FD_CLOEXEC);
+        if (ret != 0) {
+            GPDEBUG("Failed to set FD_CLOEXEC on %d!\n", fd);
+            safefree(_sock_ctx);
+            goto done;
+        }
+
+        _sock_ctx->gpctx = gpctx;
+        _sock_ctx->socket = "(Activated Socket)";
+        _sock_ctx->fd = fd;
+
+        *sock_ctx = _sock_ctx;
+    }
+
+done:
+    return ret;
+}
+#endif
 
 struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
                                      const char *file_name)

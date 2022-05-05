@@ -36,12 +36,26 @@ find_service_by_name(struct gp_config *cfg, const char *name)
     return ret;
 }
 
-static verto_ev *setup_socket(char *sock_name, verto_ctx *vctx)
+static verto_ev *setup_socket(char *sock_name, verto_ctx *vctx,
+                              bool with_activation)
 {
-    struct gp_sock_ctx *sock_ctx;
+    struct gp_sock_ctx *sock_ctx = NULL;
     verto_ev *ev;
 
-    sock_ctx = init_unix_socket(gpctx, sock_name);
+#ifdef HAVE_SYSTEMD_DAEMON
+    if (with_activation) {
+        int ret;
+        /* try to se if available, fallback otherwise */
+        ret = init_activation_socket(gpctx, &sock_ctx);
+        if (ret) {
+            return NULL;
+        }
+    }
+#endif
+    if (!sock_ctx) {
+        /* no activation, try regular socket creation */
+        sock_ctx = init_unix_socket(gpctx, sock_name);
+    }
     if (!sock_ctx) {
         return NULL;
     }
@@ -65,7 +79,7 @@ static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
 
     /* init main socket */
     if (!old_config) {
-        ev = setup_socket(gpctx->config->socket_name, vctx);
+        ev = setup_socket(gpctx->config->socket_name, vctx, false);
         if (!ev) {
             return 1;
         }
@@ -73,7 +87,7 @@ static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
         gpctx->sock_ev = ev;
     } else if (strcmp(old_config->socket_name,
                       gpctx->config->socket_name) != 0) {
-        ev = setup_socket(gpctx->config->socket_name, vctx);
+        ev = setup_socket(gpctx->config->socket_name, vctx, false);
         if (!ev) {
             return 1;
         }
@@ -112,13 +126,27 @@ static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
     for (i = 0; i < gpctx->config->num_svcs; i++) {
         svc = gpctx->config->svcs[i];
         if (svc->socket != NULL && svc->ev == NULL) {
-            ev = setup_socket(svc->socket, vctx);
+            ev = setup_socket(svc->socket, vctx, false);
             if (!ev) {
                 return 1;
             }
             svc->ev = ev;
         }
     }
+    return 0;
+}
+
+static int init_userproxy_socket(verto_ctx *vctx)
+{
+    verto_ev *ev;
+
+    /* init main socket */
+    ev = setup_socket(gpctx->config->socket_name, vctx, true);
+    if (!ev) {
+        return 1;
+    }
+
+    gpctx->sock_ev = ev;
     return 0;
 }
 
@@ -291,7 +319,11 @@ int main(int argc, const char *argv[])
         }
     }
 
-    ret = init_sockets(vctx, NULL);
+    if (opt_userproxy) {
+        ret = init_userproxy_socket(vctx);
+    } else {
+        ret = init_sockets(vctx, NULL);
+    }
     if (ret != 0) {
         goto cleanup;
     }

@@ -115,6 +115,10 @@ int clear_bound_caps(void);
 
 /* from gp_socket.c */
 void free_unix_socket(verto_ctx *ctx, verto_ev *ev);
+#ifdef HAVE_SYSTEMD_DAEMON
+int init_activation_socket(struct gssproxy_ctx *gpctx,
+                           struct gp_sock_ctx **sock_ctx);
+#endif
 struct gp_sock_ctx *init_unix_socket(struct gssproxy_ctx *gpctx,
                                      const char *file_name);
 void accept_sock_conn(verto_ctx *vctx, verto_ev *ev);
