@@ -165,8 +165,6 @@ if test x$only_gss_module != xyes; then
 
     if test x$initscript = xsystemd; then
         WITH_SYSTEMD_UNIT_DIR
-    fi
-    if test x$HAVE_SYSTEMD_UNIT != x; then
         AM_CHECK_SYSTEMD
     fi
 fi
