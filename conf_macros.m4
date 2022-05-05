@@ -119,6 +119,25 @@ AC_DEFUN([WITH_SYSTEMD_UNIT_DIR],
   AC_SUBST(systemdunitdir)
   ])
 
+dnl A macro to configure the directory to install the systemd user unit files to
+AC_DEFUN([WITH_SYSTEMD_USER_UNIT_DIR],
+  [ AC_ARG_WITH([systemduserunitdir],
+                [ AC_HELP_STRING([--with-systemduserunitdir=DIR],
+                                 [Directory for systemd user service files [Auto]]
+                                ),
+                ],
+               )
+  if test x"$with_systemduserunitdir" != x; then
+    systemduserunitdir=$with_systemduserunitdir
+  else
+    systemduserunitdir=$($PKG_CONFIG --variable=systemduserunitdir systemd)
+    if test x"$systemduserunitdir" = x; then
+      AC_MSG_ERROR([Could not detect systemd user unit directory])
+    fi
+  fi
+  AC_SUBST(systemduserunitdir)
+  ])
+
 AC_DEFUN([WITH_MANPAGES],
   [ AC_ARG_WITH([manpages],
                 [AC_HELP_STRING([--with-manpages],

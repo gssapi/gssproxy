@@ -1,0 +1,12 @@
+[Unit]
+Description=GSS User Proxy
+Documentation=man:gssproxy(8)
+
+[Service]
+Type=forking
+StandardError=journal
+ExecStart=@sbindir@/gssproxy -D -u
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
