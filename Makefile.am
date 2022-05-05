@@ -22,6 +22,7 @@ localedir = @localedir@
 
 ccpath = @ccpath@
 systemdunitdir = @systemdunitdir@
+systemduserunitdir = @systemduserunitdir@
 examplesdir= @datarootdir@/examples
 logpath = @logpath@
 pubconfpath = @pubconfpath@
@@ -32,7 +33,8 @@ gpclidir = @gpstatedir@/clients
 
 
 AM_DISTCHECK_CONFIGURE_FLAGS = \
-    --with-systemdunitdir='$$(prefix)/$(systemdunitdir)'
+    --with-systemdunitdir='$$(prefix)/$(systemdunitdir)' \
+    --with-systemduserunitdir='$$(prefix)/$(systemduserunitdir)'
 
 AM_CPPFLAGS =
 AM_CFLAGS =
@@ -255,10 +257,17 @@ endif
 
 if BUILD_PROXY
 systemdunit_DATA =
+systemduserunit_DATA =
+
 if HAVE_SYSTEMD_UNIT
-    systemdunit_DATA += \
-        systemd/gssproxy.service
+systemdunit_DATA += \
+    systemd/gssproxy.service
+
+systemduserunit_DATA += \
+    systemd/gssuserproxy.service \
+    systemd/gssuserproxy.socket
 endif
+
 endif
 
 noinst_DATA = \
@@ -284,6 +293,8 @@ replace_script = \
 
 EXTRA_DIST = \
     systemd/gssproxy.service.in \
+    systemd/gssuserproxy.service.in \
+    systemd/gssuserproxy.socket.in \
     examples/gssproxy.conf.in \
     examples/24-nfs-server.conf.in \
     examples/80-httpd.conf.in \
@@ -291,6 +302,14 @@ EXTRA_DIST = \
     examples/mech.in
 
 systemd/gssproxy.service: systemd/gssproxy.service.in Makefile
+	@$(MKDIR_P) systemd/
+	$(replace_script)
+
+systemd/gssuserproxy.service: systemd/gssuserproxy.service.in Makefile
+	@$(MKDIR_P) systemd/
+	$(replace_script)
+
+systemd/gssuserproxy.socket: systemd/gssuserproxy.socket.in Makefile
 	@$(MKDIR_P) systemd/
 	$(replace_script)
 
@@ -329,6 +348,7 @@ install-exec-hook: installgsspdirs
 if BUILD_PROXY
 if HAVE_SYSTEMD_UNIT
 	mkdir -p $(DESTDIR)$(systemdunitdir)
+	mkdir -p $(DESTDIR)$(systemduserunitdir)
 endif
 endif
 
@@ -342,7 +362,9 @@ CLEANFILES = *.X */*.X */*/*.X \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
     examples/99-network-fs-clients.conf \
-    systemd/gssproxy.service
+    systemd/gssproxy.service \
+    systemd/gssuserproxy.service \
+    systemd/gssuserproxy.socket
 
 check: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py $(CHECKARGS)

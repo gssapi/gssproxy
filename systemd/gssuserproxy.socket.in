@@ -1,0 +1,11 @@
+[Unit]
+Description=GSS User Proxy
+
+[Socket]
+Priority=6
+Backlog=5
+ListenStream=%t/gssproxy/default.sock
+SocketMode=0600
+
+[Install]
+WantedBy=sockets.target
