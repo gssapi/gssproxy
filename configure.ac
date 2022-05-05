@@ -180,9 +180,12 @@ AC_ARG_ENABLE([always-interpose],
               [always_interpose=no])
 if test x$always_interpose != xno; then
     AC_DEFINE_UNQUOTED(GSS_ALWAYS_INTERPOSE, true, [Interposer always enabled by default])
+    always_forward=true
 else
     AC_DEFINE_UNQUOTED(GSS_ALWAYS_INTERPOSE, false, [Interposer not enabled by default])
+    always_forward=false
 fi
+AC_SUBST(GPP_ALWAYS_FORWARD, $always_forward)
 
 if test x$HAVE_SELINUX != x; then
     AM_CHECK_SELINUX
