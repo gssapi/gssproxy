@@ -43,6 +43,23 @@ AC_DEFUN([WITH_PUBCONF_PATH],
     AC_DEFINE_UNQUOTED(PUBCONF_PATH, "$config_pubconfpath", [Where to store pubconf files for gssproxy])
   ])
 
+AC_DEFUN([WITH_GSSCONF_PATH],
+  [ AC_ARG_WITH([gssconf-path],
+                [AC_HELP_STRING([--with-gssconf-path=PATH],
+                                [Where to store gss mech config [/etc/gss/mech.d]]
+                               )
+                ]
+               )
+    config_gssconfpath="\"SYSCONFDIR\"/gss/mech.d"
+    gssconfpath="${sysconfdir}/gss/mech.d"
+    if test x"$with_gssconf_path" != x; then
+        config_gssconfpath=$with_gssconf_path
+        gssconfpath=$with_gssconf_path
+    fi
+    AC_SUBST(gssconfpath)
+    AC_DEFINE_UNQUOTED(GSSCONF_PATH, "$config_gssconfpath", [Where to store gss mech config])
+  ])
+
 AC_DEFUN([WITH_SOCKET_NAME],
   [ AC_ARG_WITH([socket-name],
                 [AC_HELP_STRING([--with-socket-name=PATH],

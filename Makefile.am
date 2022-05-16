@@ -26,6 +26,7 @@ systemduserunitdir = @systemduserunitdir@
 examplesdir= @datarootdir@/examples
 logpath = @logpath@
 pubconfpath = @pubconfpath@
+gssconfdir = @gssconfpath@
 pkgconfigdir = $(libdir)/pkgconfig
 
 gpstatedir = @gpstatedir@
@@ -255,6 +256,8 @@ endif
 # Installation Extras #
 #######################
 
+gssconf_DATA = examples/proxymech.conf
+
 if BUILD_PROXY
 systemdunit_DATA =
 systemduserunit_DATA =
@@ -274,8 +277,7 @@ noinst_DATA = \
     examples/gssproxy.conf \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
-    examples/99-network-fs-clients.conf \
-    examples/mech
+    examples/99-network-fs-clients.conf
 
 
 edit_cmd = $(SED) \
@@ -299,7 +301,7 @@ EXTRA_DIST = \
     examples/24-nfs-server.conf.in \
     examples/80-httpd.conf.in \
     examples/99-network-fs-clients.conf.in \
-    examples/mech.in
+    examples/proxymech.conf.in
 
 systemd/gssproxy.service: systemd/gssproxy.service.in Makefile
 	@$(MKDIR_P) systemd/
@@ -317,14 +319,13 @@ examples/%.conf: examples/%.conf.in Makefile
 	@$(MKDIR_P) examples/
 	$(replace_script)
 
-examples/mech: examples/mech.in Makefile
-	@$(MKDIR_P) examples/
-	$(replace_script)
-
 installgsspdirs::
 	mkdir -p \
-    $(DESTDIR)$(includedir) \
     $(DESTDIR)$(libdir) \
+    $(DESTDIR)$(gssconfdir)
+if BUILD_PROXY
+	mkdir -p \
+    $(DESTDIR)$(includedir) \
     $(DESTDIR)$(sbindir) \
     $(DESTDIR)$(mandir) \
     $(DESTDIR)$(gsspconfdir) \
@@ -333,6 +334,7 @@ installgsspdirs::
     $(DESTDIR)$(gpstatedir) \
     $(DESTDIR)$(gpclidir) \
     $(DESTDIR)$(pubconfpath)
+endif
 
 if HAVE_DOXYGEN
 docs:
@@ -357,7 +359,7 @@ clean-local:
 	rm -Rf testdir
 
 CLEANFILES = *.X */*.X */*/*.X \
-    examples/mech \
+    examples/proxymech.conf \
     examples/gssproxy.conf \
     examples/24-nfs-server.conf \
     examples/80-httpd.conf \
