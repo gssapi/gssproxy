@@ -55,11 +55,8 @@ mkinstalldirs
 examples/24-nfs-server.conf
 examples/80-httpd.conf
 examples/99-nfs-client.conf
-examples/gssproxy.conf
-examples/mech
+examples/*.conf
 man/gssproxy-mech.8.xml
-proxy/examples/*.conf
-proxy/examples/mech
 testdir/
 tests/__pycache__/
 tests/t_accept
