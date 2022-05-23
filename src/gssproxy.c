@@ -180,6 +180,43 @@ static void hup_handler(verto_ctx *vctx, verto_ev *ev UNUSED)
     return;
 }
 
+void break_loop(verto_ctx *vctx UNUSED, verto_ev *ev)
+{
+    if (ev == gpctx->term_ev) {
+        gpctx->term_ev = NULL;
+    }
+    GPDEBUG("Exiting!\n");
+    gpctx->terminate = true;
+}
+
+static void idle_handler(verto_ctx *vctx)
+{
+    /* we've been called, this means some event just fired,
+     * restart the timeout handler */
+
+    if (gpctx->term_timeout == 0) {
+        /* self termination is disabled */
+        return;
+    }
+
+    verto_del(gpctx->term_ev);
+
+    /* Add self-termination timeout */
+    gpctx->term_ev = verto_add_timeout(vctx, VERTO_EV_FLAG_NONE,
+                                       break_loop, gpctx->term_timeout);
+    if (!gpctx->term_ev) {
+        GPDEBUG("Failed to register timeout event!\n");
+    }
+}
+
+static void do_loop(verto_ctx *vctx)
+{
+    while(gpctx->terminate == false) {
+        verto_run_once(vctx);
+        idle_handler(vctx);
+    }
+}
+
 static void init_event(verto_ctx *vctx UNUSED, verto_ev *ev UNUSED)
 {
     GPDEBUG("Initialization complete.\n");
@@ -195,6 +232,7 @@ int main(int argc, const char *argv[])
     int opt_debug_level = 0;
     int opt_syslog_status = 0;
     int opt_userproxy = 0;
+    int opt_idle_timeout = 1000;
     verto_ctx *vctx;
     verto_ev *ev;
     int wait_fd;
@@ -226,6 +264,8 @@ int main(int argc, const char *argv[])
          _("Enable GSSAPI status logging to syslog"), NULL}, \
         {"version", '\0', POPT_ARG_NONE, &opt_version, 0, \
          _("Print version number and exit"), NULL }, \
+        {"idle-timeout", '\0', POPT_ARG_INT, &opt_idle_timeout, 0, \
+        _("Set idle timeout for user mode (default: 1000s)"), NULL },
         {"extract-ccache", '\0', POPT_ARG_STRING|POPT_ARGFLAG_DOC_HIDDEN, \
          &opt_extract_ccache, 0, \
         _("Extract a gssproxy encrypted ccache"), NULL },
@@ -299,6 +339,8 @@ int main(int argc, const char *argv[])
         write_pid();
     }
 
+    gpctx->term_timeout = opt_idle_timeout * 1000;
+
     vctx = init_event_loop();
     if (!vctx) {
         fprintf(stderr, "Failed to initialize event loop. "
@@ -308,8 +350,8 @@ int main(int argc, const char *argv[])
     }
     gpctx->vctx = vctx;
 
-    /* Add SIGHUP here so that gpctx is in scope for the handler */
     if (!opt_userproxy) {
+        /* Add SIGHUP here so that gpctx is in scope for the handler */
         ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST,
                               hup_handler, SIGHUP);
         if (!ev) {
@@ -366,7 +408,7 @@ int main(int argc, const char *argv[])
         goto cleanup;
     }
 
-    verto_run(vctx);
+    do_loop(vctx);
     verto_free(vctx);
 
     gp_workers_free(gpctx->workers);

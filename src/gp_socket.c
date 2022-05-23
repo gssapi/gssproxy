@@ -217,6 +217,9 @@ int init_activation_socket(struct gssproxy_ctx *gpctx,
         _sock_ctx->fd = fd;
 
         *sock_ctx = _sock_ctx;
+    } else {
+        /* disable self termination as we are not socket activated */
+        gpctx->term_timeout = 0;
     }
 
 done:

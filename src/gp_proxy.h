@@ -74,6 +74,10 @@ struct gssproxy_ctx {
     struct gp_workers *workers;
     verto_ctx *vctx;
     verto_ev *sock_ev;      /* default socket event */
+
+    bool terminate;     /* program runs while this is false */
+    time_t term_timeout;
+    verto_ev *term_ev; /* termination ev in user mode */
 };
 
 struct gp_sock_ctx {
@@ -105,6 +109,7 @@ void init_server(bool daemonize, int userproxy, int *wait_fd);
 void init_done(int wait_fd);
 void fini_server(void);
 verto_ctx *init_event_loop(void);
+void break_loop(verto_ctx *, verto_ev *);
 void init_proc_nfsd(struct gp_config *cfg);
 void write_pid(void);
 int drop_privs(struct gp_config *cfg);
