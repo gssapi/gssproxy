@@ -57,6 +57,13 @@ check_PROGRAMS = \
     t_setcredopt \
     $(NULL)
 
+if HAVE_SYSTEMD_DAEMON
+userproxytest_SOURCES = \
+    userproxytest.c
+
+    check_PROGRAMS += userproxytest
+endif
+
 noinst_PROGRAMS = $(check_PROGRAMS)
 
 noinst_HEADERS = \

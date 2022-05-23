@@ -370,6 +370,10 @@ CLEANFILES = *.X */*.X */*/*.X \
 
 check: all $(check_PROGRAMS)
 	$(srcdir)/tests/runtests.py $(CHECKARGS)
+if HAVE_SYSTEMD_DAEMON
+	mkdir -p testdir
+	tests/userproxytest
+endif
 
 tests: check
 
