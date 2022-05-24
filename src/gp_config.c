@@ -1219,9 +1219,13 @@ struct gp_config *userproxy_config(char *socket_name, int opt_daemonize)
     }
     cfg->num_svcs++;
 
-
     cfg->svcs[0]->name = strdup(GP_USER_PROXY_SERVICE);
     if (!cfg->svcs[0]->name) {
+        ret = ENOMEM;
+        goto done;
+    }
+    cfg->svcs[0]->socket = strdup(cfg->socket_name);
+    if (!cfg->svcs[0]->socket) {
         ret = ENOMEM;
         goto done;
     }

@@ -177,6 +177,7 @@ void free_unix_socket(verto_ctx *ctx UNUSED, verto_ev *ev)
 
 #ifdef HAVE_SYSTEMD_DAEMON
 int init_activation_socket(struct gssproxy_ctx *gpctx,
+                           const char *sock_name,
                            struct gp_sock_ctx **sock_ctx)
 {
     int num_fds;
@@ -213,7 +214,7 @@ int init_activation_socket(struct gssproxy_ctx *gpctx,
         }
 
         _sock_ctx->gpctx = gpctx;
-        _sock_ctx->socket = "(Activated Socket)";
+        _sock_ctx->socket = sock_name;
         _sock_ctx->fd = fd;
 
         *sock_ctx = _sock_ctx;

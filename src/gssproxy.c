@@ -46,7 +46,7 @@ static verto_ev *setup_socket(char *sock_name, verto_ctx *vctx,
     if (with_activation) {
         int ret;
         /* try to se if available, fallback otherwise */
-        ret = init_activation_socket(gpctx, &sock_ctx);
+        ret = init_activation_socket(gpctx, sock_name, &sock_ctx);
         if (ret) {
             return NULL;
         }
