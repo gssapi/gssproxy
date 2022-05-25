@@ -83,6 +83,10 @@ struct gssproxy_ctx {
 
     time_t term_timeout;
     verto_ev *term_ev; /* termination ev in user mode */
+
+    ssize_t readstats;
+    ssize_t writestats;
+    time_t last_activity;
 };
 
 struct gp_sock_ctx {
@@ -127,6 +131,8 @@ int clear_bound_caps(void);
 
 /* from gp_mgmt.c */
 void idle_handler(struct gssproxy_ctx *gpctx);
+void gp_activity_accounting(struct gssproxy_ctx *gpctx,
+                            ssize_t rb, ssize_t wb);
 
 /* from gp_socket.c */
 void free_unix_socket(verto_ctx *ctx, verto_ev *ev);

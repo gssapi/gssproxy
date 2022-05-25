@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#define GP_INFO_DEBUG_LVL 1
+
 extern int gp_debug;
 
 void gp_debug_toggle(int);
