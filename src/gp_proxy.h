@@ -117,12 +117,16 @@ int init_sockets(struct gssproxy_ctx *gpctx, struct gp_config *old_config);
 int init_userproxy_socket(struct gssproxy_ctx *gpctx);
 void init_event_loop(struct gssproxy_ctx *gpctx);
 void init_proc_nfsd(struct gp_config *cfg);
+int init_event_fini(struct gssproxy_ctx *gpctx);
 void write_pid(void);
 int drop_privs(struct gp_config *cfg);
 #ifdef HAVE_CAP
 int drop_caps(void);
 int clear_bound_caps(void);
 #endif
+
+/* from gp_mgmt.c */
+void idle_handler(struct gssproxy_ctx *gpctx);
 
 /* from gp_socket.c */
 void free_unix_socket(verto_ctx *ctx, verto_ev *ev);

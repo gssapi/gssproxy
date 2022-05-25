@@ -344,6 +344,33 @@ fail:
     }
 }
 
+/* Schedule an event to run as soon as the event loop is started
+ * This is also useful in debugging to know that all initialization
+ * is done. */
+static void delayed_init(verto_ctx *vctx UNUSED, verto_ev *ev)
+{
+    struct gssproxy_ctx *gpctx;
+
+    GPDEBUG("Initialization complete.\n");
+
+    gpctx = verto_get_private(ev);
+    idle_handler(gpctx);
+}
+
+int init_event_fini(struct gssproxy_ctx *gpctx)
+{
+    verto_ev *ev;
+
+    ev = verto_add_timeout(gpctx->vctx, VERTO_EV_FLAG_NONE, delayed_init, 1);
+    if (!ev) {
+        fprintf(stderr, "Failed to register delayed_init event!\n");
+        return EXIT_FAILURE;
+    }
+    verto_set_private(ev, gpctx, NULL);
+
+    return 0;
+}
+
 void init_proc_nfsd(struct gp_config *cfg)
 {
     char buf[] = "1";
