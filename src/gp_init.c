@@ -113,6 +113,12 @@ void fini_server(void)
     closelog();
 }
 
+static void break_loop(verto_ctx *vctx, verto_ev *ev UNUSED)
+{
+    GPDEBUG("Exiting after receiving a signal\n");
+    verto_break(vctx);
+}
+
 verto_ctx *init_event_loop(void)
 {
     verto_ctx *vctx;

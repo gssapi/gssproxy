@@ -180,13 +180,11 @@ static void hup_handler(verto_ctx *vctx, verto_ev *ev UNUSED)
     return;
 }
 
-void break_loop(verto_ctx *vctx UNUSED, verto_ev *ev)
+static void idle_terminate(verto_ctx *vctx, verto_ev *ev UNUSED)
 {
-    if (ev == gpctx->term_ev) {
-        gpctx->term_ev = NULL;
-    }
-    GPDEBUG("Exiting!\n");
-    gpctx->terminate = true;
+    GPDEBUG("Terminating, after idling for %ld seconds!\n",
+            (long)gpctx->term_timeout/1000);
+    verto_break(vctx);
 }
 
 static void idle_handler(verto_ctx *vctx)
@@ -203,23 +201,16 @@ static void idle_handler(verto_ctx *vctx)
 
     /* Add self-termination timeout */
     gpctx->term_ev = verto_add_timeout(vctx, VERTO_EV_FLAG_NONE,
-                                       break_loop, gpctx->term_timeout);
+                                       idle_terminate, gpctx->term_timeout);
     if (!gpctx->term_ev) {
         GPDEBUG("Failed to register timeout event!\n");
     }
 }
 
-static void do_loop(verto_ctx *vctx)
-{
-    while(gpctx->terminate == false) {
-        verto_run_once(vctx);
-        idle_handler(vctx);
-    }
-}
-
-static void init_event(verto_ctx *vctx UNUSED, verto_ev *ev UNUSED)
+static void init_event(verto_ctx *vctx, verto_ev *ev UNUSED)
 {
     GPDEBUG("Initialization complete.\n");
+    idle_handler(vctx);
 }
 
 int main(int argc, const char *argv[])
@@ -408,7 +399,7 @@ int main(int argc, const char *argv[])
         goto cleanup;
     }
 
-    do_loop(vctx);
+    verto_run(vctx);
     verto_free(vctx);
 
     gp_workers_free(gpctx->workers);
