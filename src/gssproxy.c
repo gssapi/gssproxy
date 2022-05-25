@@ -7,178 +7,10 @@
 #include <signal.h>
 #include <string.h>
 
-const int vflags =
-    VERTO_EV_FLAG_PERSIST |
-    VERTO_EV_FLAG_IO_READ |
-    VERTO_EV_FLAG_IO_CLOSE_FD;
-
-char *opt_config_file = NULL;
-char *opt_config_dir = NULL;
-char *opt_config_socket = NULL;
 char *opt_extract_ccache = NULL;
 char *opt_dest_ccache = NULL;
-int opt_daemon = 0;
 
 struct gssproxy_ctx *gpctx;
-
-static struct gp_service *
-find_service_by_name(struct gp_config *cfg, const char *name)
-{
-    int i;
-    struct gp_service *ret = NULL;
-
-    for (i = 0; i < cfg->num_svcs; i++) {
-        if (strcmp(cfg->svcs[i]->name, name) == 0) {
-            ret = cfg->svcs[i];
-            break;
-        }
-    }
-    return ret;
-}
-
-static verto_ev *setup_socket(char *sock_name, verto_ctx *vctx,
-                              bool with_activation)
-{
-    struct gp_sock_ctx *sock_ctx = NULL;
-    verto_ev *ev;
-
-#ifdef HAVE_SYSTEMD_DAEMON
-    if (with_activation) {
-        int ret;
-        /* try to se if available, fallback otherwise */
-        ret = init_activation_socket(gpctx, sock_name, &sock_ctx);
-        if (ret) {
-            return NULL;
-        }
-    }
-#endif
-    if (!sock_ctx) {
-        /* no activation, try regular socket creation */
-        sock_ctx = init_unix_socket(gpctx, sock_name);
-    }
-    if (!sock_ctx) {
-        return NULL;
-    }
-
-    ev = verto_add_io(vctx, vflags, accept_sock_conn, sock_ctx->fd);
-    if (!ev) {
-        free(sock_ctx);
-        return NULL;
-    }
-
-    verto_set_private(ev, sock_ctx, free_unix_socket);
-    return ev;
-}
-
-static int init_sockets(verto_ctx *vctx, struct gp_config *old_config)
-{
-    int i;
-    struct gp_sock_ctx *sock_ctx;
-    verto_ev *ev;
-    struct gp_service *svc;
-
-    /* init main socket */
-    if (!old_config) {
-        ev = setup_socket(gpctx->config->socket_name, vctx, false);
-        if (!ev) {
-            return 1;
-        }
-
-        gpctx->sock_ev = ev;
-    } else if (strcmp(old_config->socket_name,
-                      gpctx->config->socket_name) != 0) {
-        ev = setup_socket(gpctx->config->socket_name, vctx, false);
-        if (!ev) {
-            return 1;
-        }
-
-        verto_del(gpctx->sock_ev);
-        gpctx->sock_ev = ev;
-    } else {
-        /* free_config will erase the socket name; update it accordingly */
-        sock_ctx = verto_get_private(gpctx->sock_ev);
-        sock_ctx->socket = gpctx->config->socket_name;
-    }
-
-    /* propagate any sockets that shouldn't change */
-    if (old_config) {
-        for (i = 0; i < old_config->num_svcs; i++) {
-            if (old_config->svcs[i]->ev) {
-                svc = find_service_by_name(gpctx->config,
-                                           old_config->svcs[i]->name);
-                if (svc &&
-                    ((svc->socket == old_config->svcs[i]->socket) ||
-                     ((svc->socket != NULL) &&
-                      (old_config->svcs[i]->socket != NULL) &&
-                      strcmp(svc->socket,
-                             old_config->svcs[i]->socket) == 0))) {
-                    svc->ev = old_config->svcs[i]->ev;
-                    sock_ctx = verto_get_private(svc->ev);
-                    sock_ctx->socket = svc->socket;
-                } else {
-                    verto_del(old_config->svcs[i]->ev);
-                }
-            }
-        }
-    }
-
-    /* init all other sockets */
-    for (i = 0; i < gpctx->config->num_svcs; i++) {
-        svc = gpctx->config->svcs[i];
-        if (svc->socket != NULL && svc->ev == NULL) {
-            ev = setup_socket(svc->socket, vctx, false);
-            if (!ev) {
-                return 1;
-            }
-            svc->ev = ev;
-        }
-    }
-    return 0;
-}
-
-static int init_userproxy_socket(verto_ctx *vctx)
-{
-    verto_ev *ev;
-
-    /* init main socket */
-    ev = setup_socket(gpctx->config->socket_name, vctx, true);
-    if (!ev) {
-        return 1;
-    }
-
-    gpctx->sock_ev = ev;
-    return 0;
-}
-
-static void hup_handler(verto_ctx *vctx, verto_ev *ev UNUSED)
-{
-    int ret;
-    struct gp_config *new_config, *old_config;
-
-    GPDEBUG("Received SIGHUP; re-reading config.\n");
-    new_config = read_config(opt_config_file, opt_config_dir,
-                             opt_config_socket, opt_daemon);
-    if (!new_config) {
-        GPERROR("Error reading new configuration on SIGHUP; keeping old "
-                "configuration instead!\n");
-        return;
-    }
-    old_config = gpctx->config;
-    gpctx->config = new_config;
-
-    ret = init_sockets(vctx, old_config);
-    if (ret != 0) {
-        exit(ret);
-    }
-
-    /* conditionally reload kernel interface */
-    init_proc_nfsd(gpctx->config);
-
-    free_config(&old_config);
-
-    GPDEBUG("New config loaded successfully.\n");
-    return;
-}
 
 static void idle_terminate(verto_ctx *vctx, verto_ev *ev UNUSED)
 {
@@ -217,6 +49,10 @@ int main(int argc, const char *argv[])
 {
     int opt;
     poptContext pc;
+    char *opt_config_file = NULL;
+    char *opt_config_dir = NULL;
+    char *opt_config_socket = NULL;
+    int opt_daemon = 0;
     int opt_interactive = 0;
     int opt_version = 0;
     int opt_debug = 0;
@@ -224,7 +60,6 @@ int main(int argc, const char *argv[])
     int opt_syslog_status = 0;
     int opt_userproxy = 0;
     int opt_idle_timeout = 1000;
-    verto_ctx *vctx;
     verto_ev *ev;
     int wait_fd;
     int ret = -1;
@@ -310,14 +145,20 @@ int main(int argc, const char *argv[])
     }
 
     gpctx = calloc(1, sizeof(struct gssproxy_ctx));
+    gpctx->config_file = opt_config_file;
+    gpctx->config_dir = opt_config_dir;
+    gpctx->config_socket = opt_config_socket;
+    gpctx->daemonize = opt_daemon;
 
     if (opt_userproxy) {
-        gpctx->config = userproxy_config(opt_config_socket, opt_daemon);
+        gpctx->userproxymode = true;
+        gpctx->config = userproxy_config(gpctx->config_socket,
+                                         gpctx->daemonize);
     } else {
-        gpctx->config = read_config(opt_config_file,
-                                    opt_config_dir,
-                                    opt_config_socket,
-                                    opt_daemon);
+        gpctx->config = read_config(gpctx->config_file,
+                                    gpctx->config_dir,
+                                    gpctx->config_socket,
+                                    gpctx->daemonize);
     }
     if (!gpctx->config) {
         ret = EXIT_FAILURE;
@@ -326,36 +167,24 @@ int main(int argc, const char *argv[])
 
     init_server(gpctx->config->daemonize, opt_userproxy, &wait_fd);
 
-    if (!opt_userproxy) {
+    if (!gpctx->userproxymode) {
         write_pid();
     }
 
     gpctx->term_timeout = opt_idle_timeout * 1000;
 
-    vctx = init_event_loop();
-    if (!vctx) {
+    init_event_loop(gpctx);
+    if (!gpctx->vctx) {
         fprintf(stderr, "Failed to initialize event loop. "
                         "Is there at least one libverto backend installed?\n");
         ret = 1;
         goto cleanup;
     }
-    gpctx->vctx = vctx;
 
-    if (!opt_userproxy) {
-        /* Add SIGHUP here so that gpctx is in scope for the handler */
-        ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST,
-                              hup_handler, SIGHUP);
-        if (!ev) {
-            fprintf(stderr, "Failed to register SIGHUP handler with verto!\n");
-            ret = 1;
-            goto cleanup;
-        }
-    }
-
-    if (opt_userproxy) {
-        ret = init_userproxy_socket(vctx);
+    if (gpctx->userproxymode) {
+        ret = init_userproxy_socket(gpctx);
     } else {
-        ret = init_sockets(vctx, NULL);
+        ret = init_sockets(gpctx, NULL);
     }
     if (ret != 0) {
         goto cleanup;
@@ -364,7 +193,7 @@ int main(int argc, const char *argv[])
     /* We need to tell nfsd that GSS-Proxy is available before it starts,
      * as nfsd needs to know GSS-Proxy is in use before the first time it
      * needs to call accept_sec_context. */
-    if (!opt_userproxy) {
+    if (!gpctx->userproxymode) {
         init_proc_nfsd(gpctx->config);
     }
 
@@ -392,31 +221,32 @@ int main(int argc, const char *argv[])
      * This is useful in debug to know that all initialization is done.
      * Might be used in future to schdule startup one offs that do not
      * need to be done synchronously */
-    ev = verto_add_timeout(vctx, VERTO_EV_FLAG_NONE, init_event, 1);
+    ev = verto_add_timeout(gpctx->vctx, VERTO_EV_FLAG_NONE, init_event, 1);
     if (!ev) {
         fprintf(stderr, "Failed to register init_event with verto!\n");
         ret = EXIT_FAILURE;
         goto cleanup;
     }
 
-    verto_run(vctx);
-    verto_free(vctx);
+    verto_run(gpctx->vctx);
+    verto_free(gpctx->vctx);
 
     gp_workers_free(gpctx->workers);
 
     fini_server();
 
 
-    free_config(&gpctx->config);
-    free(gpctx);
-
     ret = 0;
 
 cleanup:
+    if (gpctx) {
+        free_config(&gpctx->config);
+        free(gpctx->config_file);
+        free(gpctx->config_dir);
+        free(gpctx->config_socket);
+        free(gpctx);
+    }
     poptFreeContext(pc);
-    free(opt_config_file);
-    free(opt_config_dir);
-    free(opt_config_socket);
     free(opt_extract_ccache);
     free(opt_dest_ccache);
 
