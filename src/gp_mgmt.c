@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "gp_proxy.h"
+#include <time.h>
 
 static void idle_terminate(verto_ctx *vctx, verto_ev *ev)
 {
@@ -33,4 +34,36 @@ void idle_handler(struct gssproxy_ctx *gpctx)
     verto_set_private(gpctx->term_ev, gpctx, NULL);
 }
 
+void gp_activity_accounting(struct gssproxy_ctx *gpctx,
+                            ssize_t rb, ssize_t wb)
+{
+    time_t now = time(NULL);
 
+    if (rb) {
+        /* Gssproxy received some request */
+        gpctx->readstats += rb;
+        GPDEBUGN(GP_INFO_DEBUG_LVL, "Total received bytes: %ld\n",
+                 (long)gpctx->readstats);
+
+        /* receiving bytes is also a sign of activity,
+         * reset idle event */
+        idle_handler(gpctx);
+
+        GPDEBUGN(GP_INFO_DEBUG_LVL, "Idle for: %ld seconds\n",
+                 now - gpctx->last_activity);
+        gpctx->last_activity = now;
+    }
+
+    if (wb) {
+        gpctx->writestats += wb;
+        GPDEBUGN(GP_INFO_DEBUG_LVL, "Total sent bytes: %ld\n",
+                 (long)gpctx->writestats);
+
+        /* sending bytes is also a sign of activity, but we send
+         * bytes only in response to requests and this is already
+         * captured by a previous read event, just update the
+         * last_activity counter to have a more precise info messgae
+         * on the following read */
+        gpctx->last_activity = now;
+    }
+}

@@ -417,6 +417,7 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
     struct gp_buffer *rbuf;
     uint32_t size;
     bool header = false;
+    ssize_t total_read = 0;
     ssize_t rn;
     int ret;
     int fd;
@@ -444,6 +445,7 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
             ret = EIO;
             goto done;
         }
+        total_read = rn;
 
         /* allocate buffer for receiving data */
         rbuf->size = ntohl(size);
@@ -482,6 +484,7 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
         }
         goto done;
     }
+    total_read += rn;
 
     if (rn == 0) {
         if (!header) {
@@ -506,16 +509,21 @@ static void gp_socket_read(verto_ctx *vctx, verto_ev *ev)
 
         /* we successfully handed over the data */
         rbuf->data = NULL;
-        gp_buffer_free(rbuf);
-        return;
+        ret = 0;
+    } else {
+        ret = EAGAIN;
     }
 
-    ret = EAGAIN;
-
 done:
+    gp_activity_accounting(rbuf->conn->sock_ctx->gpctx,
+                           total_read, 0);
+
     switch (ret) {
     case EAGAIN:
         gp_socket_schedule_read(vctx, rbuf);
+        return;
+    case 0:
+        gp_buffer_free(rbuf);
         return;
     default:
         gp_conn_free(rbuf->conn);
@@ -566,6 +574,7 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
     struct gp_buffer *wbuf;
     struct iovec iov[2];
     uint32_t size;
+    ssize_t total_write = 0;
     ssize_t wn;
     int vecs;
     int fd;
@@ -607,6 +616,8 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
         }
         return;
     }
+    total_write = wn;
+
     if (vecs == 2) {
         if (wn < (ssize_t) sizeof(size)) {
             /* don't bother trying to handle sockets that can't
@@ -619,11 +630,15 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
         }
         wn -= sizeof(size);
     }
+    wbuf->pos += wn;
 
     GPDEBUGN(3, "[status] Sending data [%p (%zu)]: successful write of %d\n",
              wbuf->data, wbuf->size, wn);
 
-    wbuf->pos += wn;
+
+    gp_activity_accounting(wbuf->conn->sock_ctx->gpctx,
+                           0, total_write);
+
     if (wbuf->size > wbuf->pos) {
         /* short write, reschedule */
         gp_socket_schedule_write(vctx, wbuf);
