@@ -113,48 +113,235 @@ void fini_server(void)
     closelog();
 }
 
+static struct gp_service *
+find_service_by_name(struct gp_config *cfg, const char *name)
+{
+    int i;
+    struct gp_service *ret = NULL;
+
+    for (i = 0; i < cfg->num_svcs; i++) {
+        if (strcmp(cfg->svcs[i]->name, name) == 0) {
+            ret = cfg->svcs[i];
+            break;
+        }
+    }
+    return ret;
+}
+
+const int vflags =
+    VERTO_EV_FLAG_PERSIST |
+    VERTO_EV_FLAG_IO_READ |
+    VERTO_EV_FLAG_IO_CLOSE_FD;
+
+static verto_ev *setup_socket(struct gssproxy_ctx *gpctx, char *sock_name,
+                              bool with_activation)
+{
+    struct gp_sock_ctx *sock_ctx = NULL;
+    verto_ev *ev;
+
+#ifdef HAVE_SYSTEMD_DAEMON
+    if (with_activation) {
+        int ret;
+        /* try to se if available, fallback otherwise */
+        ret = init_activation_socket(gpctx, sock_name, &sock_ctx);
+        if (ret) {
+            return NULL;
+        }
+    }
+#endif
+    if (!sock_ctx) {
+        /* no activation, try regular socket creation */
+        sock_ctx = init_unix_socket(gpctx, sock_name);
+    }
+    if (!sock_ctx) {
+        return NULL;
+    }
+
+    ev = verto_add_io(gpctx->vctx, vflags, accept_sock_conn, sock_ctx->fd);
+    if (!ev) {
+        free(sock_ctx);
+        return NULL;
+    }
+
+    verto_set_private(ev, sock_ctx, free_unix_socket);
+    return ev;
+}
+
+int init_sockets(struct gssproxy_ctx *gpctx, struct gp_config *old_config)
+{
+    int i;
+    struct gp_sock_ctx *sock_ctx;
+    verto_ev *ev;
+    struct gp_service *svc;
+
+    /* init main socket */
+    if (!old_config) {
+        ev = setup_socket(gpctx, gpctx->config->socket_name, false);
+        if (!ev) {
+            return 1;
+        }
+
+        gpctx->sock_ev = ev;
+    } else if (strcmp(old_config->socket_name,
+                      gpctx->config->socket_name) != 0) {
+        ev = setup_socket(gpctx, gpctx->config->socket_name, false);
+        if (!ev) {
+            return 1;
+        }
+
+        verto_del(gpctx->sock_ev);
+        gpctx->sock_ev = ev;
+    } else {
+        /* free_config will erase the socket name; update it accordingly */
+        sock_ctx = verto_get_private(gpctx->sock_ev);
+        sock_ctx->socket = gpctx->config->socket_name;
+    }
+
+    /* propagate any sockets that shouldn't change */
+    if (old_config) {
+        for (i = 0; i < old_config->num_svcs; i++) {
+            if (old_config->svcs[i]->ev) {
+                svc = find_service_by_name(gpctx->config,
+                                           old_config->svcs[i]->name);
+                if (svc &&
+                    ((svc->socket == old_config->svcs[i]->socket) ||
+                     ((svc->socket != NULL) &&
+                      (old_config->svcs[i]->socket != NULL) &&
+                      strcmp(svc->socket,
+                             old_config->svcs[i]->socket) == 0))) {
+                    svc->ev = old_config->svcs[i]->ev;
+                    sock_ctx = verto_get_private(svc->ev);
+                    sock_ctx->socket = svc->socket;
+                } else {
+                    verto_del(old_config->svcs[i]->ev);
+                }
+            }
+        }
+    }
+
+    /* init all other sockets */
+    for (i = 0; i < gpctx->config->num_svcs; i++) {
+        svc = gpctx->config->svcs[i];
+        if (svc->socket != NULL && svc->ev == NULL) {
+            ev = setup_socket(gpctx, svc->socket, false);
+            if (!ev) {
+                return 1;
+            }
+            svc->ev = ev;
+        }
+    }
+    return 0;
+}
+
+int init_userproxy_socket(struct gssproxy_ctx *gpctx)
+{
+    verto_ev *ev;
+
+    /* init main socket */
+    ev = setup_socket(gpctx, gpctx->config->socket_name, true);
+    if (!ev) {
+        return 1;
+    }
+
+    gpctx->sock_ev = ev;
+    return 0;
+}
+
+static void hup_handler(verto_ctx *vctx UNUSED, verto_ev *ev)
+{
+    int ret;
+    struct gssproxy_ctx *gpctx;
+    struct gp_config *new_config, *old_config;
+
+    gpctx = verto_get_private(ev);
+
+    GPDEBUG("Received SIGHUP; re-reading config.\n");
+    new_config = read_config(gpctx->config_file, gpctx->config_dir,
+                             gpctx->config_socket, gpctx->daemonize);
+    if (!new_config) {
+        GPERROR("Error reading new configuration on SIGHUP; keeping old "
+                "configuration instead!\n");
+        return;
+    }
+    old_config = gpctx->config;
+    gpctx->config = new_config;
+
+    ret = init_sockets(gpctx, old_config);
+    if (ret != 0) {
+        exit(ret);
+    }
+
+    /* conditionally reload kernel interface */
+    init_proc_nfsd(gpctx->config);
+
+    free_config(&old_config);
+
+    GPDEBUG("New config loaded successfully.\n");
+    return;
+}
+
 static void break_loop(verto_ctx *vctx, verto_ev *ev UNUSED)
 {
     GPDEBUG("Exiting after receiving a signal\n");
     verto_break(vctx);
 }
 
-verto_ctx *init_event_loop(void)
+void init_event_loop(struct gssproxy_ctx *gpctx)
 {
-    verto_ctx *vctx;
     verto_ev *ev;
 
-    vctx = verto_default(NULL,
-                         VERTO_EV_TYPE_IO |
-                         VERTO_EV_TYPE_SIGNAL |
-                         VERTO_EV_TYPE_TIMEOUT);
-    if (!vctx) {
-        return NULL;
+    gpctx->vctx = verto_default(NULL,
+                                VERTO_EV_TYPE_IO |
+                                VERTO_EV_TYPE_SIGNAL |
+                                VERTO_EV_TYPE_TIMEOUT);
+    if (!gpctx->vctx) {
+        goto fail;
     }
 
-    ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, break_loop, SIGINT);
+    ev = verto_add_signal(gpctx->vctx, VERTO_EV_FLAG_PERSIST,
+                          break_loop, SIGINT);
     if (!ev) {
-        verto_free(vctx);
-        return NULL;
+        fprintf(stderr, "Failed to register SIGINT handler\n");
+        goto fail;
     }
-    ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, break_loop, SIGTERM);
+    ev = verto_add_signal(gpctx->vctx, VERTO_EV_FLAG_PERSIST,
+                          break_loop, SIGTERM);
     if (!ev) {
-        verto_free(vctx);
-        return NULL;
+        fprintf(stderr, "Failed to register SIGTERM handler\n");
+        goto fail;
     }
-    ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, break_loop, SIGQUIT);
+    ev = verto_add_signal(gpctx->vctx, VERTO_EV_FLAG_PERSIST,
+                          break_loop, SIGQUIT);
     if (!ev) {
-        verto_free(vctx);
-        return NULL;
+        fprintf(stderr, "Failed to register SIGQUIT handler\n");
+        goto fail;
     }
-    ev = verto_add_signal(vctx, VERTO_EV_FLAG_PERSIST, VERTO_SIG_IGN, SIGPIPE);
+    ev = verto_add_signal(gpctx->vctx, VERTO_EV_FLAG_PERSIST,
+                          VERTO_SIG_IGN, SIGPIPE);
     if (!ev) {
-        verto_free(vctx);
-        return NULL;
+        fprintf(stderr, "Failed to register SIGPIPE handler\n");
+        goto fail;
     }
-    /* SIGHUP handler added in main */
+    if (gpctx->userproxymode) {
+        ev = verto_add_signal(gpctx->vctx, VERTO_EV_FLAG_PERSIST,
+                              VERTO_SIG_IGN, SIGHUP);
+    } else {
+        ev = verto_add_signal(gpctx->vctx, VERTO_EV_FLAG_PERSIST,
+                              hup_handler, SIGHUP);
+        if (ev) verto_set_private(ev, gpctx, NULL);
+    }
+    if (!ev) {
+        fprintf(stderr, "Failed to register SIGHUP handler\n");
+        goto fail;
+    }
 
-    return vctx;
+    return;
+
+fail:
+    if (gpctx->vctx) {
+        verto_free(gpctx->vctx);
+        gpctx->vctx = NULL;
+    }
 }
 
 void init_proc_nfsd(struct gp_config *cfg)

@@ -70,6 +70,12 @@ struct gp_config {
 struct gp_workers;
 
 struct gssproxy_ctx {
+    bool userproxymode;
+    char *config_file;
+    char *config_dir;
+    char *config_socket;
+    int daemonize;
+
     struct gp_config *config;
     struct gp_workers *workers;
     verto_ctx *vctx;
@@ -107,7 +113,9 @@ struct gp_config *userproxy_config(char *socket_name, int opt_daemonize);
 void init_server(bool daemonize, int userproxy, int *wait_fd);
 void init_done(int wait_fd);
 void fini_server(void);
-verto_ctx *init_event_loop(void);
+int init_sockets(struct gssproxy_ctx *gpctx, struct gp_config *old_config);
+int init_userproxy_socket(struct gssproxy_ctx *gpctx);
+void init_event_loop(struct gssproxy_ctx *gpctx);
 void init_proc_nfsd(struct gp_config *cfg);
 void write_pid(void);
 int drop_privs(struct gp_config *cfg);
