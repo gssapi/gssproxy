@@ -173,6 +173,7 @@ if BUILD_PROXY
 gssproxy_SOURCES = \
     src/gp_config.c \
     src/gp_init.c \
+    src/gp_mgmt.c \
     src/gp_socket.c \
     src/gp_workers.c \
     src/gp_creds.c \

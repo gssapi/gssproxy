@@ -12,39 +12,6 @@ char *opt_dest_ccache = NULL;
 
 struct gssproxy_ctx *gpctx;
 
-static void idle_terminate(verto_ctx *vctx, verto_ev *ev UNUSED)
-{
-    GPDEBUG("Terminating, after idling for %ld seconds!\n",
-            (long)gpctx->term_timeout/1000);
-    verto_break(vctx);
-}
-
-static void idle_handler(verto_ctx *vctx)
-{
-    /* we've been called, this means some event just fired,
-     * restart the timeout handler */
-
-    if (gpctx->term_timeout == 0) {
-        /* self termination is disabled */
-        return;
-    }
-
-    verto_del(gpctx->term_ev);
-
-    /* Add self-termination timeout */
-    gpctx->term_ev = verto_add_timeout(vctx, VERTO_EV_FLAG_NONE,
-                                       idle_terminate, gpctx->term_timeout);
-    if (!gpctx->term_ev) {
-        GPDEBUG("Failed to register timeout event!\n");
-    }
-}
-
-static void init_event(verto_ctx *vctx, verto_ev *ev UNUSED)
-{
-    GPDEBUG("Initialization complete.\n");
-    idle_handler(vctx);
-}
-
 int main(int argc, const char *argv[])
 {
     int opt;
@@ -60,7 +27,6 @@ int main(int argc, const char *argv[])
     int opt_syslog_status = 0;
     int opt_userproxy = 0;
     int opt_idle_timeout = 1000;
-    verto_ev *ev;
     int wait_fd;
     int ret = -1;
 
@@ -217,13 +183,9 @@ int main(int argc, const char *argv[])
         goto cleanup;
     }
 
-    /* Schedule an event to run as soon as the event loop is started
-     * This is useful in debug to know that all initialization is done.
-     * Might be used in future to schdule startup one offs that do not
-     * need to be done synchronously */
-    ev = verto_add_timeout(gpctx->vctx, VERTO_EV_FLAG_NONE, init_event, 1);
-    if (!ev) {
-        fprintf(stderr, "Failed to register init_event with verto!\n");
+    /* final initialization step */
+    ret = init_event_fini(gpctx);
+    if (ret) {
         ret = EXIT_FAILURE;
         goto cleanup;
     }
