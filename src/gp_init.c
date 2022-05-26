@@ -110,6 +110,7 @@ void init_done(int wait_fd)
 
 void fini_server(void)
 {
+    gp_krb5_fini_tracing();
     closelog();
 }
 
