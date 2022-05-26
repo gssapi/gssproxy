@@ -214,6 +214,7 @@ int init_sockets(struct gssproxy_ctx *gpctx, struct gp_config *old_config)
                     sock_ctx->socket = svc->socket;
                 } else {
                     verto_del(old_config->svcs[i]->ev);
+                    old_config->svcs[i]->ev = NULL;
                 }
             }
         }
