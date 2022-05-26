@@ -85,7 +85,11 @@ int gp_workers_init(struct gssproxy_ctx *gpctx)
     }
 
     /* make thread joinable (portability) */
-    pthread_attr_init(&attr);
+    ret = pthread_attr_init(&attr);
+    if (ret) {
+        free(w);
+        return ret;
+    }
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
     /* init all workers */
@@ -113,6 +117,8 @@ int gp_workers_init(struct gssproxy_ctx *gpctx)
         }
         LIST_ADD(w->free_list, t);
     }
+
+    pthread_attr_destroy(&attr);
 
     /* add wakeup pipe, so that threads can hand back replies to the
      * dispatcher */

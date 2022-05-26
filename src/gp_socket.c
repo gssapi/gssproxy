@@ -172,6 +172,7 @@ void free_unix_socket(verto_ctx *ctx UNUSED, verto_ev *ev)
 {
     struct gp_sock_ctx *sock_ctx = NULL;
     sock_ctx = verto_get_private(ev);
+    close(sock_ctx->fd);
     free(sock_ctx);
 }
 
