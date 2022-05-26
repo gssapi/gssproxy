@@ -133,6 +133,8 @@ int clear_bound_caps(void);
 void idle_handler(struct gssproxy_ctx *gpctx);
 void gp_activity_accounting(struct gssproxy_ctx *gpctx,
                             ssize_t rb, ssize_t wb);
+void gp_krb5_tracing_setup(int action);
+void gp_krb5_fini_tracing(void);
 
 /* from gp_socket.c */
 void free_unix_socket(verto_ctx *ctx, verto_ev *ev);

@@ -16,6 +16,7 @@ void gp_debug_toggle(int);
 void gp_debug_printf(const char *format, ...);
 void gp_debug_time_printf(const char *format, ...);
 void gp_debug_set_conn_id(int id);
+void gp_debug_set_krb5_tracing_fn(void (*fn)(int));
 
 #define GPDEBUG(...) do { \
     if (gp_debug) { \

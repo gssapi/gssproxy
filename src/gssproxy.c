@@ -86,6 +86,9 @@ int main(int argc, const char *argv[])
         goto cleanup;
     }
 
+    /* set tracing function before handling debug level */
+    gp_debug_set_krb5_tracing_fn(&gp_krb5_tracing_setup);
+
     if (opt_debug || opt_debug_level > 0) {
         if (opt_debug_level == 0) opt_debug_level = 1;
         gp_debug_toggle(opt_debug_level);
@@ -196,7 +199,6 @@ int main(int argc, const char *argv[])
     gp_workers_free(gpctx->workers);
 
     fini_server();
-
 
     ret = 0;
 
