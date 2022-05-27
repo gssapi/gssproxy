@@ -9,21 +9,12 @@ project's git repository.
 
 - Change in version.m4 with the new version number (ex. 0.1.0)
 
-- Create a docs/Releases page with highlights and a full changelog with the
-  command:
-
-```
-git shortlog <oldtag>..
-```
-
-- Commit version.m4 and the new Releases page
-
 - Test locally with "make rpms" that everything builds fine
 
-- Tag the release in master like this:
+- Make a signed tag for the release in the main branch like this:
 
 ```
-git tag v0.1.0
+git tag -s v0.1.0
 ```
 
   This will apply the tag to the last commit
@@ -55,8 +46,8 @@ sha512sum gssproxy-0.1.0.tar.gz > gssproxy-0.1.0.tar.gz.sha512sum.txt
 
 ## Publish the release
 
-- Upload tarball and checksum to GitHub release page
+- Use Github to create a Release page from the tag.
+    Use the option to create release notes from the PR log.
 
-- Copy the content of the new-release page into a mail and announce on the
-  gssproxy mailinglist
+- Announce th new release on the gssproxy mailinglist
   (https://lists.fedorahosted.org/mailman/listinfo/gss-proxy)
