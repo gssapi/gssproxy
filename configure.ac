@@ -164,13 +164,13 @@ if test x$only_gss_module != xyes; then
                          [AC_MSG_ERROR([Could not find libcap headers])])
     fi
 
-    if test x$initscript = xsystemd; then
-        WITH_SYSTEMD_UNIT_DIR
-        WITH_SYSTEMD_USER_UNIT_DIR
-        AM_CHECK_SYSTEMD
-    fi
 fi
 AM_CONDITIONAL([BUILD_PROXY], [test x$only_gss_module != xyes ])
+if test x$initscript = xsystemd; then
+    WITH_SYSTEMD_UNIT_DIR
+    WITH_SYSTEMD_USER_UNIT_DIR
+fi
+AM_CHECK_SYSTEMD
 
 AC_ARG_ENABLE([always-interpose],
               [AC_HELP_STRING([--enable-always-interpose],
