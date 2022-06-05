@@ -21,7 +21,7 @@ jobs:
             - name: Install dependencies
               run: |
                   sudo apt-get update
-                  sudo apt-get install -y build-essential autopoint clang gcc docbook-{xsl,xml} libxml2-utils xml-core xsltproc lib{krb5,ini-config,keyutils,popt,selinux1,verto}-dev lib{nss,socket}-wrapper python3{,-colorama} valgrind krb5-{kdc,admin-server,kdc-ldap} ldap-utils slapd apparmor-utils
+                  sudo apt-get install -y build-essential autopoint clang gcc docbook-{xsl,xml} libxml2-utils xml-core xsltproc lib{krb5,ini-config,keyutils,popt,selinux1,systemd,verto}-dev lib{nss,socket}-wrapper python3{,-colorama} valgrind krb5-{kdc,admin-server,kdc-ldap} ldap-utils slapd apparmor-utils
             - name: Silence AppArmor
               run: sudo aa-complain $(which slapd)
             - name: Setup
