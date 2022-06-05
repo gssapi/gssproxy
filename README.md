@@ -1,3 +1,6 @@
+[![Changelog](https://img.shields.io/github/v/release/gssapi/gssproxy?label=changelog)](https://github.com/gssapi/gssproxy/releases)
+[![Build Status](https://github.com/gssapi/gssproxy/actions/workflows/ci.yaml/badge.svg)](https://github.com/gssapi/gssproxy/actions/workflows/ci.yaml)
+
 This is the gss-proxy project.
 
 Documentation lives in the [docs folder of this
