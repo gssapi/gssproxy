@@ -19,10 +19,11 @@ AC_DEFUN([AM_CHECK_SYSTEMD],
               [SYSTEMD_DAEMON],
               [$daemon_lib_name],
               [AC_DEFINE_UNQUOTED([HAVE_SYSTEMD_DAEMON], 1,
-                                  [Build with $daemon_lib_name support])],
+                                  [Build with $daemon_lib_name support])
+
+               AC_MSG_NOTICE([Will enable systemd socket activation])],
               [AC_MSG_NOTICE([Build without $daemon_lib_name support])])],
           [AC_MSG_NOTICE([Build without $daemon_lib_name support])])
 
     AM_CONDITIONAL([HAVE_SYSTEMD_DAEMON], [test x"$daemon_lib_name" != x])
-    AC_MSG_NOTICE([Will enable systemd socket activation])
 ])
