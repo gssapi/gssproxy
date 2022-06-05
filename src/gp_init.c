@@ -151,6 +151,9 @@ static verto_ev *setup_socket(struct gssproxy_ctx *gpctx, char *sock_name,
     }
 #endif
     if (!sock_ctx) {
+        /* disable self termination as we are not socket activated */
+        gpctx->term_timeout = 0;
+
         /* no activation, try regular socket creation */
         sock_ctx = init_unix_socket(gpctx, sock_name);
     }

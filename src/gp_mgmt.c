@@ -28,7 +28,7 @@ void idle_handler(struct gssproxy_ctx *gpctx)
     /* we've been called, this means some event just fired,
      * restart the timeout handler */
 
-    if (gpctx->term_timeout == 0) {
+    if (gpctx->userproxymode == false || gpctx->term_timeout == 0) {
         /* self termination is disabled */
         return;
     }
