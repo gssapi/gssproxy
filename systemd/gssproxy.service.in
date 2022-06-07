@@ -13,5 +13,22 @@ Type=forking
 PIDFile=/run/gssproxy.pid
 ExecReload=/bin/kill -HUP $MAINPID
 
+ProtectSystem=full
+ProtectClock=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictRealtime=true
+# NoNewPrivileges: when true breaks the ability to open a socket
+#   under /var/lib/gssproxy so no NoNewPrivileges
+# PrivateTmp: can't be used as it hides ccaches stored in /tmp
+# ProtectHome: blocks access to /home which may hold ccaches
+# ProtectHostname: blocks propagation of hostname on change
+#   but in some cases, when using a keytab, we may want to see hostname
+#   changes as the server will want to respond only for the system name
+# ProtectKernelTunables: blocks ability to write to proc.
+#   on startup gssproxy needs to write in proc to let nfsd know it can
+#   use the "new" gssproxy method instead of the old rpc stuff.
+
+
 [Install]
 WantedBy=multi-user.target
