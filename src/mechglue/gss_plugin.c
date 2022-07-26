@@ -93,35 +93,35 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
     gss_OID_set interposed_mechs;
     OM_uint32 maj, min;
 
-    if (!enabled()) return NULL;
+    if (!enabled()) return GSS_C_NO_OID_SET;
 
-    interposed_mechs = NULL;
-    maj = 0;
-    if (gss_oid_equal(&gssproxy_mech_interposer, mech_type)) {
-        maj = gss_create_empty_oid_set(&min, &interposed_mechs);
-        if (maj != 0) {
-            return NULL;
-        }
-        maj = gss_add_oid_set_member(&min, no_const(&gpoid_krb5),
-                                     &interposed_mechs);
-        if (maj != 0) {
-            goto done;
-        }
-        maj = gss_add_oid_set_member(&min, no_const(&gpoid_krb5_old),
-                                     &interposed_mechs);
-        if (maj != 0) {
-            goto done;
-        }
-        maj = gss_add_oid_set_member(&min, no_const(&gpoid_krb5_wrong),
-                                     &interposed_mechs);
-        if (maj != 0) {
-            goto done;
-        }
-        maj = gss_add_oid_set_member(&min, no_const(&gpoid_iakerb),
-                                     &interposed_mechs);
-        if (maj != 0) {
-            goto done;
-        }
+    if (!gss_oid_equal(&gssproxy_mech_interposer, mech_type)) {
+        return GSS_C_NO_OID_SET;
+    }
+
+    maj = gss_create_empty_oid_set(&min, &interposed_mechs);
+    if (maj != 0) {
+        return GSS_C_NO_OID_SET;
+    }
+    maj = gss_add_oid_set_member(&min, no_const(&gpoid_krb5),
+                                 &interposed_mechs);
+    if (maj != 0) {
+        goto done;
+    }
+    maj = gss_add_oid_set_member(&min, no_const(&gpoid_krb5_old),
+                                 &interposed_mechs);
+    if (maj != 0) {
+        goto done;
+    }
+    maj = gss_add_oid_set_member(&min, no_const(&gpoid_krb5_wrong),
+                                 &interposed_mechs);
+    if (maj != 0) {
+        goto done;
+    }
+    maj = gss_add_oid_set_member(&min, no_const(&gpoid_iakerb),
+                                 &interposed_mechs);
+    if (maj != 0) {
+        goto done;
     }
 
     /* while there also initiaize special_mechs */
@@ -130,7 +130,7 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
 done:
     if (maj != 0) {
         (void)gss_release_oid_set(&min, &interposed_mechs);
-        interposed_mechs = NULL;
+        interposed_mechs = GSS_C_NO_OID_SET;
     }
 
     return interposed_mechs;
