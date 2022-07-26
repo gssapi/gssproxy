@@ -621,7 +621,7 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
             /* don't bother trying to handle sockets that can't
              * buffer even 4 bytes */
             GPDEBUGN(3, "[status] Sending data [%p (%zu)]: failed with short "
-                     "write of %z\n", wbuf->data, wbuf->size, wn);
+                     "write of %zi\n", wbuf->data, wbuf->size, wn);
             gp_conn_free(wbuf->conn);
             gp_buffer_free(wbuf);
             return;
@@ -630,7 +630,7 @@ static void gp_socket_write(verto_ctx *vctx, verto_ev *ev)
     }
     wbuf->pos += wn;
 
-    GPDEBUGN(3, "[status] Sending data [%p (%zu)]: successful write of %z\n",
+    GPDEBUGN(3, "[status] Sending data [%p (%zu)]: successful write of %zi\n",
              wbuf->data, wbuf->size, wn);
 
 
