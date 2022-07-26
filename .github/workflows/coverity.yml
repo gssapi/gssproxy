@@ -1,0 +1,39 @@
+name: Coverity Scan
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    - cron: '13 2 * * 0'
+
+jobs:
+  coverity:
+    name: Coverity Scan
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Install dependencies
+      run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autopoint clang gcc docbook-{xsl,xml} libxml2-utils xml-core xsltproc lib{krb5,ini-config,keyutils,popt,selinux1,systemd,verto}-dev lib{nss,socket}-wrapper python3{,-colorama} valgrind krb5-{kdc,admin-server,kdc-ldap} ldap-utils slapd apparmor-utils
+    - name: Silence AppArmor
+      run: sudo aa-complain $(which slapd)
+    - name: Setup
+      run: |
+          autoreconf -fiv
+          ./configure
+    - name: Check for changes
+      run: |
+          echo "RUN_COV=0" >> $GITHUB_ENV;
+          DIFF=`git log --since=1week | wc -l`
+          if [ x${DIFF} != "x0" ]; then
+            echo "RUN_COV=1" >> $GITHUB_ENV;
+          fi
+    - name: Coverity Scan
+      if: env.RUN_COV == 1
+      uses: vapier/coverity-scan-action@v1
+      with:
+        project: "gssproxy"
+        email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+        token: ${{ secrets.COVERITY_SCAN_TOKEN }}
