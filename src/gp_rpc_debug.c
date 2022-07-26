@@ -47,7 +47,7 @@ void gpdbg_gssx_OID(gssx_OID *x)
     if (GSS_ERROR(maj)) {
         gp_debug_printf("<BAD OID> ");
     } else {
-        gp_debug_printf("%.*s ", oidbuf.length, (char *)oidbuf.value);
+        gp_debug_printf("%.*s ", (int)oidbuf.length, (char *)oidbuf.value);
     }
     maj = gss_release_buffer(&min, &oidbuf);
 }
