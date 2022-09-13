@@ -186,7 +186,7 @@
                 <varlistentry>
                     <term>cred_usage (string)</term>
                     <listitem>
-                        <para>Allow to restrict the kind of operations permitted for this service.</para>
+                        <para>Allow one to restrict the kind of operations permitted for this service.</para>
                         <para>The allowed options are: initiate, accept, both</para>
                         <para>Default: cred_usage = both </para>
                     </listitem>
