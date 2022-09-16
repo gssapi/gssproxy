@@ -36,7 +36,7 @@
             <filename>/etc/gss/mech</filename> configuration file.
         </para>
         <para>
-            The interposer plugin allows to intercept the entire GSSAPI
+            The interposer plugin allows one to intercept the entire GSSAPI
             communication and detour to the <command>gssproxy</command>
             daemon. When the interposer plugin is installed two other
             conditions need to be met in order to activate it:
@@ -112,7 +112,7 @@
                 <term>REMOTE_ONLY</term>
                 <listitem>
                     <para>This setting is currently not fully implemented and
-                        therefor not supported.
+                        therefore not supported.
                     </para>
                 </listitem>
             </varlistentry>
