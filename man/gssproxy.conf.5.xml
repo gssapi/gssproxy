@@ -98,7 +98,7 @@
                               option may cause a service definition to mask
                               access to following services. To avoid issues
                               change the order of services in your
-                              configuation file so that services with
+                              configuration file so that services with
                               allow_any_uid enabled are listed last, or define
                               a custom socket for other services.</para>
                         <para>Default: false</para>
@@ -146,7 +146,7 @@
                 <varlistentry>
                     <term>cred_store (string)</term>
                     <listitem>
-                        <para>This parameter allows to control in which way gssproxy should use the cred_store interface provided by GSSAPI. The parameter can be defined multiple times per service.</para>
+                        <para>This parameter allows one to control in which way gssproxy should use the cred_store interface provided by GSSAPI. The parameter can be defined multiple times per service.</para>
                         <para>The syntax of the cred_store parameter is as
                             follows:
                             <![CDATA[cred_store = <cred_store_option>:<cred_store_value>]]></para>
@@ -272,7 +272,7 @@
                             flag name or value.
                         </para>
                         <para>
-                            NOTE: Because often gssproxy is used to withold
+                            NOTE: Because often gssproxy is used to withhold
                             access to credentials the Delegate Flag is filtered
                             by default. To allow a service to delegate
                             credentials use the first example below.
@@ -381,7 +381,7 @@
                 <varlistentry>
                     <term>socket (string)</term>
                     <listitem>
-                        <para>This parameter allows to create a per-service socket file over which gssproxy client and server components communicate.
+                        <para>This parameter allows one to create a per-service socket file over which gssproxy client and server components communicate.
                         </para>
                         <para>When this parameter is not set, gssproxy will
                             use a compiled-in default.</para>
