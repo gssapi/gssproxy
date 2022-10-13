@@ -171,9 +171,11 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                                    &out_cred);
         if (maj == GSS_S_COMPLETE || maj == GSS_S_CONTINUE_NEEDED) {
             if (out_cred) {
-                xdr_free((xdrproc_t)xdr_gssx_cred,
-                         (char *)cred_handle->remote);
-                free(cred_handle->remote);
+                if (cred_handle->remote) {
+                    xdr_free((xdrproc_t)xdr_gssx_cred,
+                             (char *)cred_handle->remote);
+                    free(cred_handle->remote);
+                }
                 cred_handle->remote = out_cred;
                 out_cred = NULL;
                 /* failuire is not fatal */
