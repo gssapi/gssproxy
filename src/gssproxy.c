@@ -114,6 +114,11 @@ int main(int argc, const char *argv[])
     }
 
     gpctx = calloc(1, sizeof(struct gssproxy_ctx));
+    if (!gpctx) {
+        ret = EXIT_FAILURE;
+        goto cleanup;
+    }
+
     gpctx->config_file = opt_config_file;
     gpctx->config_dir = opt_config_dir;
     gpctx->config_socket = opt_config_socket;
