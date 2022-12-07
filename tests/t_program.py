@@ -6,6 +6,7 @@ from testlib import *
 from t_acquire import run as run_acquire_test
 
 import os
+import testlib
 
 GSSPROXY_PROGRAM = '''
 [gssproxy]
@@ -22,7 +23,7 @@ GSSPROXY_PROGRAM = '''
 '''
 
 def run(testdir, env, conf):
-    conf['prefix'] = str(cmd_index)
+    conf['prefix'] = str(testlib.cmd_index)
     prefix = conf["prefix"]
     retval = 0
 
@@ -45,7 +46,8 @@ def run(testdir, env, conf):
     update_gssproxy_conf(testdir, conf["keysenv"], GSSPROXY_CONF_TEMPLATE)
     gssproxy_reload(testdir, conf['gpid'])
 
-    print_return(retval, -1, "Program", False)
+    print_return(retval, -1, "(%d) Program" % testlib.cmd_index, False)
+    testlib.cmd_index += 1
     return retval
 
 if __name__ == "__main__":
