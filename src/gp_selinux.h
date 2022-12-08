@@ -3,12 +3,13 @@
 #ifndef _GP_SELINUX_H_
 #define _GP_SELINUX_H_
 
+typedef char * SEC_CTX;
+
 #ifdef HAVE_SELINUX
 
 #include <selinux/context.h>
 #define SELINUX_CTX context_t
 #include <selinux/selinux.h>
-#define SEC_CTX security_context_t
 
 #define SELINUX_context_new context_new
 #define SELINUX_context_free context_free
