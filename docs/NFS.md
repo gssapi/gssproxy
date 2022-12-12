@@ -52,7 +52,7 @@ This is pretty much all that is needed to use GSS-Proxy as the user-space helper
 The NFS client case is a little bit more complicated. For starter, at the time of writing the NFS client code in kernel still uses the classic protocol and can only talk with the rpc.gssd service. The interaction with GSS-Proxy, in the client case, is more subtle.
 
 The way GSS-Proxy is configured in the client case is pretty much the normal userspace interposition, performed at the libgssapi level.
-The GSSAPI library need to be configured (either in /etc/gss.conf or /etc/gss.conf.d/gssproxy.conf to load the GSS-Proxy interposer plugin which allows GSS-Proxy to intercept GSSAPI calls and sprinkle a little magic on the operations (as well as performing privilege separation).
+The GSSAPI library need to be configured (either in /etc/gss.conf or /etc/gss.conf.d/gssproxy.conf) to load the GSS-Proxy interposer plugin which allows GSS-Proxy to intercept GSSAPI calls and sprinkle a little magic on the operations (as well as performing privilege separation).
 
 Example gss.conf
 ```
