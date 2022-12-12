@@ -13,7 +13,7 @@ which are a containerized solution that aims, among other things, at
 constraining what apps within the flatpak can do and not give full unfettered
 access to the user session.
 
-Userproxy is tayloerd to this kind of use.
+Userproxy is tailored to this kind of use.
 
 NOTE: Do not donfuse the userproxy mode of operations with the run_as_user
 configure option, thes eare completely orthogonal things.
@@ -23,7 +23,7 @@ NOTE: carefully read the Behavior section
 ## Setting up Userproxy mode
 
 If GSS-Proxy is started with the argument -u|--userproxy it switched to
-userproxy mode. This has some profound consequences on the behafior of
+userproxy mode. This has some profound consequences on the behavior of
 GSS-Proxy.
 
 ### Configuration
@@ -52,17 +52,17 @@ whole directory structure needs to be in place or startup will fail.
 Because this mode is intended to provide full access to a user session,
 including potentially further proxing out to another gssproxy instance, the
 userproxy mode does not prevent loops in GSSAPI by internally setting the
-GSS_USE_PROXY env var to "no", as the defaul mode does.
+GSS_USE_PROXY env var to "no", as the default mode does.
 
 This allows the following to work:
 [container (GSSAPI app)] -> [user session (GSS-Proxy)] -> [privileged
 (GSS-Proxy)]
 
-It is also the reaon why a non standard socket is used in this mode, so that
+It is also the reason why a non standard socket is used in this mode, so that
 the proxymech plugin running withing GSSAPI in the GSS-Proxy's userproxy
 itself does not, in fact, try to reconnect back and deadlock in a loop.
 
-Within the container it is recommended to bind mount he userproxy created
+Within the container it is recommended to bind mount the userproxy created
 directory on the standard location which is generally:
 /var/lib/gssproxy
 
