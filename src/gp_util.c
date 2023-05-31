@@ -63,7 +63,7 @@ char *gp_strerror(int errnum)
     static __thread char buf[MAX_GP_STRERROR];
     int saved_errno = errno;
 
-#if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE)
+#if ((_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !_GNU_SOURCE) || !defined(__GLIBC__)
     /* XSI version */
     int ret;
 
