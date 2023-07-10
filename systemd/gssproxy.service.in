@@ -5,6 +5,7 @@ After=syslog.target network.target
 Before=rpc-gssd.service
 
 [Service]
+StateDirectory=gssproxy/clients gssproxy/rcache
 Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
 ExecStart=@sbindir@/gssproxy -D
 # These two should be used with traditional UNIX forking daemons
