@@ -17,7 +17,8 @@ char *srv_args[] = {
     "-u", "-i",
     "-d", "--debug-level=1",
     "-s", "./testdir/userproxytest.sock",
-    "--idle-timeout=3"
+    "--idle-timeout=3",
+    NULL
 };
 
 int mock_activation_sockets(void)
