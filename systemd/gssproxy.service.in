@@ -3,6 +3,9 @@ Description=GSSAPI Proxy Daemon
 # GSSPROXY will not be started until syslog is
 After=syslog.target network.target
 Before=rpc-gssd.service
+# auth_rpcgss creates the /proc/net/rpc/use-gss-proxy file
+Wants=modprobe@auth_rpcgss.service
+After=modprobe@auth_rpcgss.service
 
 [Service]
 StateDirectory=gssproxy/clients gssproxy/rcache
