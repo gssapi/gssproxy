@@ -379,12 +379,14 @@ int init_event_fini(struct gssproxy_ctx *gpctx)
 static int try_init_proc_nfsd(void)
 {
     char buf[] = "1";
-    int fd, ret;
     static bool poked = false;
     static bool warned_once = false;
+    int fd = 1;
+    int ret;
 
-    if (poked)
+    if (poked) {
         return 0;
+    }
 
     fd = open(LINUX_PROC_USE_GSS_PROXY_FILE, O_RDWR);
     if (fd == -1) {
@@ -411,7 +413,9 @@ static int try_init_proc_nfsd(void)
     ret = 0;
 
 out:
-    close(fd);
+    if (fd != -1) {
+        close(fd);
+    }
     return ret;
 }
 
