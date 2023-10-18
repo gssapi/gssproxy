@@ -168,7 +168,7 @@ int main(int argc, const char *argv[])
      * as nfsd needs to know GSS-Proxy is in use before the first time it
      * needs to call accept_sec_context. */
     if (!gpctx->userproxymode) {
-        init_proc_nfsd(gpctx->config);
+        init_proc_nfsd(gpctx);
     }
 
     /* Now it is safe to tell the init system that we're done starting up,

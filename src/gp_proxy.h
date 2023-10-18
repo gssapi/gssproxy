@@ -84,6 +84,8 @@ struct gssproxy_ctx {
     time_t term_timeout;
     verto_ev *term_ev; /* termination ev in user mode */
 
+    verto_ev *retry_proc_ev; /* retry telling the kernel to use GSS-Proxy */
+
     ssize_t readstats;
     ssize_t writestats;
     time_t last_activity;
@@ -120,7 +122,7 @@ void fini_server(void);
 int init_sockets(struct gssproxy_ctx *gpctx, struct gp_config *old_config);
 int init_userproxy_socket(struct gssproxy_ctx *gpctx);
 void init_event_loop(struct gssproxy_ctx *gpctx);
-void init_proc_nfsd(struct gp_config *cfg);
+int init_proc_nfsd(struct gssproxy_ctx *gpctx);
 int init_event_fini(struct gssproxy_ctx *gpctx);
 void write_pid(void);
 int drop_privs(struct gp_config *cfg);
