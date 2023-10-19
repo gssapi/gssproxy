@@ -44,6 +44,7 @@ BuildRequires: libcap-devel
 BuildRequires: popt-devel
 BuildRequires: findutils
 BuildRequires: systemd-units
+BuildRequires: systemd-devel
 
 
 %description

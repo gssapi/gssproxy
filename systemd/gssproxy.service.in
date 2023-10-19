@@ -7,11 +7,10 @@ Before=rpc-gssd.service
 [Service]
 StateDirectory=gssproxy/clients gssproxy/rcache
 Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
-ExecStart=@sbindir@/gssproxy -D
-# These two should be used with traditional UNIX forking daemons
-# consult systemd.service(5) for more details
-Type=forking
-PIDFile=/run/gssproxy.pid
+ExecStart=@sbindir@/gssproxy -i
+# This can be changed to notify-reload and ExecReload= can be removed once
+#   systemd 253 is common enough
+Type=notify
 ExecReload=/bin/kill -HUP $MAINPID
 
 ProtectSystem=full
