@@ -46,6 +46,16 @@
 /* max out at 1MB for now */
 #define MAX_RPC_SIZE 1024*1024
 
+#ifdef HAVE_SYSTEMD_DAEMON
+#include <systemd/sd-daemon.h>
+#else
+__inline__ int sd_notifyf(int unset_environment UNUSED, const char *format UNUSED, ...)
+{
+    return 0;
+}
+#endif
+
+uint64_t time_now_usec(void);
 bool gp_same(const char *a, const char *b);
 bool gp_boolean_is_true(const char *s);
 char *gp_getenv(const char *name);

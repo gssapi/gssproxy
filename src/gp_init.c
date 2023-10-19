@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #ifdef HAVE_CAP
 
@@ -260,10 +261,19 @@ static void hup_handler(verto_ctx *vctx UNUSED, verto_ev *ev)
 
     gpctx = verto_get_private(ev);
 
+    sd_notifyf(0, "RELOADING=1\n"
+               "MONOTONIC_USEC=%" PRIu64 "\n"
+               "STATUS=Reloading configuration\n",
+               time_now_usec());
+
     GPDEBUG("Received SIGHUP; re-reading config.\n");
     new_config = read_config(gpctx->config_file, gpctx->config_dir,
                              gpctx->config_socket, gpctx->daemonize);
     if (!new_config) {
+        sd_notifyf(0, "READY=1\n"
+                   "STATUS=Running, %i service(s) configured"
+                   " (failed to re-read config)\n",
+                   gpctx->config->num_svcs);
         GPERROR("Error reading new configuration on SIGHUP; keeping old "
                 "configuration instead!\n");
         return;
@@ -281,12 +291,16 @@ static void hup_handler(verto_ctx *vctx UNUSED, verto_ev *ev)
 
     free_config(&old_config);
 
+    sd_notifyf(0, "READY=1\n"
+               "STATUS=Running, %i service(s) configured\n",
+               gpctx->config->num_svcs);
     GPDEBUG("New config loaded successfully.\n");
     return;
 }
 
 static void break_loop(verto_ctx *vctx, verto_ev *ev UNUSED)
 {
+    sd_notifyf(0, "STOPPING=1\nSTATUS=Signal received, stopping\n");
     GPDEBUG("Exiting after receiving a signal\n");
     verto_break(vctx);
 }
@@ -354,11 +368,14 @@ fail:
  * is done. */
 static void delayed_init(verto_ctx *vctx UNUSED, verto_ev *ev)
 {
-    struct gssproxy_ctx *gpctx;
+    struct gssproxy_ctx *gpctx = verto_get_private(ev);
+
+    sd_notifyf(0, "READY=1\n"
+	       "STATUS=Running, %i service(s) configured\n",
+	       gpctx->config->num_svcs);
 
     GPDEBUG("Initialization complete.\n");
 
-    gpctx = verto_get_private(ev);
     idle_handler(gpctx);
 }
 

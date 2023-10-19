@@ -3,7 +3,7 @@ Description=GSS User Proxy
 Documentation=man:gssproxy(8)
 
 [Service]
-Type=exec
+Type=notify
 StandardError=journal
 ExecStart=@sbindir@/gssproxy -i -u
 Restart=on-failure

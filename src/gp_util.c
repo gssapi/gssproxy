@@ -7,8 +7,37 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <time.h>
 
 #include "gp_common.h"
+
+#define USEC_INFINITY ((uint64_t)UINT64_MAX)
+#define NSEC_PER_USEC ((uint64_t)1000ULL)
+#define USEC_PER_SEC  ((uint64_t)1000000ULL)
+uint64_t time_now_usec(void)
+{
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0) {
+        goto out;
+    }
+
+    if (ts.tv_sec < 0 || ts.tv_nsec < 0) {
+        goto out;
+    }
+
+    if ((uint64_t)ts.tv_sec >
+        (UINT64_MAX - (ts.tv_nsec / NSEC_PER_USEC)) / USEC_PER_SEC) {
+        goto out;
+    }
+
+    return (uint64_t)ts.tv_sec * USEC_PER_SEC +
+           (uint64_t)ts.tv_nsec / NSEC_PER_USEC;
+
+out:
+    return USEC_INFINITY;
+}
 
 bool gp_same(const char *a, const char *b)
 {

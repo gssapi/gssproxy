@@ -18,6 +18,9 @@ static void idle_terminate(verto_ctx *vctx, verto_ev *ev)
 {
     struct gssproxy_ctx *gpctx = verto_get_private(ev);
 
+    sd_notifyf(0, "STOPPING=1\nSTATUS=Idle for %ld seconds, stopping\n",
+               (long)gpctx->term_timeout/1000);
+
     GPDEBUG("Terminating, after idling for %ld seconds!\n",
             (long)gpctx->term_timeout/1000);
     verto_break(vctx);
