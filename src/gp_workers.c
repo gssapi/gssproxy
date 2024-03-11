@@ -189,7 +189,7 @@ void gp_workers_free(struct gp_workers *w)
     while (w->busy_list) {
         /* pick threads one by one */
         t = w->busy_list;
-        LIST_DEL(w->free_list, t);
+        LIST_DEL(w->busy_list, t);
 
         /* wake up threads, then join them */
         /* ======> COND_MUTEX */
