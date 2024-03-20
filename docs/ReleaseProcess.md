@@ -50,4 +50,4 @@ sha512sum gssproxy-0.1.0.tar.gz > gssproxy-0.1.0.tar.gz.sha512sum.txt
     Use the option to create release notes from the PR log.
 
 - Announce th new release on the gssproxy mailinglist
-  (https://lists.fedorahosted.org/mailman/listinfo/gss-proxy)
+  (https://lists.fedorahosted.org/archives/lists/gss-proxy.lists.fedorahosted.org/)

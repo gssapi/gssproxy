@@ -5,8 +5,8 @@ Summary:	GSSAPI Proxy
 
 Group:		System Environment/Libraries
 License:	MIT
-URL:		http://fedorahosted.org/gss-proxy
-Source0:	http://fedorahosted.org/released/gss-proxy/%{name}-%{version}.tar.gz
+URL:		https://github.com/gssapi/gssproxy
+Source0:	https://github.com/gssapi/gssproxy/releases/download/v%{version}/%{name}-%{version}.tar.gz
 BuildRoot:	%(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 %global servicename gssproxy
