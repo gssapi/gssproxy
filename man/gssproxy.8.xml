@@ -6,7 +6,7 @@
 <refentry>
     <refentryinfo>
         <productname>GSS Proxy</productname>
-        <orgname>GSS-Proxy - http://fedorahosted.org/gss-proxy</orgname>
+        <orgname>GSS-Proxy - https://github.com/gssapi/gssproxy</orgname>
     </refentryinfo>
 
     <refmeta>
