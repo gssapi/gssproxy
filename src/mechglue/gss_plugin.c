@@ -124,7 +124,7 @@ gss_OID_set gss_mech_interposer(gss_OID mech_type)
         goto done;
     }
 
-    /* while there also initiaize special_mechs */
+    /* while there also initialize special_mechs */
     gpp_init_special_available_mechs(interposed_mechs);
 
 done:
