@@ -396,7 +396,7 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
             }
 
             ret = 0;
-            wn = write(gpmctx->fd, &size, sizeof(uint32_t));
+            wn = send(gpmctx->fd, &size, sizeof(uint32_t), MSG_NOSIGNAL);
             if (wn == -1) {
                 ret = errno;
             }
@@ -424,7 +424,7 @@ static int gpm_send_buffer(struct gpm_ctx *gpmctx,
             goto done;
         }
 
-        wn = write(gpmctx->fd, buffer + pos, length - pos);
+        wn = send(gpmctx->fd, buffer + pos, length - pos, MSG_NOSIGNAL);
         if (wn == -1) {
             if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
                 continue;
