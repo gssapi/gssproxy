@@ -19,6 +19,10 @@ The gssproxy client registers to the kernel by performing 2 actions in the follo
 - creates a unix socket for kernel communication in /var/run/gssproxy.sock (this path is hardcoded in the kernel and cannot be changed at this time)
 - writes 1 byte in the proc file /proc/net/rpc/use-gss-proxy (the client must be ready to accept a connection from the kernel when this is done, as the kernel we check that the socket is available)
 
+NOTE: GSS-Proxy does not use libnfsidmap (nor /etc/idmap.conf) for three reasons:
+- principal to local name mapping is already implemented in krb5.conf via the `auth_to_local` option and that automatically integrates with any nsswitch providers that feed users to the system (like SSSD, Winbind, etc) that do proper caching and filtering without requiring a completely separate mapping system
+- because of the above we can avoid a lot of code to handle libnfsidmap in gssproxy that is not needed, without loss of functionality, and in fact with gain of functionality via the above mentioned mapping systems (no manual krb5.conf configuration needed when a system is using Winbindd/SSSD and is joined to a domain)
+- libidmap is not thread safe and this is a deal breaker
 
 The simplest GSS-Proxy configuration file to act as a NFSD helper is the following:
 ```
