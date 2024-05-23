@@ -178,7 +178,7 @@ OM_uint32 gssi_init_sec_context(OM_uint32 *minor_status,
                 }
                 cred_handle->remote = out_cred;
                 out_cred = NULL;
-                /* failuire is not fatal */
+                /* failure is not fatal */
                 (void)gpp_store_remote_creds(&tmin,
                                              cred_handle->default_creds,
                                              &cred_handle->store,

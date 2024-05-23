@@ -1007,7 +1007,7 @@ uint32_t gp_cred_allowed(uint32_t *min,
     /* if we find an impersonator entry we bail as that is not authorized,
      * *unless* the target is the impersonator itself! If the operation
      * were authorized then gpcall->service->allow_const_deleg would have
-     * caused the ealier check to return GSS_S_COMPLETE already */
+     * caused the earlier check to return GSS_S_COMPLETE already */
     if (impersonator != NULL) {
         ret_maj = check_impersonator_name(&ret_min, target_name, impersonator);
     }
