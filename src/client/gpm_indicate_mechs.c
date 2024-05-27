@@ -52,6 +52,11 @@ static uint32_t gpm_copy_gss_OID_set(uint32_t *minor_status,
     uint32_t ret_maj;
     uint32_t ret_min;
 
+    if (oldset == GSS_C_NO_OID_SET) {
+	    *newset = GSS_C_NO_OID_SET;
+	    return GSS_S_COMPLETE;
+    }
+
     ret_maj = gss_create_empty_oid_set(&ret_min, &n);
     if (ret_maj) {
         *minor_status = ret_min;
