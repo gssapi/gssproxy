@@ -1,7 +1,7 @@
 [service/network-fs-clients]
   mechs = krb5
   cred_store = keytab:/etc/krb5.keytab
-  cred_store = ccache:FILE:@gpclidir@/krb5cc_%U
+  cred_store = ccache:FILE:@gpclidir@/krb5cc_fs_%U
   cred_store = client_keytab:@gpclidir@/%U.keytab
   cred_usage = initiate
   allow_any_uid = yes
