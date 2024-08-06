@@ -33,6 +33,7 @@ int gp_init_sec_context(struct gp_call_ctx *gpcall,
     };
     uint32_t gccn_before = 0;
     uint32_t gccn_after = 0;
+    uint32_t discard;
     int ret;
 
     isca = &arg->init_sec_context;
@@ -192,6 +193,7 @@ done:
 
     GPRPCDEBUG(gssx_res_init_sec_context, iscr);
 
+    gss_delete_sec_context(&discard, &ctx, NULL);
     gss_release_name(&ret_min, &target_name);
     gss_release_oid(&ret_min, &mech_type);
     gss_release_cred(&ret_min, &ich);

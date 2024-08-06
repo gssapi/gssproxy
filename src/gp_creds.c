@@ -800,6 +800,7 @@ done:
     gss_release_cred(&discard, &user_cred);
     gss_release_name(&discard, &target_name);
     gss_delete_sec_context(&discard, &initiator_context, NULL);
+    gss_delete_sec_context(&discard, &acceptor_context, NULL);
     gss_release_buffer(&discard, &init_token);
     gss_release_buffer(&discard, &accept_token);
     gss_release_name(&discard, &req_name);

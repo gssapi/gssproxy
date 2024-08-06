@@ -377,7 +377,7 @@ void run_server(struct aproc *data)
     uint32_t ret_min;
     gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
     gss_cred_id_t cred_handle = GSS_C_NO_CREDENTIAL;
-    gss_name_t src_name;
+    gss_name_t src_name = GSS_C_NO_NAME;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
     gss_cred_id_t deleg_cred = GSS_C_NO_CREDENTIAL;
     gss_OID_set mech_set = GSS_C_NO_OID_SET;
@@ -591,7 +591,8 @@ void run_server(struct aproc *data)
         goto done;
     }
 
-    fprintf(stdout, "Server, RECV: %s\n", (char *)out_token.value);
+    fprintf(stdout, "Server, RECV: %*s\n", (int)out_token.length,
+                                           (char *)out_token.value);
 
     gss_release_buffer(&ret_min, &out_token);
 
