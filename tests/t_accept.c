@@ -9,7 +9,7 @@ int main(int argc, const char *argv[])
     gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
     gss_buffer_desc in_token = GSS_C_EMPTY_BUFFER;
     gss_buffer_desc out_token = GSS_C_EMPTY_BUFFER;
-    gss_name_t src_name;
+    gss_name_t src_name = GSS_C_NO_NAME;
     uint32_t ret_maj;
     uint32_t ret_min;
     int ret = -1;

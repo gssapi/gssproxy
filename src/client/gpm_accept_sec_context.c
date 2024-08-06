@@ -105,6 +105,7 @@ OM_uint32 gpm_accept_sec_context(OM_uint32 *minor_status,
     if (outbuf) {
         *output_token = *outbuf;
         free(outbuf);
+        outbuf = NULL;
     }
     if (ret_flags) {
         *ret_flags = ctx->ctx_flags;

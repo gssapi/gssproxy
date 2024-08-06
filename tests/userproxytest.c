@@ -33,14 +33,19 @@ int mock_activation_sockets(void)
     unlink(addr.sun_path);
 
     fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (fd == -1) return -1;
+    if (fd == -1) {
+        ret = -1;
+        goto done;
+    }
 
     ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
-    if (ret == -1) return -1;
+    if (ret == -1) goto done;
 
     ret = listen(fd, 1);
-    if (ret == -1) return -1;
+    if (ret == -1) goto done;
 
+done:
+    if (ret == -1) close(fd);
     return 0;
 }
 
@@ -75,19 +80,19 @@ int wait_and_check_output(int outfd, int timeout)
     useconds_t interval = 100 * 1000; /* 100 msec */
     char outbuf[1024];
     char *line;
-    FILE *out;
-    int ret;
+    FILE *out = NULL;
+    int err, ret = -1;
 
     /* make pipe non blocking */
-    ret = fcntl(outfd, F_SETFL, O_NONBLOCK);
-    if (ret) return -1;
+    err = fcntl(outfd, F_SETFL, O_NONBLOCK);
+    if (err) goto done;
 
     out = fdopen(outfd, "r");
-    if (!out) return -1;
+    if (!out) goto done;
 
     while (now < start + timeout) {
-        ret = usleep(interval);
-        if (ret) return -1;
+        err = usleep(interval);
+        if (err) goto done;
 
         line = fgets(outbuf, 1023, out);
         if (line) {
@@ -101,13 +106,15 @@ int wait_and_check_output(int outfd, int timeout)
         now = time(NULL);
     }
 
-    fclose(out);
-
     for (int i = 0; checks[i].match != NULL; i++) {
-        if (checks[i].matched == false) return -1;
+        if (checks[i].matched == false) goto done;
     }
 
-    return 0;
+    ret = 0;
+
+done:
+    if (out) fclose(out);
+    return ret;
 }
 
 int child(int outpipe[])
