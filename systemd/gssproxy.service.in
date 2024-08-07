@@ -6,6 +6,7 @@ Before=rpc-gssd.service
 [Service]
 ConfigurationDirectory=gssproxy
 StateDirectory=gssproxy gssproxy/clients gssproxy/rcache
+StateDirectoryMode=0700
 Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
 ExecStart=@sbindir@/gssproxy -i
 # This can be changed to notify-reload and ExecReload= can be removed once
