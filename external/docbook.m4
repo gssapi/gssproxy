@@ -23,7 +23,7 @@ dnl Checks if the XML catalog given by FILE exists and
 dnl if a particular URI appears in the XML catalog
 AC_DEFUN([CHECK_STYLESHEET],
 [
-  AC_CHECK_FILE($1, [], [AC_MSG_ERROR([could not find XML catalog])])
+  if ! test -e $1; then AC_MSG_ERROR([could not find XML catalog]); fi
 
   AC_MSG_CHECKING([for ifelse([$3],,[$2],[$3]) in XML catalog])
   if AC_RUN_LOG([$XMLCATALOG --noout "$1" "$2" >&2]); then

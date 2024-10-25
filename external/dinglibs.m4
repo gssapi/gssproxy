@@ -129,7 +129,7 @@ AC_DEFUN([WITH_LIBINI_CONFIG],
         return ret;
     }
     ]])]
-    ,, [AC_MSG_ERROR(["ini_config library must support extended INI_MS_DETECT. See: https://pagure.io/SSSD/ding-libs/pull-request/3172"])])
+    ,, [AC_MSG_ERROR(["ini_config library must support extended INI_MS_DETECT."])], AC_MSG_WARN(["Cross Compiling. Make sure your ini_config library supports extended INI_MS_DETECT"]))
 
     have_libini_config=yes
   ], [
