@@ -54,7 +54,10 @@ PrivateMounts=yes
 SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 SystemCallArchitectures=native
-NoNewPrivileges=yes
+# NoNewPrivileges=yes
+# NoNewPrivileges: If it is true, it breaks the ability
+#   to open a socket under /var/lib/gssproxy when selinux enabled.
+#   So it is commented out here.
 CapabilityBoundingSet=CAP_DAC_OVERRIDE
 IPAddressDeny=any
 UMask=0177
