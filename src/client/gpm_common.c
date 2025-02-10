@@ -676,6 +676,8 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     gp_rpc_msg msg;
     XDR xdr_call_ctx = {0};
     XDR xdr_reply_ctx = {0};
+    xdrfn *arg_fn;
+    xdrfn *res_fn;
     char *send_buffer = NULL;
     char *recv_buffer = NULL;
     uint32_t send_length;
@@ -726,7 +728,8 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     }
 
     /* encode data */
-    xdrok = gpm_xdr_set[proc].arg_fn(&xdr_call_ctx, (char *)arg);
+    arg_fn = gpm_xdr_set[proc].arg_fn;
+    xdrok = arg_fn(&xdr_call_ctx, arg);
     if (!xdrok) {
         ret = EINVAL;
         goto done;
@@ -765,7 +768,8 @@ int gpm_make_call(int proc, union gp_rpc_arg *arg, union gp_rpc_res *res)
     }
 
     /* decode answer */
-    xdrok = gpm_xdr_set[proc].res_fn(&xdr_reply_ctx, (char *)res);
+    res_fn = gpm_xdr_set[proc].res_fn;
+    xdrok = res_fn(&xdr_reply_ctx, res);
     if (!xdrok) {
         ret = EINVAL;
     }

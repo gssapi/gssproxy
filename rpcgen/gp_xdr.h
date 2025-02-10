@@ -5,6 +5,10 @@
 
 #include "gssrpc/rpc.h"
 
+/* Equivalent to xdrptoc_t but with proper arguments so that modern
+ * compilers do not complain */
+typedef int xdrfn(XDR *, void *);
+
 #define xdr_u_quad_t gp_xdr_uint64_t
 
 bool_t gp_xdr_uint64_t(XDR *xdrs, uint64_t *objp);
