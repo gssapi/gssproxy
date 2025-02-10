@@ -196,6 +196,7 @@ static int gp_rpc_decode_call(XDR *xdr_call_ctx,
                               gp_rpc_accept_status *acc,
                               gp_rpc_reject_status *rej)
 {
+    xdrfn *arg_fn;
     bool xdrok;
     int ret;
 
@@ -204,7 +205,8 @@ static int gp_rpc_decode_call(XDR *xdr_call_ctx,
         return ret;
     }
 
-    xdrok = gp_xdr_set[*proc].arg_fn(xdr_call_ctx, (char *)arg);
+    arg_fn = gp_xdr_set[*proc].arg_fn;
+    xdrok = arg_fn(xdr_call_ctx, arg);
     if (!xdrok) {
         *acc = GP_RPC_GARBAGE_ARGS;
         return EINVAL;
@@ -283,6 +285,7 @@ static int gp_rpc_encode_reply(XDR *xdr_reply_ctx,
                                gp_rpc_accept_status acc,
                                gp_rpc_reject_status rej)
 {
+    xdrfn *res_fn;
     bool xdrok;
     int ret;
 
@@ -291,7 +294,8 @@ static int gp_rpc_encode_reply(XDR *xdr_reply_ctx,
         return ret;
     }
 
-    xdrok = gp_xdr_set[proc].res_fn(xdr_reply_ctx, (char *)res);
+    res_fn = gp_xdr_set[proc].res_fn;
+    xdrok = res_fn(xdr_reply_ctx, res);
 
     if (!xdrok) {
         return gp_rpc_encode_reply_header(xdr_reply_ctx, xid, EINVAL,
