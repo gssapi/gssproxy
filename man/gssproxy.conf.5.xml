@@ -27,7 +27,7 @@
         <para>
             GSS-Proxy conf files are classic ini-style configuration files.
             Each option consist of a key = value pair.
-            Any characters behind '#' will be treated as comments and will be ignored.
+            Any line starting with '#' will be treated as comment and will be ignored.
             Boolean parameters accept "1", "true", "yes" and "on" as
             positive values. All other values will be considered as negative
             values.
