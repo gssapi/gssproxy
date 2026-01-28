@@ -32,7 +32,6 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdlib.h>
 #include <stdint.h>
 #include <ini_configobj.h>
-#include <ini_config.h>
 
 static int write_to_file(char *path, char *text)
 {
