@@ -147,7 +147,6 @@ if test x$only_gss_module != xyes; then
 
 
     WITH_LIBINI_CONFIG
-    WITH_REF_ARRAY
 
     INI_CFLAGS="$INI_CONFIG_CFLAGS"
     INI_LIBS="$INI_CONFIG_LIBS"
