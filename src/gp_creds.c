@@ -634,7 +634,8 @@ uint32_t gp_add_krb5_creds(uint32_t *min,
         if (ret_maj == GSS_S_COMPLETE) {
             return GSS_S_COMPLETE;
         } else if (ret_maj == GSS_S_CREDENTIALS_EXPIRED ||
-                   ret_maj == GSS_S_NO_CRED) {
+                   ret_maj == GSS_S_NO_CRED || 
+                   ret_maj == GSS_S_DEFECTIVE_CREDENTIAL) {
             /* continue and try to obtain new creds */
             ret_maj = 0;
             ret_min = 0;
