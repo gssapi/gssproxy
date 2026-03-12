@@ -12,6 +12,7 @@
 
 extern int gp_debug;
 
+void gp_debug_check_env_(void);
 void gp_debug_toggle(int);
 void gp_debug_printf(const char *format, ...);
 void gp_debug_time_printf(const char *format, ...);
