@@ -9,7 +9,16 @@
 
 /* global debug switch */
 int gp_debug = 0;
+bool gp_env_trace = false;
 
+/* determine if we can set KRB5_TRACE or the user already set it.
+ * we do not override a user's setting */
+void gp_debug_check_env_(void)
+{
+    if (getenv("KRB5_TRACE")) {
+        gp_env_trace = true;
+    }
+}
 
 void (*gp_debug_setup_k5_trace_fn)(int) = NULL;
 
@@ -27,24 +36,26 @@ void gp_debug_set_krb5_tracing_fn(void (*fn)(int))
      * initial debug level is set via configuration.
      * Make sure to immedaiately call it if debug level is
      * already above 3 */
-    if (gp_debug >= 3 && !getenv("KRB5_TRACE")) {
+    if (gp_debug >= 3 && !gp_env_trace) {
         gp_debug_setup_k5_trace_fn(1);
     }
 }
 
 void gp_debug_toggle(int level)
 {
-    if (level >= 3 && !getenv("KRB5_TRACE")) {
-        if (gp_debug_setup_k5_trace_fn) {
-            gp_debug_setup_k5_trace_fn(1);
-        } else {
-            setenv("KRB5_TRACE", "/dev/stderr", 1);
-        }
-    } else if (level < 3) {
-        if (gp_debug_setup_k5_trace_fn) {
-            gp_debug_setup_k5_trace_fn(0);
-        } else {
-            unsetenv("KRB5_TRACE");
+    if (!gp_env_trace) {
+        if (level >= 3) {
+            if (gp_debug_setup_k5_trace_fn) {
+                gp_debug_setup_k5_trace_fn(1);
+            } else {
+                setenv("KRB5_TRACE", "/dev/stderr", 1);
+            }
+        } else if (level < 3) {
+            if (gp_debug_setup_k5_trace_fn) {
+                gp_debug_setup_k5_trace_fn(0);
+            } else {
+                unsetenv("KRB5_TRACE");
+            }
         }
     }
 

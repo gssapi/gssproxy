@@ -86,12 +86,16 @@ int main(int argc, const char *argv[])
         goto cleanup;
     }
 
-    /* set tracing function before handling debug level */
-    gp_debug_set_krb5_tracing_fn(&gp_krb5_tracing_setup);
+    gp_debug_check_env_();
 
     if (opt_debug || opt_debug_level > 0) {
         if (opt_debug_level == 0) opt_debug_level = 1;
         gp_debug_toggle(opt_debug_level);
+    }
+
+    /* if we are in interactive mode set up tracing immediately */
+    if (opt_interactive) {
+        gp_debug_set_krb5_tracing_fn(&gp_krb5_tracing_setup);
     }
 
     if (opt_extract_ccache) {
@@ -140,6 +144,12 @@ int main(int argc, const char *argv[])
     }
 
     init_server(gpctx->config->daemonize, opt_userproxy, &wait_fd);
+
+    if (!opt_interactive) {
+        /* set tracing function *after* demonizing, or we kill the
+         * trace reader thread */
+        gp_debug_set_krb5_tracing_fn(&gp_krb5_tracing_setup);
+    }
 
     if (!gpctx->userproxymode) {
         write_pid();
