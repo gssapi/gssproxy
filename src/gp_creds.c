@@ -1105,21 +1105,20 @@ uint32_t gp_count_tickets(uint32_t *min, gss_cred_id_t cred, uint32_t *ccsum)
         goto done;
     }
 
-    do {
-        err = krb5_cc_next_cred(context, ccache, &cursor, &creds);
-        if (err != 0 && err != KRB5_CC_END) {
-            ret_min = err;
-            ret_maj = GSS_S_FAILURE;
-            goto done;
-        }
-
+    while ((err = krb5_cc_next_cred(context, ccache, &cursor, &creds)) == 0) {
         krb5_free_cred_contents(context, &creds);
 
         /* TODO: Should we do a real checksum over all creds->ticket data and
          * flags in future ? */
         (*ccsum)++;
-
-    } while (err == 0);
+    }
+    if (err != KRB5_CC_END) {
+        ret_min = err;
+        ret_maj = GSS_S_FAILURE;
+        /* do not leak the cursor when an iteration error occurs */
+        krb5_cc_end_seq_get(context, ccache, &cursor);
+        goto done;
+    }
 
     err = krb5_cc_end_seq_get(context, ccache, &cursor);
     if (err != 0) {
