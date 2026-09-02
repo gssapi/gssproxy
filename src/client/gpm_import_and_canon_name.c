@@ -92,10 +92,7 @@ OM_uint32 gpm_display_name(OM_uint32 *minor_status,
     ret_maj = GSS_S_COMPLETE;
 
 done:
-    if (output_name) {
-        xdr_free((xdrproc_t)xdr_gssx_name, (char *)output_name);
-        free(output_name);
-    }
+    gp_xdr_free_ptr(output_name);
     *minor_status = ret_min;
     return ret_maj;
 }
@@ -406,10 +403,8 @@ OM_uint32 gpm_release_name(OM_uint32 *minor_status,
 {
     *minor_status = 0;
 
-    if (*input_name != NULL) {
-        xdr_free((xdrproc_t)xdr_gssx_name, (char *)(*input_name));
-        free(*input_name);
-        *input_name = NULL;
+    if (input_name) {
+        gp_xdr_free_ptr(*input_name);
     }
     return GSS_S_COMPLETE;
 }

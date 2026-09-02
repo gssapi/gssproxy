@@ -185,7 +185,7 @@ static int gp_rpc_decode_call_header(XDR *xdr_call_ctx,
     ret = 0;
 
 done:
-    xdr_free((xdrproc_t)xdr_gp_rpc_msg, (char *)&msg);
+    gp_xdr_free(&msg);
     return ret;
 }
 

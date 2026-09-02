@@ -162,11 +162,7 @@ done:
             *time_rec = ctx->lifetime;
         }
     } else {
-        if (ctx) {
-            xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ctx);
-            free(ctx);
-            ctx = NULL;
-        }
+        gp_xdr_free_ptr(ctx);
         if (outbuf) {
             free(outbuf->value);
             free(outbuf);
@@ -174,10 +170,7 @@ done:
     }
 
     /* always replace old ctx handle and set new */
-    if (*context_handle) {
-        xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
-        free(*context_handle);
-    }
+    gp_xdr_free_ptr(*context_handle);
     *context_handle = ctx;
 
     *minor_status = ret_min;

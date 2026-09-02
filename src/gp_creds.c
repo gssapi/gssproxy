@@ -1221,7 +1221,7 @@ uint32_t gp_export_sync_creds(uint32_t *min, struct gp_call_ctx *gpcall,
     ret_maj = GSS_S_COMPLETE;
 
 done:
-    xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&creds);
+    gp_xdr_free(&creds);
     *min = ret_min;
     return ret_maj;
 }

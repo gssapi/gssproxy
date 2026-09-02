@@ -228,9 +228,9 @@ int gp_conv_cb_to_gssx(gss_channel_bindings_t in, gssx_cb *out)
 
 done:
     if (ret) {
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->initiator_address);
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->acceptor_address);
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out->application_data);
+        gp_xdr_free(&out->initiator_address);
+        gp_xdr_free(&out->acceptor_address);
+        gp_xdr_free(&out->application_data);
     }
     return ret;
 }
@@ -408,10 +408,10 @@ done:
     gss_release_buffer(&ret_min, &exported_name);
     gss_release_buffer(&ret_min, &exported_composite_name);
     if (ret_maj) {
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out.display_name);
-        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out.name_type);
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out.exported_name);
-        xdr_free((xdrproc_t)xdr_gssx_buffer, (char *)&out.exported_composite_name);
+        gp_xdr_free(&out.display_name);
+        gp_xdr_free(&out.name_type);
+        gp_xdr_free(&out.exported_name);
+        gp_xdr_free(&out.exported_composite_name);
     } else {
         *_out = out;
     }
@@ -590,8 +590,7 @@ int gp_copy_gssx_status_alloc(gssx_status *in, gssx_status **out)
 
 done:
     if (ret) {
-        xdr_free((xdrproc_t)xdr_gssx_status, (char *)o);
-        free(o);
+        gp_xdr_free_ptr(o);
     }
     return ret;
 }
@@ -699,7 +698,7 @@ int gp_copy_gssx_name(gssx_name *in, gssx_name *out)
 
 done:
     if (ret) {
-        xdr_free((xdrproc_t)xdr_gssx_name, (char *)out);
+        gp_xdr_free(out);
     }
     return ret;
 }

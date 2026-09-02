@@ -65,10 +65,7 @@ uint32_t gpp_cred_handle_free(uint32_t *min, struct gpp_cred_handle *handle)
         maj = gss_release_cred(min, &handle->local);
     }
 
-    if (handle->remote) {
-        xdr_free((xdrproc_t)xdr_gssx_cred, (char *)handle->remote);
-        free(handle->remote);
-    }
+    gp_xdr_free_ptr(handle->remote);
 
     if (handle->store.count > 0) {
         for (size_t i = 0; i < handle->store.count; i++) {
@@ -427,7 +424,7 @@ OM_uint32 gppint_get_def_creds(OM_uint32 *minor_status,
             }
         }
 
-        xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&remote);
+        gp_xdr_free(&remote);
 
         if (maj == GSS_S_COMPLETE) {
             goto done;

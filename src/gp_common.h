@@ -66,6 +66,37 @@ ssize_t gp_safe_write(int fd, const void *buf, size_t count);
 char *gp_strerror(int errnum);
 
 #include "rpcgen/gss_proxy.h"
+#include "rpcgen/gp_rpc.h"
+
+#define gp_xdr_proc(val) _Generic((val), \
+    octet_string *: xdr_octet_string, \
+    utf8string *: xdr_utf8string, \
+    gssx_OID_set *: xdr_gssx_OID_set, \
+    struct gssx_option *: xdr_gssx_option, \
+    struct gssx_mech_attr *: xdr_gssx_mech_attr, \
+    struct gssx_mech_info *: xdr_gssx_mech_info, \
+    struct gssx_name_attr *: xdr_gssx_name_attr, \
+    struct gssx_status *: xdr_gssx_status, \
+    struct gssx_call_ctx *: xdr_gssx_call_ctx, \
+    struct gssx_name *: xdr_gssx_name, \
+    struct gssx_cred_element *: xdr_gssx_cred_element, \
+    struct gssx_cred *: xdr_gssx_cred, \
+    struct gssx_ctx *: xdr_gssx_ctx, \
+    struct gssx_handle *: xdr_gssx_handle, \
+    struct gssx_cb *: xdr_gssx_cb, \
+    struct gp_rpc_msg *: xdr_gp_rpc_msg \
+)
+
+#define gp_xdr_free(val) do { \
+    xdr_free((xdrproc_t)gp_xdr_proc(val), (char *)(val)); \
+} while(0)
+
+#define gp_xdr_free_ptr(ptr) do { \
+    if (ptr) { \
+        xdr_free((xdrproc_t)gp_xdr_proc(ptr), (char *)(ptr)); \
+        safefree(ptr); \
+    } \
+} while(0)
 
 union gp_rpc_arg {
     gssx_arg_release_handle release_handle;
