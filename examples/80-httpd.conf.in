@@ -1,5 +1,6 @@
 [service/HTTP]
   mechs = krb5
   cred_store = keytab:/etc/gssproxy/http.keytab
-  cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_%U
+  cred_store = ccache:/var/lib/gssproxy/clients/krb5cc_http_%U
   euid = apache
+  program = /usr/sbin/httpd
