@@ -94,7 +94,7 @@ int gp_send_accept_sec_context(int fd,
         return EFAULT;
     }
 
-    xdr_free((xdrproc_t)xdr_gp_rpc_msg, (char *)&msg);
+    gp_xdr_free(&msg);
     xdr_destroy(&xdr_call_ctx);
     xdr_destroy(&xdr_reply_ctx);
     return 0;

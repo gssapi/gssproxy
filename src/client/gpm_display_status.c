@@ -8,8 +8,7 @@ static pthread_key_t gpm_last_status;
 static void gpm_destroy_last_status(void *arg)
 {
     gssx_status *status = (gssx_status *)arg;
-    xdr_free((xdrproc_t)xdr_gssx_status, (char *)status);
-    free(status);
+    gp_xdr_free_ptr(status);
 }
 
 void gpm_display_status_init_once(void)

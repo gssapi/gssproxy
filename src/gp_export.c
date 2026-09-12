@@ -772,7 +772,7 @@ export:
     case EXP_CTX_PARTIAL:
         /* this happens only when a init_sec_context call returns a partially
          * initialized context so we return only what we have, not much */
-        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->mech);
+        gp_xdr_free(&out->mech);
         ret = gp_conv_oid_to_gssx(mech, &out->mech);
         if (ret) {
             ret_maj = GSS_S_FAILURE;
@@ -812,12 +812,10 @@ export:
         }
         /* suppress names exported_composite_name, the kernel doesn't want
          * this information */
-        xdr_free((xdrproc_t)xdr_gssx_buffer,
-                 (char *)&out->src_name.exported_composite_name);
+        gp_xdr_free(&out->src_name.exported_composite_name);
         memset(&out->src_name.exported_composite_name, 0,
                sizeof(out->src_name.exported_composite_name));
-        xdr_free((xdrproc_t)xdr_gssx_buffer,
-                 (char *)&out->targ_name.exported_composite_name);
+        gp_xdr_free(&out->targ_name.exported_composite_name);
         memset(&out->targ_name.exported_composite_name, 0,
                sizeof(out->targ_name.exported_composite_name));
         break;
@@ -839,9 +837,9 @@ done:
         gss_krb5_free_lucid_sec_context(&ret_min, lucid);
     }
     if (ret_maj) {
-        xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&out->mech);
-        xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->src_name);
-        xdr_free((xdrproc_t)xdr_gssx_name, (char *)&out->targ_name);
+        gp_xdr_free(&out->mech);
+        gp_xdr_free(&out->src_name);
+        gp_xdr_free(&out->targ_name);
     }
     return ret_maj;
 }

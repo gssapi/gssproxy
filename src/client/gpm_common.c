@@ -831,7 +831,7 @@ done:
     if (sockgrab) {
         gpm_release_sock(gpmctx);
     }
-    xdr_free((xdrproc_t)xdr_gp_rpc_msg, (char *)&msg);
+    gp_xdr_free(&msg);
     xdr_destroy(&xdr_call_ctx);
 
     if (recv_buffer != NULL)

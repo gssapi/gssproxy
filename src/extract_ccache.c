@@ -126,7 +126,7 @@ done:
         if (ccache) krb5_cc_close(ctx, ccache);
         krb5_free_context(ctx);
     }
-    xdr_free((xdrproc_t)xdr_gssx_cred, (char *)&xcred);
+    gp_xdr_free(&xcred);
     gp_free_creds_handle(&handle);
     gss_release_cred(&ret_min, &gcred);
     free(data_out.data);

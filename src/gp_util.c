@@ -212,7 +212,7 @@ uint32_t gp_add_option(gssx_option **options_val, u_int *options_len,
 
 done:
     if (ret) {
-        xdr_free((xdrproc_t)xdr_gssx_option, (char *)&opt);
+        gp_xdr_free(&opt);
     }
     return ret;
 }

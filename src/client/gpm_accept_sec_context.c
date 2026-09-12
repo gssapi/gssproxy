@@ -134,14 +134,8 @@ done:
     gpm_free_xdrs(GSSX_ACCEPT_SEC_CONTEXT, &uarg, &ures);
 
     if (ret) {
-        if (ctx) {
-            xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)ctx);
-            free(ctx);
-        }
-        if (name) {
-            xdr_free((xdrproc_t)xdr_gssx_name, (char *)name);
-            free(name);
-        }
+        gp_xdr_free_ptr(ctx);
+        gp_xdr_free_ptr(name);
         if (outbuf) {
             free(outbuf->value);
             free(outbuf);
@@ -151,10 +145,7 @@ done:
     }
 
     /* always replace old ctx handle and set new */
-    if (*context_handle) {
-        xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)*context_handle);
-        free(*context_handle);
-    }
+    gp_xdr_free_ptr(*context_handle);
     *context_handle = ctx;
 
     return ret_maj;

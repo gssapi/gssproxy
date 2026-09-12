@@ -50,9 +50,7 @@ rel_done:
     memset(&arg->cred_handle.gssx_handle_u.cred_info, 0, sizeof(gssx_cred));
     gpm_free_xdrs(GSSX_RELEASE_HANDLE, &uarg, &ures);
 done:
-    xdr_free((xdrproc_t)xdr_gssx_cred, (char *)r);
-    free(r);
-    *cred_handle = NULL;
+    gp_xdr_free_ptr(*cred_handle);
     return ret;
 }
 
@@ -105,8 +103,6 @@ rel_done:
     memset(&arg->cred_handle.gssx_handle_u.sec_ctx_info, 0, sizeof(gssx_cred));
     gpm_free_xdrs(GSSX_RELEASE_HANDLE, &uarg, &ures);
 done:
-    xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)r);
-    free(r);
-    *context_handle = NULL;
+    gp_xdr_free_ptr(*context_handle);
     return ret;
 }

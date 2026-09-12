@@ -524,9 +524,7 @@ uint32_t gpp_remote_to_local_ctx(uint32_t *minor, gssx_ctx **remote_ctx,
 
     free(mech.elements);
     (void)gss_release_buffer(&min, &wrap_token);
-    xdr_free((xdrproc_t)xdr_gssx_ctx, (char *)(*remote_ctx));
-    free(*remote_ctx);
-    *remote_ctx = NULL;
+    gp_xdr_free_ptr(*remote_ctx);
     return maj;
 }
 

@@ -204,10 +204,7 @@ done:
         maj = tmaj;
         min = tmin;
     }
-    if (in_cred_remote) {
-        xdr_free((xdrproc_t)xdr_gssx_cred, (char *)in_cred_remote);
-        free(in_cred_remote);
-    }
+    gp_xdr_free_ptr(in_cred_remote);
     if (maj == GSS_S_COMPLETE) {
         *output_cred_handle = (gss_cred_id_t)out_cred_handle;
     } else {

@@ -71,7 +71,7 @@ int gp_indicate_mechs(struct gp_call_ctx *gpcall UNUSED,
             /* temporarily skip any offender */
             imr->mechs.mechs_len--;
             h--;
-            xdr_free((xdrproc_t)xdr_gssx_OID, (char *)&mi->mech);
+            gp_xdr_free(&mi->mech);
             continue;
         }
 
