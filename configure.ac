@@ -123,6 +123,10 @@ AC_SUBST([GSSRPC_LIBS])
 
 AC_CHECK_FUNCS([__secure_getenv secure_getenv])
 
+# keytab_loader: memfd output, pidfd exit notification
+AC_CHECK_HEADERS([sys/pidfd.h])
+AC_CHECK_FUNCS([memfd_create pidfd_open close_range])
+
 AC_ARG_ENABLE([only-gss-module],
               [AC_HELP_STRING([--enable-only-gss-module],
                               [Whether to build only the gss module code [no]]
