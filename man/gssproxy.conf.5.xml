@@ -309,6 +309,43 @@
                     </varlistentry>
 
                 <varlistentry>
+                    <term>keytab_loader (string)</term>
+                    <listitem>
+                        <para>A program that produces the service's keytab,
+                              so that the keys never touch a filesystem.
+                              The service must use an in-memory keytab:
+                              <quote>cred_store = keytab:MEMORY:name</quote>.
+                        </para>
+                        <para>The value is an absolute path followed by
+                              arguments, separated by blanks; no shell is
+                              involved.  GSS-Proxy runs the program with an
+                              anonymous memory file (memfd) as file
+                              descriptor 3, and the program writes a keytab
+                              in the MIT file format to it.  When the program
+                              exits with status 0, the keys replace the
+                              contents of the MEMORY keytab and the memory
+                              file is closed.
+                        </para>
+                        <para>A program that fails (or runs longer than five
+                              minutes) is retried with exponential backoff,
+                              from 5 seconds up to 10 minutes; the keys
+                              loaded before stay in use meanwhile.  SIGHUP
+                              runs every loader again.  When a keytab is no
+                              longer used by any service its keys are
+                              dropped.
+                        </para>
+                        <para>Services that share a MEMORY keytab must name
+                              the same keytab_loader.  While any loader is
+                              configured, GSS-Proxy marks itself as not
+                              dumpable, keeping the keys out of core dumps.
+                        </para>
+                        <para>Example: keytab_loader =
+                              /usr/libexec/kuipa-unseal --memfd
+                        </para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
                     <term>krb5_principal (string)</term>
                     <listitem>
                         <para>
