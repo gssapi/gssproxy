@@ -289,6 +289,9 @@ static void hup_handler(verto_ctx *vctx UNUSED, verto_ev *ev)
     /* conditionally reload kernel interface */
     init_proc_nfsd(gpctx);
 
+    /* re-run keytab loaders, start new ones and drop unused keytabs */
+    gp_keytab_loaders_update(gpctx);
+
     free_config(&old_config);
 
     sd_notifyf(0, "READY=1\n"
