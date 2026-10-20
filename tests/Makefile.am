@@ -33,6 +33,9 @@ t_init_SOURCES = \
 t_init_LDADD = \
     $(GSSAPI_LIBS)
 
+t_kt_loader_SOURCES = \
+    t_kt_loader.c
+
 t_names_SOURCES = \
     t_utils.c \
     t_names.c
@@ -53,6 +56,7 @@ check_PROGRAMS = \
     t_impersonate \
     t_accept \
     t_init \
+    t_kt_loader \
     t_names \
     t_setcredopt \
     $(NULL)
@@ -77,6 +81,7 @@ EXTRA_DIST = \
     testlib.py \
     t_impersonate.py \
     t_interpose.py \
+    t_keytab_loader.py \
     t_multi_key.py \
     t_names.py \
     t_program.py \
