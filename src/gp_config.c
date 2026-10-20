@@ -56,6 +56,17 @@ static void free_str_array(const char ***a, int *count)
     safefree(*a);
 }
 
+static void free_argv(char ***argv)
+{
+    if (!*argv) {
+        return;
+    }
+    for (int i = 0; (*argv)[i]; i++) {
+        safefree((*argv)[i]);
+    }
+    safefree(*argv);
+}
+
 void free_cred_store_elements(gss_key_value_set_desc *cs)
 {
     if (!cs->elements) return;
@@ -78,21 +89,25 @@ static void gp_service_free(struct gp_service *svc)
     }
     free(svc->socket);
     free(svc->program);
+    free_argv(&svc->keytab_loader);
     SELINUX_context_free(svc->selinux_ctx);
     memset(svc, 0, sizeof(struct gp_service));
+}
+
+const char *gp_service_get_keytab(struct gp_service *svc)
+{
+    for (unsigned i = 0; i < svc->krb5.store.count; i++) {
+        if (strcmp(svc->krb5.store.elements[i].key, "keytab") == 0) {
+            return svc->krb5.store.elements[i].value;
+        }
+    }
+    return NULL;
 }
 
 static int setup_krb5_creds_handle(struct gp_service *svc)
 {
     uint32_t ret_maj, ret_min;
-    const char *keytab = NULL;
-
-    for (unsigned i = 0; i < svc->krb5.store.count; i++) {
-        if (strcmp(svc->krb5.store.elements[i].key, "keytab") == 0) {
-            keytab = svc->krb5.store.elements[i].value;
-            break;
-        }
-    }
+    const char *keytab = gp_service_get_keytab(svc);
 
     ret_maj = gp_init_creds_handle(&ret_min, svc->name, keytab,
                                    &svc->krb5.creds_handle);
@@ -101,6 +116,70 @@ static int setup_krb5_creds_handle(struct gp_service *svc)
     }
 
     return 0;
+}
+
+/* keytab_loader is a command line, split on blanks; no shell is involved */
+static int parse_keytab_loader(struct gp_service *svc, const char *value)
+{
+#if defined(HAVE_MEMFD_CREATE) && defined(HAVE_PIDFD_OPEN)
+    const char *keytab;
+    char **argv = NULL;
+    char **tmp;
+    char *vcopy;
+    char *token;
+    char *handle;
+    int argc = 0;
+    int ret = 0;
+
+    keytab = gp_service_get_keytab(svc);
+    if (!keytab || strncmp(keytab, "MEMORY:", 7) != 0) {
+        GPERROR("keytab_loader in [service/%s] requires "
+                "\"cred_store = keytab:MEMORY:<name>\".\n", svc->name);
+        return EINVAL;
+    }
+
+    vcopy = strdup(value);
+    if (!vcopy) {
+        return ENOMEM;
+    }
+
+    for (token = strtok_r(vcopy, " \t", &handle);
+         token != NULL;
+         token = strtok_r(NULL, " \t", &handle)) {
+        tmp = realloc(argv, (argc + 2) * sizeof(char *));
+        if (!tmp) {
+            ret = ENOMEM;
+            goto done;
+        }
+        argv = tmp;
+        argv[argc] = strdup(token);
+        if (!argv[argc]) {
+            ret = ENOMEM;
+            goto done;
+        }
+        argc++;
+        argv[argc] = NULL;
+    }
+
+    if (argc == 0 || argv[0][0] != '/') {
+        GPERROR("keytab_loader in [service/%s] must start with an "
+                "absolute path.\n", svc->name);
+        ret = EINVAL;
+        goto done;
+    }
+
+    svc->keytab_loader = argv;
+    argv = NULL;
+
+done:
+    free_argv(&argv);
+    safefree(vcopy);
+    return ret;
+#else
+    GPERROR("keytab_loader in [service/%s] is not supported on this "
+            "platform.\n", svc->name);
+    return ENOTSUP;
+#endif
 }
 
 static int get_krb5_mech_cfg(struct gp_service *svc,
@@ -185,6 +264,15 @@ static int get_krb5_mech_cfg(struct gp_service *svc,
     }
 
     if (ret == 0) {
+        ret = gp_config_get_string(ctx, secname, "keytab_loader", &value);
+        if (ret == 0) {
+            ret = parse_keytab_loader(svc, value);
+        } else if (ret == ENOENT) {
+            ret = 0;
+        }
+    }
+
+    if (ret == 0) {
         ret = setup_krb5_creds_handle(svc);
     }
 
@@ -246,6 +334,18 @@ static int parse_flags(const char *value, uint32_t *storage)
     return 0;
 }
 
+static bool same_argv(char **a, char **b)
+{
+    int i;
+
+    for (i = 0; a[i] && b[i]; i++) {
+        if (strcmp(a[i], b[i]) != 0) {
+            return false;
+        }
+    }
+    return a[i] == b[i];
+}
+
 static int check_services(const struct gp_config *cfg)
 {
     int i, j;
@@ -273,6 +373,18 @@ static int check_services(const struct gp_config *cfg)
 
         for (j = 0; j < i; j++) {
             jsvc = cfg->svcs[j];
+
+            /* services sharing a loaded keytab must share its loader */
+            if (isvc->keytab_loader && jsvc->keytab_loader &&
+                strcmp(gp_service_get_keytab(isvc),
+                       gp_service_get_keytab(jsvc)) == 0 &&
+                !same_argv(isvc->keytab_loader, jsvc->keytab_loader)) {
+                ret = 1;
+                GPERROR("%s and %s load keytab %s with different "
+                        "keytab_loader commands!\n",
+                        isvc->name, jsvc->name, gp_service_get_keytab(isvc));
+            }
+
             jsock = jsvc->socket;
             if (!jsock) {
                 jsock = GP_SOCKET_NAME;
