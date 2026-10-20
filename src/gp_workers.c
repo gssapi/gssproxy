@@ -393,7 +393,10 @@ static void *gp_worker_main(void *pvt)
         /* handle the client request */
         GPDEBUGN(3, "[status] Handling query input: %p (%zu)\n", q->buffer,
                  q->buflen);
+        /* keytab loaders must not remove keys while we use them */
+        gp_keytab_rdlock();
         gp_handle_query(t->pool, q);
+        gp_keytab_unlock();
         GPDEBUGN(3 ,"[status] Handling query output: %p (%zu)\n", q->buffer,
                  q->buflen);
 

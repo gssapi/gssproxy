@@ -69,6 +69,7 @@ struct gp_config {
 };
 
 struct gp_workers;
+struct gp_keytab_loader;
 
 struct gssproxy_ctx {
     bool userproxymode;
@@ -86,6 +87,8 @@ struct gssproxy_ctx {
     verto_ev *term_ev; /* termination ev in user mode */
 
     verto_ev *retry_proc_ev; /* retry telling the kernel to use GSS-Proxy */
+
+    struct gp_keytab_loader *kt_loaders; /* keytab loaders, see gp_keytab.c */
 
     ssize_t readstats;
     ssize_t writestats;
@@ -171,6 +174,12 @@ int gp_query_new(struct gp_workers *w, struct gp_conn *conn,
 int gp_rpc_process_call(struct gp_call_ctx *gpcall,
                         uint8_t *inbuf, size_t inlen,
                         uint8_t **outbuf, size_t *outlen);
+
+/* from gp_keytab.c */
+void gp_keytab_loaders_update(struct gssproxy_ctx *gpctx);
+void gp_keytab_loaders_fini(struct gssproxy_ctx *gpctx);
+void gp_keytab_rdlock(void);
+void gp_keytab_unlock(void);
 
 /* from gp_creds.c */
 struct gp_service *gp_creds_match_conn(struct gssproxy_ctx *gpctx,

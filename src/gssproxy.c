@@ -201,6 +201,9 @@ int main(int argc, const char *argv[])
         goto cleanup;
     }
 
+    /* after dropping privileges, so loaders run as the configured user */
+    gp_keytab_loaders_update(gpctx);
+
     /* final initialization step */
     ret = init_event_fini(gpctx);
     if (ret) {
@@ -209,6 +212,7 @@ int main(int argc, const char *argv[])
     }
 
     verto_run(gpctx->vctx);
+    gp_keytab_loaders_fini(gpctx);
     verto_free(gpctx->vctx);
 
     gp_workers_free(gpctx->workers);
