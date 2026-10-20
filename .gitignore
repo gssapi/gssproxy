@@ -65,5 +65,6 @@ tests/t_acquire
 tests/t_cred_store
 tests/t_impersonate
 tests/t_init
+tests/t_kt_loader
 tests/t_names
 tests/t_setcredopt
