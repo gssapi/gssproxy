@@ -47,6 +47,7 @@ struct gp_service {
     uint32_t enforce_flags;
     uint32_t min_lifetime;
     char *program;
+    char **keytab_loader;   /* argv of the keytab loader, NULL-terminated */
 
     uint32_t mechs;
     struct gp_cred_krb5 krb5;
@@ -111,6 +112,7 @@ struct gp_call_ctx {
 struct gp_config *read_config(char *config_file, char *config_dir,
                               char *socket_name, int opt_daemonize);
 struct gp_creds_handle *gp_service_get_creds_handle(struct gp_service *svc);
+const char *gp_service_get_keytab(struct gp_service *svc);
 void free_config(struct gp_config **config);
 void free_cred_store_elements(gss_key_value_set_desc *cs);
 struct gp_config *userproxy_config(char *socket_name, int opt_daemonize);
