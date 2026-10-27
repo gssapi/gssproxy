@@ -212,10 +212,12 @@ int main(int argc, const char *argv[])
     }
 
     verto_run(gpctx->vctx);
+    /* Stop workers first, before releasing any shared resources */
+    gp_workers_free(gpctx->workers);
+    gpctx->workers = NULL;
+
     gp_keytab_loaders_fini(gpctx);
     verto_free(gpctx->vctx);
-
-    gp_workers_free(gpctx->workers);
 
     fini_server();
 
