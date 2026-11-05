@@ -449,6 +449,11 @@ uint32_t gp_conv_gssx_to_name(uint32_t *min, gssx_name *in, gss_name_t *out)
     uint32_t ret_min;
     int ret;
 
+    if (in == NULL) {
+        *min = EINVAL;
+        return GSS_S_CALL_INACCESSIBLE_READ;
+    }
+
     if (in->display_name.octet_string_len != 0) {
         /* ok we have a display name.
          * In this case always import and canonicalize it so we can
