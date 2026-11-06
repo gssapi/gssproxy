@@ -16,7 +16,6 @@ ExecReload=/bin/kill -HUP $MAINPID
 
 ProtectSystem=strict
 PrivateDevices=yes
-PrivateNetwork=yes
 PrivateIPC=yes
 # Blocks access to /home which may hold ccaches, also breaks euid mappings
 PrivateUsers=no
