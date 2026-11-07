@@ -6,7 +6,7 @@ Before=rpc-gssd.service
 [Service]
 ConfigurationDirectory=gssproxy
 StateDirectory=gssproxy gssproxy/clients gssproxy/rcache
-StateDirectoryMode=0700
+StateDirectoryMode=0711
 Environment=KRB5RCACHEDIR=/var/lib/gssproxy/rcache
 ExecStart=@sbindir@/gssproxy -i
 # This can be changed to notify-reload and ExecReload= can be removed once
@@ -41,7 +41,6 @@ ProtectProc=default
 ProtectKernelModules=yes
 ProtectKernelLogs=yes
 ProtectControlGroups=yes
-RestrictAddressFamilies=AF_UNIX AF_LOCAL
 RestrictNamespaces=yes
 LockPersonality=yes
 MemoryDenyWriteExecute=yes
@@ -55,7 +54,6 @@ SystemCallErrorNumber=EPERM
 SystemCallArchitectures=native
 NoNewPrivileges=yes
 CapabilityBoundingSet=CAP_DAC_OVERRIDE
-IPAddressDeny=any
 UMask=0177
 
 [Install]
