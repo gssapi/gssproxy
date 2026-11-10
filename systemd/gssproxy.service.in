@@ -53,7 +53,7 @@ SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 SystemCallArchitectures=native
 NoNewPrivileges=yes
-CapabilityBoundingSet=CAP_DAC_OVERRIDE
+CapabilityBoundingSet=CAP_DAC_OVERRIDE CAP_SYS_PTRACE
 UMask=0177
 
 [Install]
