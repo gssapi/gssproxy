@@ -180,6 +180,17 @@
                     </para>
                 </listitem>
             </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--idle-timeout=</option><replaceable>SECONDS</replaceable>
+                </term>
+                <listitem>
+                    <para>
+                        Set the idle timeout in seconds for socket-activated
+                        user proxy mode. The default is 1000 seconds.
+                    </para>
+                </listitem>
+            </varlistentry>
         </variablelist>
     </refsect1>
 
